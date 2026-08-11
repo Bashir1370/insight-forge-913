@@ -167,13 +167,13 @@ function ConsultationPage() {
           <div className="space-y-2">
             <Label htmlFor="name">نام و نام خانوادگی</Label>
             <Input id="name" name="name" maxLength={100} placeholder="دکتر ..." />
-            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
+            {errors['name'] && <p className="text-xs text-destructive">{errors['name']}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="email">ایمیل دانشگاهی</Label>
             <Input id="email" name="email" type="email" maxLength={255} dir="ltr" placeholder="name@university.ac.ir" />
-            {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+            {errors['email'] && <p className="text-xs text-destructive">{errors['email']}</p>}
           </div>
 
           <div className="space-y-2">
@@ -196,7 +196,7 @@ function ConsultationPage() {
                 <SelectItem value="other">سایر</SelectItem>
               </SelectContent>
             </Select>
-            {errors.topic && <p className="text-xs text-destructive">{errors.topic}</p>}
+            {errors['topic'] && <p className="text-xs text-destructive">{errors['topic']}</p>}
           </div>
 
           <div className="space-y-2">
@@ -208,7 +208,7 @@ function ConsultationPage() {
               maxLength={1500}
               placeholder="پرسش پژوهشی، نوع داده، تعداد نمونه و هدف نهایی را بنویسید."
             />
-            {errors.message && <p className="text-xs text-destructive">{errors.message}</p>}
+            {errors['message'] && <p className="text-xs text-destructive">{errors['message']}</p>}
           </div>
 
           <Button type="submit" variant="hero" size="lg" className="w-full">
