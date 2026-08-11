@@ -33,7 +33,7 @@ export const Route = createFileRoute("/")({
 });
 
 function NetworkGraphic() {
-  const nodes = [
+  const nodes: Array<[number, number]> = [
     [40, 60],
     [110, 30],
     [95, 120],
@@ -44,7 +44,7 @@ function NetworkGraphic() {
     [150, 175],
     [280, 190],
   ];
-  const edges = [
+  const edges: Array<[number, number]> = [
     [0, 1],
     [0, 2],
     [1, 3],
@@ -58,6 +58,7 @@ function NetworkGraphic() {
     [7, 8],
     [6, 8],
   ];
+
   return (
     <svg viewBox="0 0 330 230" className="h-full w-full" role="img" aria-label="شبکه مولکولی انتزاعی">
       {edges.map(([a, b], i) => (
