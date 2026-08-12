@@ -10,7 +10,7 @@ export const Route = createFileRoute("/services/")({
       {
         name: "description",
         content:
-          "فهرست خدمات هسته بیوانفورماتیک: مشاوره، طراحی پژوهش، Bulk و Single-cell RNA-seq، داده‌های عمومی، مسیرها، شبکه، بیومارکر، میکروبیوم و مصورسازی.",
+          "فهرست خدمات زیست فلو: مشاوره، طراحی پژوهش، Bulk و Single-cell RNA-seq، داده‌های عمومی، مسیرها، شبکه، بیومارکر، میکروبیوم و مصورسازی.",
       },
       { property: "og:title", content: "خدمات تخصصی بیوانفورماتیک" },
       {

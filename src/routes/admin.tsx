@@ -15,12 +15,12 @@ import { projectStages } from "@/lib/content";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: "پنل مدیریت | هسته بیوانفورماتیک" },
+      { title: "پنل مدیریت | زیست فلو" },
       {
         name: "description",
-        content: "مدیریت پروژه‌ها، درخواست‌های مشاوره، تخصیص تحلیل‌گر و پایش وضعیت هسته بیوانفورماتیک.",
+        content: "مدیریت پروژه‌ها، درخواست‌های مشاوره، تخصیص تحلیل‌گر و پایش وضعیت زیست فلو.",
       },
-      { property: "og:title", content: "پنل مدیریت هسته بیوانفورماتیک" },
+      { property: "og:title", content: "پنل مدیریت زیست فلو" },
       { property: "og:description", content: "پایش پروژه‌ها، صف مشاوره و بار کاری تیم تحلیل." },
       { name: "robots", content: "noindex" },
     ],
