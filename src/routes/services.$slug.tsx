@@ -13,7 +13,7 @@ export const Route = createFileRoute("/services/$slug")({
     if (!loaderData) {
       return { meta: [{ title: "خدمت یافت نشد" }, { name: "robots", content: "noindex" }] };
     }
-    const title = `${loaderData.title} | زیست فلو`;
+    const title = `${loaderData.title} | هاب‌ژن`;
     return {
       meta: [
         { title },

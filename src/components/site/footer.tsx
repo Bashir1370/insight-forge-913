@@ -11,7 +11,7 @@ export function Footer() {
             <span className="flex size-9 items-center justify-center rounded-xl surface-navy">
               <Dna className="size-5" />
             </span>
-            <span className="text-sm font-extrabold text-navy">زیست فلو</span>
+            <span className="text-sm font-extrabold text-navy">هاب‌ژن</span>
           </div>
           <p className="mt-4 text-sm leading-7 text-muted-foreground">
             از پرسش پژوهشی تا بینش زیستی؛ مشاوره، تحلیل داده‌های زیستی و خروجی‌های آماده انتشار برای
@@ -71,7 +71,7 @@ export function Footer() {
           <h3 className="text-sm font-bold text-navy">تماس</h3>
           <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Mail className="size-4 text-primary" />
-            core@bioinsight.research
+            core@hubgene.research
           </p>
           <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-4 text-primary" />
@@ -80,7 +80,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border py-5 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} ZistFlo Bioinformatics — تمامی حقوق محفوظ است.
+        © {new Date().getFullYear()} HubGene Bioinformatics — تمامی حقوق محفوظ است.
       </div>
     </footer>
   );
