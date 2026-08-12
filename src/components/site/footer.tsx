@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Dna, Mail, ShieldCheck } from "lucide-react";
+import { Mail, ShieldCheck } from "lucide-react";
+import { BrandMark } from "@/components/site/brand-mark";
 import { services } from "@/lib/content";
 
 export function Footer() {
@@ -9,7 +10,7 @@ export function Footer() {
         <div className="md:col-span-1">
           <div className="flex items-center gap-2.5">
             <span className="flex size-9 items-center justify-center rounded-xl surface-navy">
-              <Dna className="size-5" />
+              <BrandMark className="size-5" />
             </span>
             <span className="text-sm font-extrabold text-navy">هاب‌ژن</span>
           </div>
