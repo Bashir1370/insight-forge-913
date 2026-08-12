@@ -14,8 +14,8 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BlogRouteImport } from './routes/blog'
 import { Route as ConsultationRouteImport } from './routes/consultation'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as WizardRouteImport } from './routes/wizard'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as ServicesSlugRouteImport } from './routes/services.$slug'
 
@@ -44,14 +44,14 @@ const ConsultationRoute = ConsultationRouteImport.update({
   path: '/consultation',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const WizardRoute = WizardRouteImport.update({
   id: '/wizard',
   path: '/wizard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/_authenticated/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
@@ -71,8 +71,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRoute
   '/consultation': typeof ConsultationRoute
-  '/dashboard': typeof DashboardRoute
   '/wizard': typeof WizardRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/services/': typeof ServicesIndexRoute
 }
@@ -82,8 +82,8 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRoute
   '/consultation': typeof ConsultationRoute
-  '/dashboard': typeof DashboardRoute
   '/wizard': typeof WizardRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/services': typeof ServicesIndexRoute
 }
@@ -94,8 +94,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/blog': typeof BlogRoute
   '/consultation': typeof ConsultationRoute
-  '/dashboard': typeof DashboardRoute
   '/wizard': typeof WizardRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/services/$slug': typeof ServicesSlugRoute
   '/services/': typeof ServicesIndexRoute
 }
@@ -107,8 +107,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/blog'
     | '/consultation'
-    | '/dashboard'
     | '/wizard'
+    | '/dashboard'
     | '/services/$slug'
     | '/services/'
   fileRoutesByTo: FileRoutesByTo
@@ -118,8 +118,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/blog'
     | '/consultation'
-    | '/dashboard'
     | '/wizard'
+    | '/dashboard'
     | '/services/$slug'
     | '/services'
   id:
@@ -129,8 +129,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/blog'
     | '/consultation'
-    | '/dashboard'
     | '/wizard'
+    | '/_authenticated/dashboard'
     | '/services/$slug'
     | '/services/'
   fileRoutesById: FileRoutesById
@@ -141,8 +141,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   BlogRoute: typeof BlogRoute
   ConsultationRoute: typeof ConsultationRoute
-  DashboardRoute: typeof DashboardRoute
   WizardRoute: typeof WizardRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   ServicesSlugRoute: typeof ServicesSlugRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
 }
@@ -184,18 +184,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConsultationRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/wizard': {
       id: '/wizard'
       path: '/wizard'
       fullPath: '/wizard'
       preLoaderRoute: typeof WizardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/services/': {
@@ -221,8 +221,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   BlogRoute: BlogRoute,
   ConsultationRoute: ConsultationRoute,
-  DashboardRoute: DashboardRoute,
   WizardRoute: WizardRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   ServicesSlugRoute: ServicesSlugRoute,
   ServicesIndexRoute: ServicesIndexRoute,
 }

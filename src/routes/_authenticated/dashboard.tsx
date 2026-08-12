@@ -15,7 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { projectStages } from "@/lib/content";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "داشبورد پژوهشگر هاب‌ژن | مدیریت پروژه‌های بیوانفورماتیک" },
