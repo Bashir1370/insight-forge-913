@@ -7,7 +7,7 @@ import { blogCategories, blogPosts } from "@/lib/content";
 export const Route = createFileRoute("/blog")({
   head: () => ({
     meta: [
-      { title: "دانشنامه بیوانفورماتیک | راهنماهای RNA-seq و تحلیل داده زیستی" },
+      { title: "دانشنامه بیوانفورماتیک هاب‌ژن | راهنماهای RNA-seq و تحلیل داده" },
       {
         name: "description",
         content:

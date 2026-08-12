@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Dna } from "lucide-react";
+import { BrandMark } from "@/components/site/brand-mark";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "ورود پژوهشگر | زیست فلو" },
+      { title: "ورود پژوهشگر | هاب‌ژن" },
       {
         name: "description",
         content: "ورود یا ساخت حساب پژوهشگر برای مدیریت پروژه‌ها، داده‌ها و جلسات مشاوره.",
@@ -29,7 +29,7 @@ function Auth() {
       <div className="mx-auto max-w-md px-4 py-20">
         <div className="card-elevated p-8">
           <span className="mx-auto flex size-12 items-center justify-center rounded-2xl surface-navy">
-            <Dna className="size-6" />
+            <BrandMark className="size-6" />
           </span>
           <h1 className="mt-5 text-center text-2xl text-navy">حساب پژوهشگر</h1>
           <p className="mt-2 text-center text-sm text-muted-foreground">

@@ -16,13 +16,13 @@ import { SciTerm } from "@/components/site/sci-term";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "زیست فلو | از پرسش پژوهشی تا بینش زیستی" },
+      { title: "هاب‌ژن | از پرسش پژوهشی تا بینش زیستی" },
       {
         name: "description",
         content:
           "مشاوره تخصصی بیوانفورماتیک، تحلیل پیشرفته داده‌های زیستی و خروجی‌های آماده انتشار برای پژوهشگران، اساتید و آزمایشگاه‌های علوم حیات.",
       },
-      { property: "og:title", content: "زیست فلو | از پرسش پژوهشی تا بینش زیستی" },
+      { property: "og:title", content: "هاب‌ژن | از پرسش پژوهشی تا بینش زیستی" },
       {
         property: "og:description",
         content: "طراح تعاملی پروژه پژوهشی، تحلیل RNA-seq و تک‌سلولی، و مشاوره طراحی مطالعه.",

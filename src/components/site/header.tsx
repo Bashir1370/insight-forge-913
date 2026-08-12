@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Dna, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
+import { BrandMark } from "@/components/site/brand-mark";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -20,11 +21,11 @@ export function Header() {
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4">
         <Link to="/" className="flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-xl surface-navy shadow-glow">
-            <Dna className="size-5" />
+            <BrandMark className="size-5" />
           </span>
           <span className="leading-tight">
-            <span className="block text-sm font-extrabold text-navy">زیست فلو</span>
-            <span className="block text-[11px] text-muted-foreground">ZistFlo Bioinformatics</span>
+            <span className="block text-sm font-extrabold text-navy">هاب‌ژن</span>
+            <span className="block text-[10px] text-muted-foreground">Bioinformatics & Computational Biology</span>
           </span>
         </Link>
 
