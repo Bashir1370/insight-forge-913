@@ -8,7 +8,7 @@ import { labelFor, recommendation, wizardSteps, type WizardAnswers } from "@/lib
 export const Route = createFileRoute("/wizard")({
   head: () => ({
     meta: [
-      { title: "طراح پروژه پژوهشی | هسته بیوانفورماتیک" },
+      { title: "طراح پروژه پژوهشی | زیست فلو" },
       {
         name: "description",
         content:

@@ -11,7 +11,7 @@ export function Footer() {
             <span className="flex size-9 items-center justify-center rounded-xl surface-navy">
               <Dna className="size-5" />
             </span>
-            <span className="text-sm font-extrabold text-navy">هسته بیوانفورماتیک</span>
+            <span className="text-sm font-extrabold text-navy">زیست فلو</span>
           </div>
           <p className="mt-4 text-sm leading-7 text-muted-foreground">
             از پرسش پژوهشی تا بینش زیستی؛ مشاوره، تحلیل داده‌های زیستی و خروجی‌های آماده انتشار برای
@@ -80,7 +80,7 @@ export function Footer() {
         </div>
       </div>
       <div className="border-t border-border py-5 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} BioInsight Core Facility — تمامی حقوق محفوظ است.
+        © {new Date().getFullYear()} ZistFlo Bioinformatics — تمامی حقوق محفوظ است.
       </div>
     </footer>
   );

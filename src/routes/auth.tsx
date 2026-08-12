@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "ورود پژوهشگر | هسته بیوانفورماتیک" },
+      { title: "ورود پژوهشگر | زیست فلو" },
       {
         name: "description",
         content: "ورود یا ساخت حساب پژوهشگر برای مدیریت پروژه‌ها، داده‌ها و جلسات مشاوره.",

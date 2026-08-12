@@ -23,8 +23,8 @@ export function Header() {
             <Dna className="size-5" />
           </span>
           <span className="leading-tight">
-            <span className="block text-sm font-extrabold text-navy">هسته بیوانفورماتیک</span>
-            <span className="block text-[11px] text-muted-foreground">BioInsight Core Facility</span>
+            <span className="block text-sm font-extrabold text-navy">زیست فلو</span>
+            <span className="block text-[11px] text-muted-foreground">ZistFlo Bioinformatics</span>
           </span>
         </Link>
 

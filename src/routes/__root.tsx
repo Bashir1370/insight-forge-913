@@ -80,7 +80,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "هسته بیوانفورماتیک | از پرسش پژوهشی تا بینش زیستی" },
+      { title: "زیست فلو | از پرسش پژوهشی تا بینش زیستی" },
       {
         name: "description",
         content:
