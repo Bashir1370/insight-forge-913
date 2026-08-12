@@ -18,7 +18,7 @@ import {
 export const Route = createFileRoute("/consultation")({
   head: () => ({
     meta: [
-      { title: "رزرو مشاوره بیوانفورماتیک | بررسی رایگان و طراحی مطالعه" },
+      { title: "رزرو مشاوره هاب‌ژن | بررسی رایگان و طراحی مطالعه" },
       {
         name: "description",
         content:

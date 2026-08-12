@@ -18,7 +18,7 @@ import { projectStages } from "@/lib/content";
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
     meta: [
-      { title: "داشبورد پژوهشگر | مدیریت پروژه‌های بیوانفورماتیک" },
+      { title: "داشبورد پژوهشگر هاب‌ژن | مدیریت پروژه‌های بیوانفورماتیک" },
       {
         name: "description",
         content:
