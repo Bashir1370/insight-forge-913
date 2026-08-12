@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { projectStages } from "@/lib/content";
+import { useAuth, useProfile } from "@/hooks/use-auth";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "داشبورد پژوهشگر هاب‌ژن | مدیریت پروژه‌های بیوانفورماتیک" },
@@ -92,6 +93,9 @@ function StageTracker({ stage }: { stage: number }) {
 }
 
 function Dashboard() {
+  const { user } = useAuth();
+  const profile = useProfile(user?.id);
+  const displayName = profile?.full_name?.trim() || user?.email || "پژوهشگر";
   const [active, setActive] = useState(projects[0]!.id);
   const current = projects.find((p) => p.id === active)!;
 
@@ -101,7 +105,7 @@ function Dashboard() {
         <div>
           <h1 className="text-3xl text-navy">داشبورد پژوهشگر</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            خوش آمدید، دکتر رضایی — آزمایشگاه نوروبیولوژی مولکولی
+            خوش آمدید، {displayName}
           </p>
         </div>
         <Button asChild variant="hero">
