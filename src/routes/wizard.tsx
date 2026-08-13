@@ -1,9 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw, Workflow } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RefreshCw, Workflow } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { labelFor, recommendation, wizardSteps, type WizardAnswers } from "@/lib/wizard";
+import { createProject, projectErrorMessage, suggestedTitle } from "@/lib/projects";
+import { useAuth } from "@/hooks/use-auth";
+
 
 export const Route = createFileRoute("/wizard")({
   head: () => ({
@@ -25,13 +30,22 @@ export const Route = createFileRoute("/wizard")({
 });
 
 function WizardPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<WizardAnswers>({});
   const [done, setDone] = useState(false);
+  const [title, setTitle] = useState("");
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const current = wizardSteps[step]!;
   const progress = ((done ? wizardSteps.length : step) / wizardSteps.length) * 100;
   const result = useMemo(() => recommendation(answers), [answers]);
+
+  useEffect(() => {
+    if (done && !titleTouched) setTitle(suggestedTitle(answers));
+  }, [done, titleTouched, answers]);
 
   const pick = (value: string) => {
     setAnswers((prev) => ({ ...prev, [current.key]: value }));
@@ -43,7 +57,34 @@ function WizardPage() {
     setAnswers({});
     setStep(0);
     setDone(false);
+    setTitle("");
+    setTitleTouched(false);
   };
+
+  const submit = async () => {
+    if (!user) {
+      toast.error("برای ثبت پروژه ابتدا وارد حساب خود شوید.");
+      navigate({ to: "/auth" });
+      return;
+    }
+    const finalTitle = title.trim() || suggestedTitle(answers);
+    setSubmitting(true);
+    try {
+      const { error } = await createProject({ userId: user.id, title: finalTitle, answers });
+      if (error) {
+        toast.error(projectErrorMessage(error.message));
+        return;
+      }
+      toast.success("پروژه شما با موفقیت ثبت شد.");
+      navigate({ to: "/dashboard" });
+    } catch (e) {
+      toast.error(projectErrorMessage(e instanceof Error ? e.message : ""));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+
 
   return (
     <div className="surface-hero">
@@ -169,7 +210,42 @@ function WizardPage() {
                 </div>
               </div>
 
+              <div className="mt-8 rounded-2xl border border-border bg-secondary/40 p-5">
+                <label htmlFor="project-title" className="text-sm font-bold text-navy">
+                  عنوان پروژه
+                </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  عنوان پیشنهادی را می‌توانید پیش از ثبت نهایی ویرایش کنید.
+                </p>
+                <Input
+                  id="project-title"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setTitleTouched(true);
+                  }}
+                  className="mt-3"
+                  placeholder="عنوان پروژه پژوهشی"
+                />
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="mt-4"
+                  disabled={submitting}
+                  onClick={submit}
+                >
+                  {submitting && <Loader2 className="size-4 animate-spin" />}
+                  {user ? "ثبت نهایی پروژه" : "ورود و ثبت پروژه"}
+                </Button>
+                {!user && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    برای ثبت پروژه باید وارد حساب پژوهشگری خود شوید؛ پاسخ‌های شما حفظ می‌شود.
+                  </p>
+                )}
+              </div>
+
               <div className="mt-8 flex flex-wrap gap-3">
+
                 <Button asChild variant="hero" size="lg">
                   <Link to="/consultation">
                     رزرو مشاوره با متخصص

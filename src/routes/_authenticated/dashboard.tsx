@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BadgeDollarSign,
   CheckCircle2,
@@ -7,6 +7,7 @@ import {
   FileBarChart,
   FileText,
   FolderKanban,
+  Loader2,
   MessageSquare,
   Users2,
 } from "lucide-react";
@@ -15,6 +16,16 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { projectStages } from "@/lib/content";
 import { useAuth, useProfile } from "@/hooks/use-auth";
+import {
+  formatDate,
+  listMyProjects,
+  projectErrorMessage,
+  shortId,
+  statusLabel,
+  statusToStage,
+  type ProjectRow,
+} from "@/lib/projects";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -35,32 +46,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-const projects = [
-  {
-    id: "PRJ-2418",
-    title: "ترنسکریپتوم میکروگلیا در مدل التهاب عصبی",
-    type: "Bulk RNA-seq",
-    stage: 4,
-    files: 12,
-    updated: "۲ روز پیش",
-  },
-  {
-    id: "PRJ-2391",
-    title: "اطلس تک‌سلولی نفوذ لنفوسیتی در تومور",
-    type: "Single-cell RNA-seq",
-    stage: 2,
-    files: 5,
-    updated: "۶ روز پیش",
-  },
-  {
-    id: "PRJ-2356",
-    title: "متاآنالیز سه کوهورت GEO برای امضای ژنی",
-    type: "Public dataset",
-    stage: 6,
-    files: 21,
-    updated: "۳ هفته پیش",
-  },
-];
+
+
 
 const files = [
   { name: "samples_metadata.csv", size: "۴۲ کیلوبایت", status: "تأیید شده" },
@@ -96,8 +83,43 @@ function Dashboard() {
   const { user } = useAuth();
   const profile = useProfile(user?.id);
   const displayName = profile?.full_name?.trim() || user?.email || "پژوهشگر";
-  const [active, setActive] = useState(projects[0]!.id);
-  const current = projects.find((p) => p.id === active)!;
+
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [active, setActive] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    let mounted = true;
+    setLoading(true);
+    listMyProjects(user.id)
+      .then(({ data, error }) => {
+        if (!mounted) return;
+        if (error) {
+          setLoadError(projectErrorMessage(error.message));
+          return;
+        }
+        const rows = (data ?? []) as ProjectRow[];
+        setLoadError(null);
+        setProjects(rows);
+        setActive((prev) => prev ?? rows[0]?.id ?? null);
+      })
+      .catch((e: unknown) => {
+        if (mounted) setLoadError(projectErrorMessage(e instanceof Error ? e.message : ""));
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  const current = projects.find((p) => p.id === active) ?? projects[0] ?? null;
+  const activeCount = projects.filter(
+    (p) => p.status !== "completed" && p.status !== "cancelled",
+  ).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-14">
@@ -115,7 +137,11 @@ function Dashboard() {
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { icon: FolderKanban, label: "پروژه‌های فعال", value: "۲" },
+          {
+            icon: FolderKanban,
+            label: "پروژه‌های فعال",
+            value: new Intl.NumberFormat("fa-IR").format(activeCount),
+          },
           { icon: CloudUpload, label: "فایل‌های بارگذاری‌شده", value: "۳۸" },
           { icon: Users2, label: "جلسات مشاوره", value: "۵" },
           { icon: FileBarChart, label: "گزارش‌های تحویل‌شده", value: "۳" },
@@ -128,6 +154,29 @@ function Dashboard() {
         ))}
       </div>
 
+      {loadError && (
+        <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {loadError}
+        </p>
+      )}
+
+      {loading ? (
+        <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          در حال بارگذاری پروژه‌ها…
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="card-elevated mt-8 p-12 text-center">
+          <FolderKanban className="mx-auto size-8 text-primary" />
+          <p className="mt-4 text-base font-bold text-navy">هنوز پروژه‌ای ثبت نکرده‌اید.</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            با طراح پروژه پژوهشی، اولین پروژه بیوانفورماتیک خود را ثبت کنید.
+          </p>
+          <Button asChild variant="hero" className="mt-6">
+            <Link to="/wizard">ثبت پروژه جدید</Link>
+          </Button>
+        </div>
+      ) : (
       <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
         <aside className="card-elevated h-fit p-5">
           <h2 className="text-sm font-bold text-navy">پروژه‌های من</h2>
@@ -137,12 +186,14 @@ function Dashboard() {
                 <button
                   onClick={() => setActive(p.id)}
                   className={`w-full rounded-xl border p-3 text-start transition-colors ${
-                    active === p.id ? "border-primary bg-accent/60" : "border-border hover:bg-secondary"
+                    current?.id === p.id ? "border-primary bg-accent/60" : "border-border hover:bg-secondary"
                   }`}
                 >
-                  <span className="block text-[11px] text-muted-foreground">{p.id}</span>
+                  <span className="block text-[11px] text-muted-foreground" dir="ltr">
+                    {shortId(p.id)}
+                  </span>
                   <span className="mt-1 block text-sm font-semibold leading-6 text-navy">{p.title}</span>
-                  <span className="mt-1 block text-[11px] text-primary">{p.type}</span>
+                  <span className="mt-1 block text-[11px] text-primary">{p.analysis_type ?? "—"}</span>
                 </button>
               </li>
             ))}
@@ -152,17 +203,19 @@ function Dashboard() {
         <section className="card-elevated p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-lg text-navy">{current.title}</h2>
+              <h2 className="text-lg text-navy">{current!.title}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                {current.id} · {current.type} · آخرین بروزرسانی {current.updated}
+                <span dir="ltr">{shortId(current!.id)}</span> · {current!.analysis_type ?? "—"} · ثبت{" "}
+                {formatDate(current!.created_at)} · آخرین بروزرسانی {formatDate(current!.updated_at)}
               </p>
             </div>
             <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-accent-foreground">
-              {projectStages[Math.min(current.stage, projectStages.length) - 1]}
+              {statusLabel(current!.status)}
             </span>
           </div>
 
-          <StageTracker stage={current.stage} />
+          <StageTracker stage={statusToStage(current!.status)} />
+
 
           <Tabs defaultValue="files" className="mt-8">
             <TabsList className="flex-wrap">
@@ -276,6 +329,8 @@ function Dashboard() {
           </Tabs>
         </section>
       </div>
+      )}
     </div>
+
   );
 }
