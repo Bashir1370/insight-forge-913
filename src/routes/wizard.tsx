@@ -1,9 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, RefreshCw, Workflow } from "lucide-react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Loader2, RefreshCw, Workflow } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { labelFor, recommendation, wizardSteps, type WizardAnswers } from "@/lib/wizard";
+import { createProject, projectErrorMessage, suggestedTitle } from "@/lib/projects";
+import { useAuth } from "@/hooks/use-auth";
+
 
 export const Route = createFileRoute("/wizard")({
   head: () => ({
