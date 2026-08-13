@@ -329,6 +329,8 @@ function Dashboard() {
           </Tabs>
         </section>
       </div>
+      )}
     </div>
+
   );
 }
