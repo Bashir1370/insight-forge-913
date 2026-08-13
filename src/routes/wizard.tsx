@@ -30,13 +30,22 @@ export const Route = createFileRoute("/wizard")({
 });
 
 function WizardPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<WizardAnswers>({});
   const [done, setDone] = useState(false);
+  const [title, setTitle] = useState("");
+  const [titleTouched, setTitleTouched] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   const current = wizardSteps[step]!;
   const progress = ((done ? wizardSteps.length : step) / wizardSteps.length) * 100;
   const result = useMemo(() => recommendation(answers), [answers]);
+
+  useEffect(() => {
+    if (done && !titleTouched) setTitle(suggestedTitle(answers));
+  }, [done, titleTouched, answers]);
 
   const pick = (value: string) => {
     setAnswers((prev) => ({ ...prev, [current.key]: value }));
@@ -48,7 +57,34 @@ function WizardPage() {
     setAnswers({});
     setStep(0);
     setDone(false);
+    setTitle("");
+    setTitleTouched(false);
   };
+
+  const submit = async () => {
+    if (!user) {
+      toast.error("برای ثبت پروژه ابتدا وارد حساب خود شوید.");
+      navigate({ to: "/auth" });
+      return;
+    }
+    const finalTitle = title.trim() || suggestedTitle(answers);
+    setSubmitting(true);
+    try {
+      const { error } = await createProject({ userId: user.id, title: finalTitle, answers });
+      if (error) {
+        toast.error(projectErrorMessage(error.message));
+        return;
+      }
+      toast.success("پروژه شما با موفقیت ثبت شد.");
+      navigate({ to: "/dashboard" });
+    } catch (e) {
+      toast.error(projectErrorMessage(e instanceof Error ? e.message : ""));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+
 
   return (
     <div className="surface-hero">
