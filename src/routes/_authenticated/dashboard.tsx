@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BadgeDollarSign,
   CheckCircle2,
@@ -7,6 +7,7 @@ import {
   FileBarChart,
   FileText,
   FolderKanban,
+  Loader2,
   MessageSquare,
   Users2,
 } from "lucide-react";
@@ -15,6 +16,16 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { projectStages } from "@/lib/content";
 import { useAuth, useProfile } from "@/hooks/use-auth";
+import {
+  formatDate,
+  listMyProjects,
+  projectErrorMessage,
+  shortId,
+  statusLabel,
+  statusToStage,
+  type ProjectRow,
+} from "@/lib/projects";
+
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
