@@ -210,7 +210,42 @@ function WizardPage() {
                 </div>
               </div>
 
+              <div className="mt-8 rounded-2xl border border-border bg-secondary/40 p-5">
+                <label htmlFor="project-title" className="text-sm font-bold text-navy">
+                  عنوان پروژه
+                </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  عنوان پیشنهادی را می‌توانید پیش از ثبت نهایی ویرایش کنید.
+                </p>
+                <Input
+                  id="project-title"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setTitleTouched(true);
+                  }}
+                  className="mt-3"
+                  placeholder="عنوان پروژه پژوهشی"
+                />
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="mt-4"
+                  disabled={submitting}
+                  onClick={submit}
+                >
+                  {submitting && <Loader2 className="size-4 animate-spin" />}
+                  {user ? "ثبت نهایی پروژه" : "ورود و ثبت پروژه"}
+                </Button>
+                {!user && (
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    برای ثبت پروژه باید وارد حساب پژوهشگری خود شوید؛ پاسخ‌های شما حفظ می‌شود.
+                  </p>
+                )}
+              </div>
+
               <div className="mt-8 flex flex-wrap gap-3">
+
                 <Button asChild variant="hero" size="lg">
                   <Link to="/consultation">
                     رزرو مشاوره با متخصص
