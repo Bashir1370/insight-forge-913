@@ -46,32 +46,8 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-const projects = [
-  {
-    id: "PRJ-2418",
-    title: "ترنسکریپتوم میکروگلیا در مدل التهاب عصبی",
-    type: "Bulk RNA-seq",
-    stage: 4,
-    files: 12,
-    updated: "۲ روز پیش",
-  },
-  {
-    id: "PRJ-2391",
-    title: "اطلس تک‌سلولی نفوذ لنفوسیتی در تومور",
-    type: "Single-cell RNA-seq",
-    stage: 2,
-    files: 5,
-    updated: "۶ روز پیش",
-  },
-  {
-    id: "PRJ-2356",
-    title: "متاآنالیز سه کوهورت GEO برای امضای ژنی",
-    type: "Public dataset",
-    stage: 6,
-    files: 21,
-    updated: "۳ هفته پیش",
-  },
-];
+
+
 
 const files = [
   { name: "samples_metadata.csv", size: "۴۲ کیلوبایت", status: "تأیید شده" },
