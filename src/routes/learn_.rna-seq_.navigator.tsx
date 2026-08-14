@@ -11,6 +11,7 @@ type NavigatorNode = {
   id: string;
   number: string;
   title: string;
+  englishTitle: string;
   category: string;
   shortDescription: string;
   simpleExplanation: string;
@@ -35,6 +36,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "research-question",
     number: "01",
     title: "سؤال پژوهشی",
+    englishTitle: "Research Question",
     category: "طراحی پژوهش",
     shortDescription:
       "قبل از هر نرم‌افزار و هر فایل، باید بدانیم دقیقاً چه چیزی را می‌خواهیم بفهمیم.",
@@ -71,6 +73,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "study-design",
     number: "02",
     title: "طراحی مطالعه",
+    englishTitle: "Experimental Design",
     category: "طراحی پژوهش",
     shortDescription:
       "گروه‌ها، نمونه‌ها، تکرارهای زیستی و عوامل مداخله‌گر ساختار تحلیل را تعیین می‌کنند.",
@@ -107,6 +110,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "sequencing",
     number: "03",
     title: "از نمونه تا FASTQ",
+    englishTitle: "Sample to Sequencing",
     category: "داده",
     shortDescription:
       "نمونه زیستی چگونه به داده‌ای تبدیل می‌شود که کامپیوتر بتواند آن را تحلیل کند؟",
@@ -143,6 +147,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "quality-control",
     number: "04",
     title: "کنترل کیفیت",
+    englishTitle: "Quality Control",
     category: "کنترل داده",
     shortDescription:
       "قبل از تحلیل باید بفهمیم داده خام چه کیفیتی دارد و آیا الگوی غیرعادی دیده می‌شود.",
@@ -179,6 +184,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "quantification",
     number: "05",
     title: "کمی‌سازی بیان",
+    englishTitle: "Quantification",
     category: "پردازش داده",
     shortDescription:
       "خوانش‌ها چگونه به اعدادی تبدیل می‌شوند که بتوانیم با آن‌ها بیان ژن را بررسی کنیم؟",
@@ -215,6 +221,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "expression-matrix",
     number: "06",
     title: "ماتریس بیان",
+    englishTitle: "Expression Matrix",
     category: "ساختار داده",
     shortDescription:
       "یکی از مهم‌ترین نقاط مسیر: ژن‌ها و نمونه‌ها در یک جدول ساختاریافته کنار هم قرار می‌گیرند.",
@@ -251,6 +258,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "normalization",
     number: "07",
     title: "نرمال‌سازی داده",
+    englishTitle: "Normalization",
     category: "آمار و آماده‌سازی",
     shortDescription:
       "چرا نمی‌توانیم همیشه شمارش‌های خام را مستقیماً با یکدیگر مقایسه کنیم؟",
@@ -287,6 +295,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "sample-exploration",
     number: "08",
     title: "بررسی ساختار نمونه‌ها",
+    englishTitle: "Sample Exploration",
     category: "اکتشاف داده",
     shortDescription:
       "قبل از رفتن سراغ ژن‌های معنی‌دار، باید رفتار کلی نمونه‌ها را ببینیم.",
@@ -323,6 +332,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "differential-expression",
     number: "09",
     title: "تحلیل بیان افتراقی",
+    englishTitle: "Differential Expression",
     category: "تحلیل آماری",
     shortDescription:
       "کدام ژن‌ها بین شرایط مورد مطالعه تغییر کرده‌اند و چقدر به این نتیجه اطمینان داریم؟",
@@ -359,6 +369,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "visualization",
     number: "10",
     title: "نمایش نتایج",
+    englishTitle: "Visualization",
     category: "تحلیل و نمایش داده",
     shortDescription:
       "نمودار آتشفشانی و نقشه حرارتی کمک می‌کنند نتیجه را ببینیم؛ اما خود نتیجه نیستند.",
@@ -395,6 +406,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "functional-analysis",
     number: "11",
     title: "تحلیل عملکردی",
+    englishTitle: "Functional Analysis",
     category: "تفسیر زیستی",
     shortDescription:
       "چگونه از صدها ژن به فرآیندها و مسیرهای زیستی قابل فهم برسیم؟",
@@ -431,6 +443,7 @@ const navigatorNodes: NavigatorNode[] = [
     id: "interpretation",
     number: "12",
     title: "تفسیر زیستی",
+    englishTitle: "Biological Interpretation",
     category: "جمع‌بندی پژوهش",
     shortDescription:
       "همه چیز باید در پایان دوباره به سؤال پژوهشی اولیه برگردد.",
@@ -632,7 +645,6 @@ function RnaSeqLearningNavigator() {
       dir="rtl"
       className="min-h-screen bg-slate-50 text-right text-slate-900"
     >
-      {/* TOP BAR */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -668,7 +680,6 @@ function RnaSeqLearningNavigator() {
         </div>
       </header>
 
-      {/* HERO */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-teal-100/70 blur-3xl" />
@@ -744,13 +755,11 @@ function RnaSeqLearningNavigator() {
         </div>
       </section>
 
-      {/* MAIN NAVIGATOR */}
       <section
         id="navigator-content"
         className="scroll-mt-6"
       >
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:px-8 xl:grid-cols-[0.72fr_1.28fr]">
-          {/* SIDE MAP */}
           <aside className="xl:sticky xl:top-6 xl:self-start">
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-5">
@@ -809,7 +818,7 @@ function RnaSeqLearningNavigator() {
                             : node.number}
                       </span>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <p
                           className={[
                             "text-sm font-bold",
@@ -821,8 +830,11 @@ function RnaSeqLearningNavigator() {
                           {node.title}
                         </p>
 
-                        <p className="mt-0.5 text-xs text-slate-400">
-                          {node.category}
+                        <p
+                          dir="ltr"
+                          className="mt-0.5 truncate text-left text-[11px] font-medium text-slate-400"
+                        >
+                          {node.englishTitle}
                         </p>
                       </div>
                     </button>
@@ -854,7 +866,6 @@ function RnaSeqLearningNavigator() {
             </div>
           </aside>
 
-          {/* ACTIVE NODE */}
           <div>
             {!showSummary ? (
               <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
@@ -874,6 +885,13 @@ function RnaSeqLearningNavigator() {
                       <h2 className="mt-5 text-3xl font-bold text-slate-950">
                         {currentNode.title}
                       </h2>
+
+                      <p
+                        dir="ltr"
+                        className="mt-1 text-left text-sm font-semibold text-teal-700"
+                      >
+                        {currentNode.englishTitle}
+                      </p>
                     </div>
 
                     <span className="rounded-2xl bg-white px-4 py-2 text-sm font-semibold text-slate-500 shadow-sm">
@@ -984,7 +1002,6 @@ function RnaSeqLearningNavigator() {
                     </div>
                   </LearningBlock>
 
-                  {/* CHECKPOINT */}
                   <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
                     <div className="flex items-start gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">
@@ -1067,7 +1084,6 @@ function RnaSeqLearningNavigator() {
                     )}
                   </section>
 
-                  {/* CONFIDENCE */}
                   <section>
                     <div>
                       <p className="font-bold text-slate-950">
@@ -1111,7 +1127,6 @@ function RnaSeqLearningNavigator() {
                     </div>
                   </section>
 
-                  {/* NAVIGATION */}
                   <div className="border-t border-slate-100 pt-7">
                     {!nodeReady && (
                       <div className="mb-4 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-500">
@@ -1136,8 +1151,7 @@ function RnaSeqLearningNavigator() {
                         disabled={!nodeReady}
                         className="min-h-11 rounded-xl bg-slate-950 px-6 py-2.5 font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
-                        {currentIndex ===
-                        navigatorNodes.length - 1
+                        {currentIndex === navigatorNodes.length - 1
                           ? "مشاهده جمع‌بندی مسیر"
                           : "رفتن به مرحله بعد"}
                       </button>
@@ -1312,9 +1326,7 @@ function LearningBlock({
 }) {
   return (
     <section>
-      <h3 className="font-bold text-slate-950">
-        {title}
-      </h3>
+      <h3 className="font-bold text-slate-950">{title}</h3>
 
       <div className="mt-3 text-sm leading-8 text-slate-600">
         {children}
@@ -1378,9 +1390,7 @@ function Legend({
         {marker}
       </span>
 
-      <span className="text-slate-500">
-        {text}
-      </span>
+      <span className="text-slate-500">{text}</span>
     </div>
   );
 }
