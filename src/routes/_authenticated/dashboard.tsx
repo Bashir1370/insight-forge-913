@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   BadgeDollarSign,
+  BookOpen,
   CalendarClock,
   CheckCircle2,
   CloudUpload,
@@ -146,6 +147,25 @@ type ProjectInvoiceRow = {
   created_at: string;
   updated_at: string;
 };
+
+type LearningProgressRow = {
+  node_id: string;
+  status:
+    | "not_started"
+    | "in_progress"
+    | "completed"
+    | "needs_review";
+  confidence:
+    | "unclear"
+    | "developing"
+    | "clear"
+    | null;
+  selected_answer: number | null;
+  is_correct: boolean | null;
+  updated_at: string;
+};
+
+const RNA_SEQ_TOTAL_NODES = 12;
 
 const PROJECT_FILES_BUCKET = "project-files";
 
@@ -334,6 +354,21 @@ function Dashboard() {
     setInvoicesLoading,
   ] = useState(false);
 
+  const [
+    learningProgress,
+    setLearningProgress,
+  ] = useState<LearningProgressRow[]>([]);
+
+  const [
+    learningLoading,
+    setLearningLoading,
+  ] = useState(false);
+
+  const [
+    learningError,
+    setLearningError,
+  ] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -503,6 +538,60 @@ function Dashboard() {
     loadConsultations();
   }, [user?.id]);
 
+  const loadLearningProgress =
+    async () => {
+      if (!user?.id) return;
+
+      setLearningLoading(true);
+      setLearningError(null);
+
+      const { data, error } =
+        await (supabase as any)
+          .from("learning_progress")
+          .select(
+            "node_id, status, confidence, selected_answer, is_correct, updated_at",
+          )
+          .eq(
+            "user_id",
+            user.id,
+          )
+          .eq(
+            "research_line",
+            "rna-seq",
+          )
+          .order(
+            "updated_at",
+            {
+              ascending: false,
+            },
+          );
+
+      if (error) {
+        console.error(error);
+
+        setLearningProgress([]);
+        setLearningError(
+          "دریافت پیشرفت مسیر یادگیری انجام نشد.",
+        );
+        setLearningLoading(false);
+
+        return;
+      }
+
+      setLearningProgress(
+        (data ??
+          []) as LearningProgressRow[],
+      );
+
+      setLearningLoading(false);
+    };
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    void loadLearningProgress();
+  }, [user?.id]);
+
   const current =
     projects.find(
       (project) =>
@@ -519,6 +608,38 @@ function Dashboard() {
         project.status !==
           "cancelled",
     ).length;
+
+  const completedLearningCount =
+    learningProgress.filter(
+      (row) =>
+        row.selected_answer !==
+          null &&
+        Boolean(
+          row.confidence,
+        ),
+    ).length;
+
+  const learningPercent =
+    Math.round(
+      (Math.min(
+        completedLearningCount,
+        RNA_SEQ_TOTAL_NODES,
+      ) /
+        RNA_SEQ_TOTAL_NODES) *
+        100,
+    );
+
+  const learningReviewCount =
+    learningProgress.filter(
+      (row) =>
+        row.status ===
+        "needs_review",
+    ).length;
+
+  const lastLearningUpdate =
+    learningProgress[0]
+      ?.updated_at ??
+    null;
 
   const currentConsultations =
     current
@@ -1216,6 +1337,33 @@ function Dashboard() {
         </p>
       )}
 
+      <LearningProgressCard
+        loading={
+          learningLoading
+        }
+        error={
+          learningError
+        }
+        completed={
+          completedLearningCount
+        }
+        total={
+          RNA_SEQ_TOTAL_NODES
+        }
+        percent={
+          learningPercent
+        }
+        reviewCount={
+          learningReviewCount
+        }
+        lastUpdated={
+          lastLearningUpdate
+        }
+        onRefresh={
+          loadLearningProgress
+        }
+      />
+
       {loading ? (
         <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
@@ -1907,6 +2055,280 @@ function Dashboard() {
           </section>
         </div>
       )}
+    </div>
+  );
+}
+
+function LearningProgressCard({
+  loading,
+  error,
+  completed,
+  total,
+  percent,
+  reviewCount,
+  lastUpdated,
+  onRefresh,
+}: {
+  loading: boolean;
+  error: string | null;
+  completed: number;
+  total: number;
+  percent: number;
+  reviewCount: number;
+  lastUpdated: string | null;
+  onRefresh: () => Promise<void>;
+}) {
+  const hasProgress =
+    completed > 0;
+
+  const finished =
+    completed >= total;
+
+  return (
+    <section className="card-elevated mt-8 overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-accent/20 p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <BookOpen className="size-5" />
+          </span>
+
+          <div>
+            <p className="text-xs font-semibold text-primary">
+              یادگیری من
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-navy">
+              مسیر یادگیری RNA-seq
+            </h2>
+
+            <p
+              dir="ltr"
+              className="mt-0.5 text-left text-[11px] font-semibold text-muted-foreground"
+            >
+              RNA-seq Learning Navigator
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            void onRefresh();
+          }}
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs text-muted-foreground transition hover:bg-secondary disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`size-4 ${
+              loading
+                ? "animate-spin"
+                : ""
+            }`}
+          />
+          بروزرسانی
+        </button>
+      </div>
+
+      <div className="p-5 sm:p-6">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            در حال دریافت پیشرفت یادگیری…
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5">
+            <p className="text-sm font-bold text-navy">
+              پیشرفت یادگیری فعلاً دریافت نشد.
+            </p>
+
+            <p className="mt-2 text-xs leading-6 text-muted-foreground">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                void onRefresh();
+              }}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
+            >
+              <RefreshCw className="size-4 text-primary" />
+              تلاش دوباره
+            </button>
+          </div>
+        ) : !hasProgress ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p className="text-base font-bold text-navy">
+                هنوز مسیر یادگیری RNA-seq را شروع نکرده‌اید.
+              </p>
+
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
+                در این مسیر، ساختار RNA-seq را از سؤال پژوهشی و طراحی
+                مطالعه تا FASTQ، کنترل کیفیت، تحلیل بیان افتراقی و
+                تفسیر زیستی مرحله‌به‌مرحله یاد می‌گیرید.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              variant="hero"
+            >
+              <Link to="/learn/rna-seq/navigator">
+                شروع یادگیری RNA-seq
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+              <div>
+                <div className="flex flex-wrap items-end justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-navy">
+                      {finished
+                        ? "مسیر کامل شده است"
+                        : "مسیر در حال یادگیری است"}
+                    </p>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Intl.NumberFormat(
+                        "fa-IR",
+                      ).format(
+                        Math.min(
+                          completed,
+                          total,
+                        ),
+                      )}{" "}
+                      از{" "}
+                      {new Intl.NumberFormat(
+                        "fa-IR",
+                      ).format(
+                        total,
+                      )}{" "}
+                      مرحله مرور شده
+                    </p>
+                  </div>
+
+                  <p className="text-2xl font-extrabold text-primary">
+                    {new Intl.NumberFormat(
+                      "fa-IR",
+                    ).format(
+                      percent,
+                    )}
+                    ٪
+                  </p>
+                </div>
+
+                <Progress
+                  value={percent}
+                  className="mt-4 h-2"
+                />
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <LearningMetric
+                    label="مراحل مرورشده"
+                    value={`${new Intl.NumberFormat(
+                      "fa-IR",
+                    ).format(
+                      Math.min(
+                        completed,
+                        total,
+                      ),
+                    )} از ${new Intl.NumberFormat(
+                      "fa-IR",
+                    ).format(
+                      total,
+                    )}`}
+                  />
+
+                  <LearningMetric
+                    label="نیازمند مرور دوباره"
+                    value={new Intl.NumberFormat(
+                      "fa-IR",
+                    ).format(
+                      reviewCount,
+                    )}
+                  />
+
+                  <LearningMetric
+                    label="آخرین فعالیت"
+                    value={
+                      lastUpdated
+                        ? formatDateTime(
+                            lastUpdated,
+                          )
+                        : "—"
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  asChild
+                  variant="hero"
+                >
+                  <Link to="/learn/rna-seq/navigator">
+                    {finished
+                      ? "مرور دوباره مسیر"
+                      : "ادامه مسیر یادگیری"}
+                  </Link>
+                </Button>
+
+                <Button
+                  asChild
+                  variant="outline"
+                  size="sm"
+                >
+                  <Link to="/learn">
+                    مشاهده بخش آموزش
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            {reviewCount > 0 && (
+              <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-sm font-bold text-amber-950">
+                  چند مفهوم ارزش مرور دوباره دارند.
+                </p>
+
+                <p className="mt-1 text-xs leading-6 text-amber-900/80">
+                  {new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    reviewCount,
+                  )}{" "}
+                  مرحله بر اساس پاسخ یا میزان اطمینان شما برای مرور
+                  بیشتر علامت‌گذاری شده است. این یک نمره یا ارزیابی
+                  رسمی نیست.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function LearningMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
+        {label}
+      </p>
+
+      <p className="mt-1 text-sm font-bold leading-6 text-navy">
+        {value}
+      </p>
     </div>
   );
 }
