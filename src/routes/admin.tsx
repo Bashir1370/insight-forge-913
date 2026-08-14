@@ -1,157 +1,327 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Activity, AlertCircle, CalendarClock, FolderKanban, Users2 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { projectStages } from "@/lib/content";
+  Activity,
+  CheckCircle2,
+  FolderKanban,
+  Loader2,
+  Users2,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
+import {
+  formatDate,
+  shortId,
+  statusLabel,
+  type ProjectRow,
+} from "@/lib/projects";
+
+type ProfileRow = {
+  id: string;
+  full_name: string | null;
+  organization: string | null;
+  research_field: string | null;
+};
+
+const statusOptions = [
+  { value: "submitted", label: "ثبت پروژه" },
+  { value: "scientific_review", label: "بررسی اولیه" },
+  { value: "design_confirmation", label: "تأیید طراحی" },
+  { value: "data_received", label: "دریافت داده" },
+  { value: "qc", label: "کنترل کیفیت" },
+  { value: "analysis", label: "تحلیل" },
+  { value: "interpretation", label: "تفسیر زیستی" },
+  { value: "completed", label: "تکمیل‌شده" },
+  { value: "cancelled", label: "لغوشده" },
+];
 
 export const Route = createFileRoute("/admin")({
+  ssr: false,
+
+  beforeLoad: async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw redirect({ to: "/auth" });
+    }
+
+    const { data: role, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (roleError || !role) {
+      throw redirect({ to: "/dashboard" });
+    }
+
+    return { user };
+  },
+
   head: () => ({
     meta: [
       { title: "پنل مدیریت | هاب‌ژن" },
-      {
-        name: "description",
-        content: "مدیریت پروژه‌ها، درخواست‌های مشاوره، تخصیص تحلیل‌گر و پایش وضعیت هاب‌ژن.",
-      },
-      { property: "og:title", content: "پنل مدیریت هاب‌ژن" },
-      { property: "og:description", content: "پایش پروژه‌ها، صف مشاوره و بار کاری تیم تحلیل." },
       { name: "robots", content: "noindex" },
     ],
   }),
+
   component: Admin,
 });
 
-const queue = [
-  { id: "PRJ-2431", pi: "دکتر موسوی", type: "Single-cell", stage: 1, analyst: "—", priority: "بالا" },
-  { id: "PRJ-2418", pi: "دکتر رضایی", type: "Bulk RNA-seq", stage: 4, analyst: "س. کریمی", priority: "متوسط" },
-  { id: "PRJ-2402", pi: "دکتر احمدی", type: "WES", stage: 3, analyst: "م. نوری", priority: "متوسط" },
-  { id: "PRJ-2391", pi: "دکتر شریفی", type: "Public dataset", stage: 2, analyst: "ه. عباسی", priority: "پایین" },
-];
-
-const consultRequests = [
-  { name: "دکتر کاظمی", topic: "طراحی مطالعه ترنسکریپتوم", plan: "رایگان", time: "امروز ۱۰:۳۰" },
-  { name: "دکتر فرهادی", topic: "تحلیل میکروبیوم روده", plan: "تخصصی", time: "فردا ۱۴:۰۰" },
-  { name: "دکتر یزدانی", topic: "کشف بیومارکر در TCGA", plan: "تخصصی", time: "پنجشنبه ۹:۰۰" },
-];
-
 function Admin() {
+  const [projects, setProjects] = useState<ProjectRow[]>([]);
+  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadData() {
+      setLoading(true);
+
+      const [projectsResult, profilesResult] = await Promise.all([
+        supabase
+          .from("projects")
+          .select("*")
+          .order("created_at", { ascending: false }),
+
+        supabase
+          .from("profiles")
+          .select("id, full_name, organization, research_field"),
+      ]);
+
+      if (!mounted) return;
+
+      if (projectsResult.error || profilesResult.error) {
+        toast.error("دریافت اطلاعات پنل مدیریت با خطا مواجه شد.");
+        setLoading(false);
+        return;
+      }
+
+      setProjects((projectsResult.data ?? []) as ProjectRow[]);
+      setProfiles((profilesResult.data ?? []) as ProfileRow[]);
+      setLoading(false);
+    }
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const profileMap = useMemo(
+    () => new Map(profiles.map((profile) => [profile.id, profile])),
+    [profiles],
+  );
+
+  const activeProjects = projects.filter(
+    (p) => p.status !== "completed" && p.status !== "cancelled",
+  ).length;
+
+  const completedProjects = projects.filter(
+    (p) => p.status === "completed",
+  ).length;
+
+  const updateStatus = async (projectId: string, status: string) => {
+    setUpdatingId(projectId);
+
+    const { error } = await supabase
+      .from("projects")
+      .update({ status })
+      .eq("id", projectId);
+
+    if (error) {
+      toast.error("تغییر وضعیت پروژه انجام نشد.");
+      setUpdatingId(null);
+      return;
+    }
+
+    setProjects((prev) =>
+      prev.map((project) =>
+        project.id === projectId
+          ? {
+              ...project,
+              status,
+              updated_at: new Date().toISOString(),
+            }
+          : project,
+      ),
+    );
+
+    toast.success("وضعیت پروژه به‌روزرسانی شد.");
+    setUpdatingId(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center gap-2">
+        <Loader2 className="size-5 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">
+          در حال بارگذاری پنل مدیریت…
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-14">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl text-navy">پنل مدیریت</h1>
-          <p className="mt-2 text-sm text-muted-foreground">پایش پروژه‌ها، صف مشاوره و بار کاری تیم تحلیل</p>
-        </div>
-        <Button variant="hero">گزارش هفتگی</Button>
+      <div>
+        <p className="text-sm font-semibold text-primary">HubGene Admin</p>
+        <h1 className="mt-2 text-3xl text-navy">پنل مدیریت هاب‌ژن</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          مدیریت پروژه‌های پژوهشی و وضعیت اجرای آن‌ها
+        </p>
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { icon: FolderKanban, label: "پروژه‌های در جریان", value: "۱۸" },
-          { icon: CalendarClock, label: "مشاوره‌های این هفته", value: "۹" },
-          { icon: Users2, label: "پژوهشگران فعال", value: "۴۷" },
-          { icon: AlertCircle, label: "در انتظار اقدام", value: "۴" },
-        ].map((s) => (
-          <div key={s.label} className="card-elevated p-5">
-            <s.icon className="size-5 text-primary" />
-            <p className="mt-3 text-2xl font-extrabold text-navy">{s.value}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{s.label}</p>
-          </div>
-        ))}
+        <StatCard
+          icon={FolderKanban}
+          label="کل پروژه‌ها"
+          value={projects.length}
+        />
+        <StatCard
+          icon={Activity}
+          label="پروژه‌های فعال"
+          value={activeProjects}
+        />
+        <StatCard
+          icon={Users2}
+          label="پژوهشگران"
+          value={profiles.length}
+        />
+        <StatCard
+          icon={CheckCircle2}
+          label="پروژه‌های تکمیل‌شده"
+          value={completedProjects}
+        />
       </div>
 
-      <section className="mt-8 card-elevated p-6">
-        <h2 className="flex items-center gap-2 text-lg text-navy">
-          <Activity className="size-5 text-primary" />
-          صف پروژه‌ها
-        </h2>
-        <div className="mt-4 overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-right">شناسه</TableHead>
-                <TableHead className="text-right">سرپرست پروژه</TableHead>
-                <TableHead className="text-right">نوع داده</TableHead>
-                <TableHead className="text-right">مرحله</TableHead>
-                <TableHead className="text-right">تحلیل‌گر</TableHead>
-                <TableHead className="text-right">اولویت</TableHead>
-                <TableHead className="text-right">اقدام</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {queue.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-semibold text-navy">{r.id}</TableCell>
-                  <TableCell>{r.pi}</TableCell>
-                  <TableCell>{r.type}</TableCell>
-                  <TableCell>{projectStages[r.stage - 1]}</TableCell>
-                  <TableCell>{r.analyst}</TableCell>
-                  <TableCell>
-                    <Badge variant={r.priority === "بالا" ? "default" : "secondary"}>{r.priority}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm">
-                      تخصیص
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </section>
-
-      <section className="mt-8 grid gap-6 lg:grid-cols-2">
-        <div className="card-elevated p-6">
-          <h2 className="text-lg text-navy">درخواست‌های مشاوره</h2>
-          <ul className="mt-4 space-y-3">
-            {consultRequests.map((c) => (
-              <li key={c.name} className="flex items-center justify-between rounded-2xl border border-border p-4">
-                <div>
-                  <p className="text-sm font-bold text-navy">{c.name}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{c.topic}</p>
-                </div>
-                <div className="text-end">
-                  <Badge variant={c.plan === "تخصصی" ? "default" : "secondary"}>{c.plan}</Badge>
-                  <p className="mt-1 text-[11px] text-muted-foreground">{c.time}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+      <div className="card-elevated mt-8 overflow-hidden">
+        <div className="border-b border-border p-5">
+          <h2 className="text-lg font-bold text-navy">پروژه‌های پژوهشی</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            مشاهده و مدیریت پروژه‌های ثبت‌شده
+          </p>
         </div>
 
-        <div className="card-elevated p-6">
-          <h2 className="text-lg text-navy">بار کاری تیم تحلیل</h2>
-          <ul className="mt-4 space-y-4">
-            {[
-              ["س. کریمی", 80],
-              ["م. نوری", 55],
-              ["ه. عباسی", 35],
-              ["ن. طاهری", 20],
-            ].map(([name, load]) => (
-              <li key={String(name)}>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-navy">{name}</span>
-                  <span className="text-xs text-muted-foreground">{load}٪</span>
-                </div>
-                <div className="mt-2 h-2 rounded-full bg-secondary">
-                  <div
-                    className="h-2 rounded-full bg-[image:var(--gradient-primary)]"
-                    style={{ width: `${load}%` }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
+        {projects.length === 0 ? (
+          <div className="p-10 text-center text-sm text-muted-foreground">
+            هنوز پروژه‌ای ثبت نشده است.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-sm">
+              <thead className="bg-secondary/60 text-xs text-muted-foreground">
+                <tr>
+                  <th className="p-4 text-start">شناسه</th>
+                  <th className="p-4 text-start">پروژه</th>
+                  <th className="p-4 text-start">پژوهشگر</th>
+                  <th className="p-4 text-start">نوع تحلیل</th>
+                  <th className="p-4 text-start">تاریخ ثبت</th>
+                  <th className="p-4 text-start">وضعیت</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-border">
+                {projects.map((project) => {
+                  const researcher = profileMap.get(project.user_id);
+
+                  return (
+                    <tr key={project.id} className="hover:bg-secondary/30">
+                      <td className="p-4 text-xs" dir="ltr">
+                        {shortId(project.id)}
+                      </td>
+
+                      <td className="p-4">
+                        <p className="font-semibold text-navy">
+                          {project.title}
+                        </p>
+                      </td>
+
+                      <td className="p-4">
+                        <p className="font-medium text-navy">
+                          {researcher?.full_name || "پژوهشگر"}
+                        </p>
+
+                        {researcher?.organization && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {researcher.organization}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="p-4 text-muted-foreground">
+                        {project.analysis_type ?? "—"}
+                      </td>
+
+                      <td className="p-4 text-muted-foreground">
+                        {formatDate(project.created_at)}
+                      </td>
+
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={project.status}
+                            disabled={updatingId === project.id}
+                            onChange={(e) =>
+                              updateStatus(project.id, e.target.value)
+                            }
+                            className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-navy"
+                          >
+                            {statusOptions.map((option) => (
+                              <option
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+
+                          {updatingId === project.id && (
+                            <Loader2 className="size-4 animate-spin text-primary" />
+                          )}
+                        </div>
+
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {statusLabel(project.status)}
+                        </p>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof FolderKanban;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="card-elevated p-5">
+      <Icon className="size-5 text-primary" />
+      <p className="mt-3 text-2xl font-extrabold text-navy">
+        {new Intl.NumberFormat("fa-IR").format(value)}
+      </p>
+      <p className="mt-1 text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }
