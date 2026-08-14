@@ -1,5 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import {
   BadgeDollarSign,
   CheckCircle2,
@@ -8,6 +13,7 @@ import {
   FileBarChart,
   FileText,
   FolderKanban,
+  Image,
   Loader2,
   MessageSquare,
   RefreshCw,
@@ -49,16 +55,11 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       {
         name: "description",
         content:
-          "پیگیری مراحل پروژه، بارگذاری داده، پیام‌ها، جلسات مشاوره، گزارش‌ها، نتایج و پرداخت‌ها در یک داشبورد پژوهشی.",
+          "پیگیری مراحل پروژه، داده‌ها، پیام‌ها، گزارش‌ها، نتایج و پرداخت‌ها در داشبورد پژوهشگر هاب‌ژن.",
       },
       {
         property: "og:title",
         content: "داشبورد پژوهشگر",
-      },
-      {
-        property: "og:description",
-        content:
-          "از ثبت پروژه تا تحویل نتایج، همه چیز در یک محیط قابل پیگیری.",
       },
     ],
   }),
@@ -89,11 +90,6 @@ type ProjectFileRow = {
 
 const PROJECT_FILES_BUCKET = "project-files";
 
-/*
- * Standard browser upload is intentionally limited
- * to 6 MB for this phase.
- * Large sequencing data will later use resumable uploads.
- */
 const MAX_STANDARD_UPLOAD_BYTES =
   6 * 1024 * 1024;
 
@@ -106,8 +102,7 @@ function StageTracker({
     <div className="mt-4">
       <Progress
         value={
-          (stage /
-            projectStages.length) *
+          (stage / projectStages.length) *
           100
         }
         className="h-1.5"
@@ -124,9 +119,7 @@ function StageTracker({
                   : "text-muted-foreground"
               }`}
             >
-              {index < stage
-                ? "● "
-                : "○ "}
+              {index < stage ? "● " : "○ "}
               {stageName}
             </span>
           ),
@@ -139,8 +132,7 @@ function StageTracker({
 function Dashboard() {
   const { user } = useAuth();
 
-  const profile =
-    useProfile(user?.id);
+  const profile = useProfile(user?.id);
 
   const displayName =
     profile?.full_name?.trim() ||
@@ -148,8 +140,11 @@ function Dashboard() {
     "پژوهشگر";
 
   /*
-   * Projects
+   * ========================================
+   * PROJECTS
+   * ========================================
    */
+
   const [projects, setProjects] =
     useState<ProjectRow[]>([]);
 
@@ -163,8 +158,11 @@ function Dashboard() {
     useState<string | null>(null);
 
   /*
-   * Real messages
+   * ========================================
+   * MESSAGES
+   * ========================================
    */
+
   const [
     projectMessages,
     setProjectMessages,
@@ -188,8 +186,11 @@ function Dashboard() {
   ] = useState(false);
 
   /*
-   * Real project files
+   * ========================================
+   * FILES
+   * ========================================
    */
+
   const [
     projectFiles,
     setProjectFiles,
@@ -217,14 +218,22 @@ function Dashboard() {
     setTotalFileCount,
   ] = useState(0);
 
+  const [
+    totalReportCount,
+    setTotalReportCount,
+  ] = useState(0);
+
   const fileInputRef =
     useRef<HTMLInputElement | null>(
       null,
     );
 
   /*
-   * Load real projects
+   * ========================================
+   * LOAD PROJECTS + GLOBAL COUNTS
+   * ========================================
    */
+
   useEffect(() => {
     if (!user?.id) return;
 
@@ -249,8 +258,8 @@ function Dashboard() {
           (data ??
             []) as ProjectRow[];
 
-        setLoadError(null);
         setProjects(rows);
+        setLoadError(null);
 
         setActive(
           (previous) =>
@@ -259,41 +268,60 @@ function Dashboard() {
             null,
         );
 
-        /*
-         * Count all files belonging
-         * to all projects of this user.
-         */
         if (rows.length === 0) {
           setTotalFileCount(0);
+          setTotalReportCount(0);
           return;
         }
 
-        const projectIds =
-          rows.map(
-            (project) =>
-              project.id,
-          );
+        const projectIds = rows.map(
+          (project) => project.id,
+        );
 
-        const {
-          count,
-          error: countError,
-        } = await supabase
-          .from("project_files")
-          .select("id", {
-            count: "exact",
-            head: true,
-          })
-          .in(
-            "project_id",
-            projectIds,
-          );
+        const [
+          fileCountResult,
+          reportCountResult,
+        ] = await Promise.all([
+          supabase
+            .from("project_files")
+            .select("id", {
+              count: "exact",
+              head: true,
+            })
+            .in(
+              "project_id",
+              projectIds,
+            ),
 
-        if (
-          mounted &&
-          !countError
-        ) {
+          supabase
+            .from("project_files")
+            .select("id", {
+              count: "exact",
+              head: true,
+            })
+            .in(
+              "project_id",
+              projectIds,
+            )
+            .eq(
+              "category",
+              "report",
+            ),
+        ]);
+
+        if (!mounted) return;
+
+        if (!fileCountResult.error) {
           setTotalFileCount(
-            count ?? 0,
+            fileCountResult.count ??
+              0,
+          );
+        }
+
+        if (!reportCountResult.error) {
+          setTotalReportCount(
+            reportCountResult.count ??
+              0,
           );
         }
       })
@@ -339,9 +367,32 @@ function Dashboard() {
     ).length;
 
   /*
-   * =========================
-   * PROJECT MESSAGES
-   * =========================
+   * Separate file categories.
+   */
+
+  const dataFiles =
+    projectFiles.filter(
+      (file) =>
+        file.category === "data" ||
+        file.category === "other",
+    );
+
+  const reportFiles =
+    projectFiles.filter(
+      (file) =>
+        file.category === "report",
+    );
+
+  const resultFiles =
+    projectFiles.filter(
+      (file) =>
+        file.category === "result",
+    );
+
+  /*
+   * ========================================
+   * MESSAGES
+   * ========================================
    */
 
   const loadMessages = async (
@@ -382,59 +433,65 @@ function Dashboard() {
     setMessagesLoading(false);
   };
 
-  const sendMessage = async () => {
-    if (!current || !user)
-      return;
+  const sendMessage =
+    async () => {
+      if (!current || !user)
+        return;
 
-    const cleanMessage =
-      messageText.trim();
+      const cleanMessage =
+        messageText.trim();
 
-    if (!cleanMessage) return;
+      if (!cleanMessage) return;
 
-    setSendingMessage(true);
+      setSendingMessage(true);
 
-    const { data, error } =
-      await supabase
-        .from(
-          "project_messages",
-        )
-        .insert({
-          project_id:
-            current.id,
-          sender_id: user.id,
-          message: cleanMessage,
-        })
-        .select("*")
-        .single();
+      const { data, error } =
+        await supabase
+          .from(
+            "project_messages",
+          )
+          .insert({
+            project_id:
+              current.id,
+            sender_id:
+              user.id,
+            message:
+              cleanMessage,
+          })
+          .select("*")
+          .single();
 
-    if (error) {
-      toast.error(
-        "ارسال پیام انجام نشد.",
+      if (error) {
+        toast.error(
+          "ارسال پیام انجام نشد.",
+        );
+
+        setSendingMessage(
+          false,
+        );
+
+        return;
+      }
+
+      setProjectMessages(
+        (previous) => [
+          ...previous,
+          data as ProjectMessageRow,
+        ],
       );
 
+      setMessageText("");
       setSendingMessage(false);
-      return;
-    }
 
-    setProjectMessages(
-      (previous) => [
-        ...previous,
-        data as ProjectMessageRow,
-      ],
-    );
-
-    setMessageText("");
-    setSendingMessage(false);
-
-    toast.success(
-      "پیام شما ارسال شد.",
-    );
-  };
+      toast.success(
+        "پیام شما ارسال شد.",
+      );
+    };
 
   /*
-   * =========================
-   * PROJECT FILES
-   * =========================
+   * ========================================
+   * FILES
+   * ========================================
    */
 
   const loadFiles = async (
@@ -475,7 +532,7 @@ function Dashboard() {
 
   /*
    * When selected project changes,
-   * load its files and messages.
+   * reload files and messages.
    */
   useEffect(() => {
     if (!current?.id) {
@@ -494,8 +551,11 @@ function Dashboard() {
   }, [current?.id]);
 
   /*
-   * Upload selected file
+   * ========================================
+   * RESEARCHER DATA UPLOAD
+   * ========================================
    */
+
   const uploadProjectFile =
     async (file: File) => {
       if (!current || !user) {
@@ -510,7 +570,7 @@ function Dashboard() {
         MAX_STANDARD_UPLOAD_BYTES
       ) {
         toast.error(
-          "در این نسخه، آپلود مستقیم تا ۶ مگابایت پشتیبانی می‌شود. برای فایل‌های بزرگ‌تر بعداً آپلود Resumable اضافه می‌کنیم.",
+          "در این نسخه، آپلود مستقیم تا ۶ مگابایت پشتیبانی می‌شود.",
         );
         return;
       }
@@ -524,11 +584,6 @@ function Dashboard() {
 
       setUploadingFile(true);
 
-      /*
-       * Keep storage name random and safe.
-       * Original file name is saved separately
-       * in project_files.
-       */
       const extension =
         safeExtension(
           file.name,
@@ -578,7 +633,8 @@ function Dashboard() {
         .insert({
           project_id:
             current.id,
-          uploader_id: user.id,
+          uploader_id:
+            user.id,
           bucket_id:
             PROJECT_FILES_BUCKET,
           storage_path:
@@ -628,15 +684,11 @@ function Dashboard() {
 
   const handleFileInputChange =
     async (
-      event: React.ChangeEvent<HTMLInputElement>,
+      event: ChangeEvent<HTMLInputElement>,
     ) => {
       const file =
         event.target.files?.[0];
 
-      /*
-       * Reset the input so the same
-       * file can be selected again later.
-       */
       event.target.value = "";
 
       if (!file) return;
@@ -647,12 +699,11 @@ function Dashboard() {
     };
 
   /*
-   * Download a private file.
-   *
-   * Supabase Storage.download()
-   * uses the authenticated session,
-   * therefore our RLS policies still apply.
+   * ========================================
+   * PRIVATE FILE DOWNLOAD
+   * ========================================
    */
+
   const downloadProjectFile =
     async (
       file: ProjectFileRow,
@@ -665,7 +716,9 @@ function Dashboard() {
         data,
         error,
       } = await supabase.storage
-        .from(file.bucket_id)
+        .from(
+          file.bucket_id,
+        )
         .download(
           file.storage_path,
         );
@@ -685,7 +738,9 @@ function Dashboard() {
       }
 
       const objectUrl =
-        URL.createObjectURL(data);
+        URL.createObjectURL(
+          data,
+        );
 
       const anchor =
         document.createElement(
@@ -693,6 +748,7 @@ function Dashboard() {
         );
 
       anchor.href = objectUrl;
+
       anchor.download =
         file.original_name;
 
@@ -713,11 +769,15 @@ function Dashboard() {
       );
     };
 
+  /*
+   * ========================================
+   * PAGE
+   * ========================================
+   */
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-14">
-      {/* =========================
-          HEADER
-      ========================= */}
+      {/* HEADER */}
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
@@ -741,67 +801,35 @@ function Dashboard() {
         </Button>
       </div>
 
-      {/* =========================
-          REAL / DEMO STATISTICS
-      ========================= */}
+      {/* STATISTICS */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          {
-            icon: FolderKanban,
-            label:
-              "پروژه‌های فعال",
-            value:
-              new Intl.NumberFormat(
-                "fa-IR",
-              ).format(
-                activeCount,
-              ),
-          },
-          {
-            icon: CloudUpload,
-            label:
-              "فایل‌های بارگذاری‌شده",
-            value:
-              new Intl.NumberFormat(
-                "fa-IR",
-              ).format(
-                totalFileCount,
-              ),
-          },
-          {
-            icon: Users2,
-            label:
-              "جلسات مشاوره",
-            value: "۵",
-          },
-          {
-            icon: FileBarChart,
-            label:
-              "گزارش‌های تحویل‌شده",
-            value: "۳",
-          },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="card-elevated p-5"
-          >
-            <stat.icon className="size-5 text-primary" />
+        <DashboardStat
+          icon={FolderKanban}
+          label="پروژه‌های فعال"
+          value={activeCount}
+        />
 
-            <p className="mt-3 text-2xl font-extrabold text-navy">
-              {stat.value}
-            </p>
+        <DashboardStat
+          icon={CloudUpload}
+          label="فایل‌های پروژه"
+          value={totalFileCount}
+        />
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              {stat.label}
-            </p>
-          </div>
-        ))}
+        <DashboardStat
+          icon={Users2}
+          label="جلسات مشاوره"
+          value={5}
+        />
+
+        <DashboardStat
+          icon={FileBarChart}
+          label="گزارش‌های تحویل‌شده"
+          value={totalReportCount}
+        />
       </div>
 
-      {/* =========================
-          ERROR
-      ========================= */}
+      {/* ERROR */}
 
       {loadError && (
         <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -809,9 +837,7 @@ function Dashboard() {
         </p>
       )}
 
-      {/* =========================
-          PROJECT AREA
-      ========================= */}
+      {/* PROJECTS */}
 
       {loading ? (
         <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
@@ -832,8 +858,8 @@ function Dashboard() {
 
           <p className="mt-2 text-xs text-muted-foreground">
             با طراح پروژه پژوهشی،
-            اولین پروژه بیوانفورماتیک
-            خود را ثبت کنید.
+            اولین پروژه خود را ثبت
+            کنید.
           </p>
 
           <Button
@@ -848,9 +874,7 @@ function Dashboard() {
         </div>
       ) : (
         <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
-          {/* =========================
-              PROJECT LIST
-          ========================= */}
+          {/* PROJECT LIST */}
 
           <aside className="card-elevated h-fit p-5">
             <h2 className="text-sm font-bold text-navy">
@@ -905,9 +929,7 @@ function Dashboard() {
             </ul>
           </aside>
 
-          {/* =========================
-              CURRENT PROJECT
-          ========================= */}
+          {/* CURRENT PROJECT */}
 
           <section className="card-elevated p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -988,9 +1010,9 @@ function Dashboard() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* =================================================
-                  REAL PROJECT FILES
-              ================================================= */}
+              {/* ========================================
+                  REAL DATA FILES
+              ======================================== */}
 
               <TabsContent
                 value="files"
@@ -1013,13 +1035,10 @@ function Dashboard() {
                   </p>
 
                   <p className="mx-auto mt-1 max-w-xl text-xs leading-6 text-muted-foreground">
-                    برای فایل‌های
-                    متادیتا، CSV، Excel،
-                    ماتریس‌های داده و
-                    فایل‌های کوچک پژوهشی.
-                    در این مرحله حداکثر
-                    حجم آپلود مستقیم ۶
-                    مگابایت است.
+                    برای متادیتا،
+                    CSV، Excel، ماتریس‌های
+                    داده و فایل‌های کوچک
+                    پژوهشی.
                   </p>
 
                   <Button
@@ -1035,8 +1054,7 @@ function Dashboard() {
                     {uploadingFile ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        در حال
-                        بارگذاری…
+                        در حال بارگذاری…
                       </>
                     ) : (
                       <>
@@ -1047,10 +1065,8 @@ function Dashboard() {
                   </Button>
 
                   <p className="mt-3 text-[11px] text-muted-foreground">
-                    برای FASTQ، BAM و
-                    فایل‌های حجیم توالی‌یابی
-                    مسیر آپلود جداگانه اضافه
-                    خواهد شد.
+                    حداکثر حجم فعلی:
+                    ۶ مگابایت
                   </p>
                 </div>
 
@@ -1058,21 +1074,18 @@ function Dashboard() {
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h3 className="text-sm font-bold text-navy">
-                        فایل‌های این
-                        پروژه
+                        داده‌های این پروژه
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        فایل‌ها خصوصی
-                        هستند و فقط شما و
-                        مدیریت هاب‌ژن به
-                        آن‌ها دسترسی دارید.
+                        فایل‌هایی که شما
+                        برای تحلیل در اختیار
+                        هاب‌ژن قرار داده‌اید.
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={
+                    <RefreshButton
+                      loading={
                         filesLoading
                       }
                       onClick={() =>
@@ -1081,121 +1094,27 @@ function Dashboard() {
                           current.id,
                         )
                       }
-                      className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
-                    >
-                      <RefreshCw
-                        className={`size-4 ${
-                          filesLoading
-                            ? "animate-spin"
-                            : ""
-                        }`}
-                      />
-
-                      بروزرسانی
-                    </button>
+                    />
                   </div>
 
-                  {filesLoading ? (
-                    <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-border py-12 text-sm text-muted-foreground">
-                      <Loader2 className="size-4 animate-spin" />
-
-                      در حال دریافت
-                      فایل‌ها…
-                    </div>
-                  ) : projectFiles.length ===
-                    0 ? (
-                    <div className="mt-4 rounded-2xl border border-border p-10 text-center">
-                      <FileText className="mx-auto size-7 text-primary/60" />
-
-                      <p className="mt-3 text-sm font-bold text-navy">
-                        هنوز فایلی
-                        بارگذاری نشده
-                        است.
-                      </p>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        اولین فایل این
-                        پروژه را از بخش
-                        بالا بارگذاری کنید.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-border">
-                      <ul className="divide-y divide-border">
-                        {projectFiles.map(
-                          (file) => (
-                            <li
-                              key={
-                                file.id
-                              }
-                              className="flex flex-wrap items-center justify-between gap-4 p-4"
-                            >
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <FileText className="size-4 shrink-0 text-primary" />
-
-                                  <p
-                                    className="truncate text-sm font-semibold text-navy"
-                                    dir="auto"
-                                  >
-                                    {
-                                      file.original_name
-                                    }
-                                  </p>
-                                </div>
-
-                                <p className="mt-1 text-[11px] text-muted-foreground">
-                                  {formatFileSize(
-                                    file.size_bytes,
-                                  )}
-
-                                  {" · "}
-
-                                  {file.mime_type ||
-                                    "نوع فایل نامشخص"}
-
-                                  {" · "}
-
-                                  {formatDateTime(
-                                    file.created_at,
-                                  )}
-                                </p>
-                              </div>
-
-                              <button
-                                type="button"
-                                disabled={
-                                  downloadingFileId ===
-                                  file.id
-                                }
-                                onClick={() =>
-                                  downloadProjectFile(
-                                    file,
-                                  )
-                                }
-                                className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:opacity-50"
-                              >
-                                {downloadingFileId ===
-                                file.id ? (
-                                  <Loader2 className="size-4 animate-spin" />
-                                ) : (
-                                  <Download className="size-4 text-primary" />
-                                )}
-
-                                دانلود
-                              </button>
-                            </li>
-                          ),
-                        )}
-                      </ul>
-                    </div>
-                  )}
+                  <ProjectFileList
+                    files={dataFiles}
+                    loading={filesLoading}
+                    emptyTitle="هنوز داده‌ای بارگذاری نشده است."
+                    emptyDescription="اولین فایل داده پروژه را از بخش بالا بارگذاری کنید."
+                    downloadingFileId={
+                      downloadingFileId
+                    }
+                    onDownload={
+                      downloadProjectFile
+                    }
+                  />
                 </div>
               </TabsContent>
 
-              {/* =================================================
-                  REAL PROJECT MESSAGES
-              ================================================= */}
+              {/* ========================================
+                  REAL MESSAGES
+              ======================================== */}
 
               <TabsContent
                 value="messages"
@@ -1206,20 +1125,18 @@ function Dashboard() {
                     <div>
                       <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
                         <MessageSquare className="size-4 text-primary" />
-
                         گفت‌وگوی پروژه
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        ارتباط مستقیم
-                        شما با تیم هاب‌ژن
-                        درباره همین پروژه
+                        ارتباط مستقیم شما
+                        با تیم هاب‌ژن درباره
+                        همین پروژه
                       </p>
                     </div>
 
-                    <button
-                      type="button"
-                      disabled={
+                    <RefreshButton
+                      loading={
                         messagesLoading
                       }
                       onClick={() =>
@@ -1228,28 +1145,12 @@ function Dashboard() {
                           current.id,
                         )
                       }
-                      className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
-                    >
-                      <RefreshCw
-                        className={`size-4 ${
-                          messagesLoading
-                            ? "animate-spin"
-                            : ""
-                        }`}
-                      />
-
-                      بروزرسانی
-                    </button>
+                    />
                   </div>
 
                   <div className="min-h-[220px] bg-secondary/10 p-4">
                     {messagesLoading ? (
-                      <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-                        <Loader2 className="size-4 animate-spin" />
-
-                        در حال دریافت
-                        پیام‌ها…
-                      </div>
+                      <LoadingBox text="در حال دریافت پیام‌ها…" />
                     ) : projectMessages.length ===
                       0 ? (
                       <div className="py-14 text-center">
@@ -1258,14 +1159,6 @@ function Dashboard() {
                         <p className="mt-4 text-sm font-bold text-navy">
                           هنوز پیامی ثبت
                           نشده است.
-                        </p>
-
-                        <p className="mt-2 text-xs text-muted-foreground">
-                          پیام‌های مدیریت
-                          هاب‌ژن درباره این
-                          پروژه در این
-                          قسمت نمایش داده
-                          می‌شوند.
                         </p>
                       </div>
                     ) : (
@@ -1324,12 +1217,6 @@ function Dashboard() {
                       پاسخ به تیم هاب‌ژن
                     </label>
 
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      پیام شما فقط در
-                      همین پروژه ثبت خواهد
-                      شد.
-                    </p>
-
                     <textarea
                       id="researcher-message"
                       value={
@@ -1387,9 +1274,9 @@ function Dashboard() {
                 </div>
               </TabsContent>
 
-              {/* =================================================
-                  CONSULTATIONS — DEMO FOR NOW
-              ================================================= */}
+              {/* ========================================
+                  CONSULTATIONS — STILL DEMO
+              ======================================== */}
 
               <TabsContent
                 value="consults"
@@ -1401,20 +1288,9 @@ function Dashboard() {
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    ۹۰ دقیقه · برگزار
-                    شده · سند طرح مطالعه
-                    تحویل شد
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-border p-4">
-                  <p className="text-sm font-bold text-navy">
-                    جلسه تفسیر نتایج
-                  </p>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    ۴۵ دقیقه · در انتظار
-                    زمان‌بندی
+                    این بخش هنوز به
+                    سیستم واقعی مشاوره
+                    متصل نشده است.
                   </p>
                 </div>
 
@@ -1428,87 +1304,117 @@ function Dashboard() {
                 </Button>
               </TabsContent>
 
-              {/* =================================================
-                  REPORTS — DEMO FOR NOW
-              ================================================= */}
+              {/* ========================================
+                  REAL REPORTS
+              ======================================== */}
 
               <TabsContent
                 value="reports"
-                className="mt-5 space-y-3"
+                className="mt-5"
               >
-                {[
-                  "گزارش کنترل کیفیت داده",
-                  "گزارش تحلیل بیان افتراقی",
-                  "گزارش غنی‌سازی مسیرها",
-                ].map(
-                  (report) => (
-                    <div
-                      key={
-                        report
-                      }
-                      className="flex items-center justify-between rounded-2xl border border-border p-4"
-                    >
-                      <span className="flex items-center gap-2 text-sm text-navy">
-                        <FileBarChart className="size-4 text-primary" />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <FileBarChart className="size-4 text-primary" />
+                      گزارش‌های پروژه
+                    </h3>
 
-                        {
-                          report
-                        }
-                      </span>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      گزارش‌های رسمی
+                      بارگذاری‌شده توسط
+                      تیم هاب‌ژن
+                    </p>
+                  </div>
 
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                      >
-                        دانلود PDF
-                      </Button>
-                    </div>
-                  ),
-                )}
+                  <RefreshButton
+                    loading={
+                      filesLoading
+                    }
+                    onClick={() =>
+                      current &&
+                      loadFiles(
+                        current.id,
+                      )
+                    }
+                  />
+                </div>
+
+                <ProjectFileList
+                  files={
+                    reportFiles
+                  }
+                  loading={
+                    filesLoading
+                  }
+                  emptyTitle="هنوز گزارشی تحویل نشده است."
+                  emptyDescription="پس از آماده‌شدن گزارش تحلیل، فایل آن در این قسمت نمایش داده می‌شود."
+                  downloadingFileId={
+                    downloadingFileId
+                  }
+                  onDownload={
+                    downloadProjectFile
+                  }
+                  icon="report"
+                />
               </TabsContent>
 
-              {/* =================================================
-                  RESULTS — DEMO FOR NOW
-              ================================================= */}
+              {/* ========================================
+                  REAL RESULTS
+              ======================================== */}
 
               <TabsContent
                 value="results"
                 className="mt-5"
               >
-                <div className="grid gap-4 sm:grid-cols-3">
-                  {[
-                    "Volcano plot",
-                    "PCA نمونه‌ها",
-                    "Heatmap ۵۰ ژن برتر",
-                  ].map(
-                    (result) => (
-                      <div
-                        key={
-                          result
-                        }
-                        className="rounded-2xl border border-border p-4"
-                      >
-                        <div className="h-24 rounded-xl bg-[image:var(--gradient-primary)] opacity-25" />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <Image className="size-4 text-primary" />
+                      نتایج و خروجی‌های تحلیل
+                    </h3>
 
-                        <p className="mt-3 text-sm font-semibold text-navy">
-                          {
-                            result
-                          }
-                        </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Figure، جدول،
+                      Excel، CSV، ZIP و
+                      سایر خروجی‌های تحلیلی
+                    </p>
+                  </div>
 
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          خروجی وکتور،
-                          آماده انتشار
-                        </p>
-                      </div>
-                    ),
-                  )}
+                  <RefreshButton
+                    loading={
+                      filesLoading
+                    }
+                    onClick={() =>
+                      current &&
+                      loadFiles(
+                        current.id,
+                      )
+                    }
+                  />
                 </div>
+
+                <ProjectFileList
+                  files={
+                    resultFiles
+                  }
+                  loading={
+                    filesLoading
+                  }
+                  emptyTitle="هنوز نتیجه‌ای تحویل نشده است."
+                  emptyDescription="خروجی‌های تحلیل پس از آماده‌شدن در این قسمت قرار می‌گیرند."
+                  downloadingFileId={
+                    downloadingFileId
+                  }
+                  onDownload={
+                    downloadProjectFile
+                  }
+                  icon="result"
+                />
               </TabsContent>
 
-              {/* =================================================
-                  PAYMENTS — DEMO FOR NOW
-              ================================================= */}
+              {/* ========================================
+                  PAYMENTS — STILL DEMO
+              ======================================== */}
 
               <TabsContent
                 value="payments"
@@ -1530,7 +1436,7 @@ function Dashboard() {
                 ].map(
                   ([
                     title,
-                    status,
+                    paymentStatus,
                   ]) => (
                     <div
                       key={
@@ -1540,20 +1446,17 @@ function Dashboard() {
                     >
                       <span className="flex items-center gap-2 text-sm text-navy">
                         <BadgeDollarSign className="size-4 text-primary" />
-
-                        {
-                          title
-                        }
+                        {title}
                       </span>
 
                       <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {status ===
+                        {paymentStatus ===
                           "تسویه شده" && (
                           <CheckCircle2 className="size-4 text-primary" />
                         )}
 
                         {
-                          status
+                          paymentStatus
                         }
                       </span>
                     </div>
@@ -1567,6 +1470,245 @@ function Dashboard() {
     </div>
   );
 }
+
+/*
+ * ========================================
+ * DASHBOARD STAT
+ * ========================================
+ */
+
+function DashboardStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof FolderKanban;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="card-elevated p-5">
+      <Icon className="size-5 text-primary" />
+
+      <p className="mt-3 text-2xl font-extrabold text-navy">
+        {new Intl.NumberFormat(
+          "fa-IR",
+        ).format(value)}
+      </p>
+
+      <p className="mt-1 text-xs text-muted-foreground">
+        {label}
+      </p>
+    </div>
+  );
+}
+
+/*
+ * ========================================
+ * PROJECT FILE LIST
+ * ========================================
+ */
+
+function ProjectFileList({
+  files,
+  loading,
+  emptyTitle,
+  emptyDescription,
+  downloadingFileId,
+  onDownload,
+  icon = "file",
+}: {
+  files: ProjectFileRow[];
+  loading: boolean;
+  emptyTitle: string;
+  emptyDescription: string;
+  downloadingFileId: string | null;
+  onDownload: (
+    file: ProjectFileRow,
+  ) => Promise<void>;
+  icon?:
+    | "file"
+    | "report"
+    | "result";
+}) {
+  if (loading) {
+    return (
+      <div className="mt-4">
+        <LoadingBox text="در حال دریافت فایل‌ها…" />
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+        {icon === "report" ? (
+          <FileBarChart className="mx-auto size-7 text-primary/50" />
+        ) : icon ===
+          "result" ? (
+          <Image className="mx-auto size-7 text-primary/50" />
+        ) : (
+          <FileText className="mx-auto size-7 text-primary/50" />
+        )}
+
+        <p className="mt-3 text-sm font-bold text-navy">
+          {emptyTitle}
+        </p>
+
+        <p className="mt-2 text-xs leading-6 text-muted-foreground">
+          {emptyDescription}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-border">
+      <div className="border-b border-border bg-secondary/30 px-4 py-3">
+        <p className="text-xs text-muted-foreground">
+          تعداد فایل‌ها:{" "}
+          <span className="font-bold text-navy">
+            {new Intl.NumberFormat(
+              "fa-IR",
+            ).format(
+              files.length,
+            )}
+          </span>
+        </p>
+      </div>
+
+      <ul className="divide-y divide-border">
+        {files.map(
+          (file) => (
+            <li
+              key={file.id}
+              className="flex flex-wrap items-center justify-between gap-4 p-4"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  {icon ===
+                  "report" ? (
+                    <FileBarChart className="size-4 shrink-0 text-primary" />
+                  ) : icon ===
+                    "result" ? (
+                    <Image className="size-4 shrink-0 text-primary" />
+                  ) : (
+                    <FileText className="size-4 shrink-0 text-primary" />
+                  )}
+
+                  <p
+                    className="truncate text-sm font-semibold text-navy"
+                    dir="auto"
+                  >
+                    {
+                      file.original_name
+                    }
+                  </p>
+                </div>
+
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {formatFileSize(
+                    file.size_bytes,
+                  )}
+
+                  {" · "}
+
+                  {file.mime_type ||
+                    "نوع فایل نامشخص"}
+
+                  {" · "}
+
+                  {formatDateTime(
+                    file.created_at,
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  downloadingFileId ===
+                  file.id
+                }
+                onClick={() =>
+                  onDownload(file)
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {downloadingFileId ===
+                file.id ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4 text-primary" />
+                )}
+
+                دانلود
+              </button>
+            </li>
+          ),
+        )}
+      </ul>
+    </div>
+  );
+}
+
+/*
+ * ========================================
+ * REFRESH BUTTON
+ * ========================================
+ */
+
+function RefreshButton({
+  loading,
+  onClick,
+}: {
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={loading}
+      onClick={onClick}
+      className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+    >
+      <RefreshCw
+        className={`size-4 ${
+          loading
+            ? "animate-spin"
+            : ""
+        }`}
+      />
+
+      بروزرسانی
+    </button>
+  );
+}
+
+/*
+ * ========================================
+ * LOADING BOX
+ * ========================================
+ */
+
+function LoadingBox({
+  text,
+}: {
+  text: string;
+}) {
+  return (
+    <div className="flex items-center justify-center gap-2 rounded-2xl border border-border py-12 text-sm text-muted-foreground">
+      <Loader2 className="size-4 animate-spin" />
+      {text}
+    </div>
+  );
+}
+
+/*
+ * ========================================
+ * DATE + TIME
+ * ========================================
+ */
 
 function formatDateTime(
   iso: string,
@@ -1585,6 +1727,12 @@ function formatDateTime(
     return iso;
   }
 }
+
+/*
+ * ========================================
+ * FILE SIZE
+ * ========================================
+ */
 
 function formatFileSize(
   bytes: number,
@@ -1628,6 +1776,12 @@ function formatFileSize(
 
   return `${formatted} ${units[unitIndex]}`;
 }
+
+/*
+ * ========================================
+ * SAFE EXTENSION
+ * ========================================
+ */
 
 function safeExtension(
   fileName: string,
