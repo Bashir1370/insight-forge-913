@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   CircleHelp,
   Dna,
-  FlaskConical,
   RotateCcw,
 } from "lucide-react";
 
@@ -64,14 +63,28 @@ type RecommendationLevel =
   | "review"
   | "design";
 
+type RecommendationDestination =
+  | "rna-seq-foundations"
+  | "differential-expression"
+  | "functional-analysis"
+  | "network-biology"
+  | "biomarker-discovery"
+  | "data-exploration";
+
 type ProjectRecommendation = {
   level: RecommendationLevel;
   title: string;
-  englishTitle: string;
   description: string;
+  destination: RecommendationDestination;
   strengths: string[];
   concerns: string[];
   nextSteps: string[];
+};
+
+type DestinationInfo = {
+  title: string;
+  englishTitle: string;
+  description: string;
 };
 
 const totalSteps = 5;
@@ -86,7 +99,8 @@ function RnaSeqProjectMode() {
     [answers],
   );
 
-  const completedAnswers = Object.values(answers).filter(Boolean).length;
+  const completedAnswers =
+    Object.values(answers).filter(Boolean).length;
 
   const progress = Math.round(
     (completedAnswers / totalSteps) * 100,
@@ -210,7 +224,7 @@ function RnaSeqProjectMode() {
                   dir="ltr"
                   className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-500"
                 >
-                  RNA-seq Project Mode
+                  RNA-seq
                 </span>
               </div>
 
@@ -236,12 +250,13 @@ function RnaSeqProjectMode() {
 
                   <div>
                     <p className="font-bold text-amber-950">
-                      اصل مهم این بخش
+                      یک اصل مهم
                     </p>
 
                     <p className="mt-2 text-sm leading-7 text-amber-900/80">
-                      هر تحلیلی که از نظر فنی قابل اجرا باشد، الزاماً
-                      تحلیل مناسبی برای سؤال یا طراحی مطالعه شما نیست.
+                      اینکه یک تحلیل از نظر فنی قابل اجرا باشد، به این
+                      معنی نیست که برای سؤال پژوهشی و طراحی مطالعه شما
+                      انتخاب مناسبی است.
                     </p>
                   </div>
                 </div>
@@ -333,9 +348,9 @@ function RnaSeqProjectMode() {
                 </p>
 
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  این بخش جای مشاوره تخصصی، بررسی کامل پروتکل یا تحلیل
-                  واقعی داده را نمی‌گیرد. هدف آن مشخص‌کردن مسیر اولیه
-                  پروژه است.
+                  این بخش جای مشاوره تخصصی، بررسی کامل طراحی مطالعه یا
+                  تحلیل واقعی داده را نمی‌گیرد. هدف آن مشخص‌کردن مسیر
+                  اولیه و تصمیم بعدی پروژه است.
                 </p>
               </div>
             </div>
@@ -521,7 +536,7 @@ function QuestionTypeStep({
         active={value === "exploratory"}
         onClick={() => onChange("exploratory")}
         title="بررسی اکتشافی"
-        englishTitle="Exploratory"
+        englishTitle="Exploratory Analysis"
         description="هنوز یک مقایسه مشخص ندارم و می‌خواهم ساختار داده را بفهمم."
       />
 
@@ -641,7 +656,7 @@ function ReplicateStep({
         active={value === "unsure"}
         onClick={() => onChange("unsure")}
         title="نمی‌دانم تکرار زیستی چیست"
-        englishTitle="Not Sure"
+        englishTitle="Biological Replicate"
         description="مطمئن نیستم فایل‌ها یا نمونه‌هایم تکرار زیستی محسوب می‌شوند یا نه."
       />
     </OptionGrid>
@@ -685,7 +700,7 @@ function MetadataStep({
         active={value === "unsure"}
         onClick={() => onChange("unsure")}
         title="مطمئن نیستم چه اطلاعاتی لازم است"
-        englishTitle="Not Sure"
+        englishTitle="Metadata Requirements"
         description="نمی‌دانم چه متغیرهایی باید برای تحلیل ثبت شده باشند."
       />
     </OptionGrid>
@@ -721,7 +736,7 @@ function GoalStep({
         active={value === "network"}
         onClick={() => onChange("network")}
         title="تحلیل شبکه و WGCNA"
-        englishTitle="Network Analysis"
+        englishTitle="Network Analysis / WGCNA"
         description="می‌خواهم روابط هم‌بیانی، ماژول‌ها یا ژن‌های هاب را بررسی کنم."
       />
 
@@ -745,7 +760,7 @@ function GoalStep({
         active={value === "unsure"}
         onClick={() => onChange("unsure")}
         title="نمی‌دانم چه تحلیلی مناسب است"
-        englishTitle="Not Sure"
+        englishTitle="Analysis Strategy"
         description="می‌خواهم سؤال و داده من تعیین کنند قدم بعدی چه باشد."
       />
     </OptionGrid>
@@ -785,6 +800,10 @@ function ProjectResult({
 
   const StatusIcon = theme.icon;
 
+  const destination = getDestinationInfo(
+    recommendation.destination,
+  );
+
   return (
     <article
       id="project-result"
@@ -806,6 +825,7 @@ function ProjectResult({
       </div>
 
       <div className="space-y-8 p-6 sm:p-8">
+        {/* STATUS */}
         <section
           className={`rounded-3xl border p-6 ${theme.border} ${theme.background}`}
         >
@@ -816,7 +836,7 @@ function ProjectResult({
 
             <div>
               <p className={`text-sm font-bold ${theme.text}`}>
-                {recommendation.englishTitle}
+                وضعیت پیشنهادی
               </p>
 
               <h3 className="mt-1 text-2xl font-bold text-slate-950">
@@ -828,6 +848,28 @@ function ProjectResult({
               </p>
             </div>
           </div>
+        </section>
+
+        {/* DESTINATION */}
+        <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6 sm:p-7">
+          <p className="text-sm font-bold text-teal-700">
+            مسیر پیشنهادی بعدی
+          </p>
+
+          <h3 className="mt-2 text-2xl font-bold text-slate-950">
+            {destination.title}
+          </h3>
+
+          <p
+            dir="ltr"
+            className="mt-1 text-left text-sm font-semibold text-teal-700"
+          >
+            {destination.englishTitle}
+          </p>
+
+          <p className="mt-4 leading-8 text-slate-600">
+            {destination.description}
+          </p>
         </section>
 
         <ProjectSnapshot answers={answers} />
@@ -866,101 +908,266 @@ function ProjectResult({
           ))}
         </ResultSection>
 
-        {(answers.goal === "network" ||
-          answers.goal === "biomarker") && (
+        {answers.goal === "network" && (
           <div className="rounded-3xl border border-violet-200 bg-violet-50 p-6">
             <p className="font-bold text-violet-950">
-              درباره هدف پیشرفته شما
+              چرا هاب‌ژن هنوز برای WGCNA چراغ سبز قطعی نمی‌دهد؟
             </p>
 
             <p className="mt-3 text-sm leading-8 text-violet-900/80">
-              انتخاب تحلیل شبکه، WGCNA یا مسیر کشف نشانگر زیستی نباید
-              فقط به دلیل رایج بودن این روش‌ها انجام شود. تعداد
-              نمونه‌های مستقل، ساختار داده، سؤال زیستی و برنامه
-              اعتبارسنجی باید ابتدا بررسی شوند.
+              تعداد تکرارهای زیستی در هر گروه فقط بخشی از اطلاعات
+              موردنیاز است. برای تصمیم‌گیری درباره WGCNA باید تعداد کل
+              نمونه‌های مستقل، ساختار ماتریس بیان، کیفیت داده، میزان
+              تغییرپذیری ژن‌ها و ویژگی‌های مورد بررسی نیز ارزیابی شوند.
+            </p>
+
+            <p className="mt-3 text-sm font-semibold leading-8 text-violet-950">
+              بنابراین انتخاب WGCNA باید وارد «بررسی آمادگی تحلیل
+              شبکه» شود، نه اینکه صرفاً به دلیل قابل اجرا بودن روش،
+              مستقیماً اجرا شود.
             </p>
           </div>
         )}
 
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
-          <p className="text-sm font-semibold text-teal-700">
-            ادامه مسیر
-          </p>
+        {answers.goal === "biomarker" && (
+          <div className="rounded-3xl border border-violet-200 bg-violet-50 p-6">
+            <p className="font-bold text-violet-950">
+              درباره مسیر کشف نشانگر زیستی
+            </p>
 
-          <h3 className="mt-2 text-2xl font-bold text-slate-950">
-            حالا بر اساس وضعیت پروژه تصمیم بگیرید.
-          </h3>
-
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            {recommendation.level === "learn" ? (
-              <>
-                <a
-                  href="/learn/rna-seq/navigator"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
-                >
-                  مرور مسیر یادگیری RNA-seq
-                </a>
-
-                <button
-                  type="button"
-                  onClick={onRestart}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
-                >
-                  <RotateCcw className="size-4" />
-                  بررسی دوباره پروژه
-                </button>
-              </>
-            ) : recommendation.level === "review" ? (
-              <>
-                <a
-                  href="/consultation"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
-                >
-                  درخواست بازبینی تخصصی
-                </a>
-
-                <a
-                  href="/learn/rna-seq/navigator"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
-                >
-                  مرور مفاهیم RNA-seq
-                </a>
-              </>
-            ) : (
-              <>
-                <a
-                  href="/consultation"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-5 py-3 font-bold text-white transition hover:bg-teal-800"
-                >
-                  طراحی تحلیل با متخصص
-                </a>
-
-                <button
-                  type="button"
-                  onClick={onRestart}
-                  className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
-                >
-                  <RotateCcw className="size-4" />
-                  بررسی پروژه دیگر
-                </button>
-              </>
-            )}
+            <p className="mt-3 text-sm leading-8 text-violet-900/80">
+              پیدا کردن یک DEG، ژن هاب یا ویژگی آماری مهم به‌تنهایی
+              نشانگر زیستی معتبر ایجاد نمی‌کند. انتخاب کاندیدا و
+              اعتبارسنجی باید از ابتدا بخشی از طراحی پژوهش باشند.
+            </p>
           </div>
-        </div>
+        )}
+
+        <ProjectActions
+          recommendation={recommendation}
+          onRestart={onRestart}
+        />
 
         <div className="rounded-2xl bg-slate-950 p-5 text-white">
           <p className="text-sm font-bold text-teal-300">
-            Can run ≠ Should run
+            قابل اجرا بودن ≠ مناسب بودن
           </p>
 
           <p className="mt-2 text-sm leading-7 text-slate-300">
-            هدف هاب‌ژن این نیست که فقط نشان دهد چه تحلیلی قابل اجراست؛
-            هدف این است که کمک کند بفهمید چه تحلیلی برای سؤال و طراحی
-            واقعی پروژه شما قابل دفاع‌تر است.
+            هدف هاب‌ژن فقط این نیست که بگوید چه تحلیلی از نظر فنی
+            قابل اجراست؛ هدف این است که کمک کند بفهمید چه تحلیلی برای
+            سؤال پژوهشی، داده و طراحی واقعی پروژه شما قابل دفاع‌تر
+            است.
           </p>
         </div>
       </div>
     </article>
+  );
+}
+
+function ProjectActions({
+  recommendation,
+  onRestart,
+}: {
+  recommendation: ProjectRecommendation;
+  onRestart: () => void;
+}) {
+  if (recommendation.destination === "network-biology") {
+    return (
+      <ActionBox
+        title="برای هدف شما، قدم بعدی باید شبکه‌محور باشد."
+        description="به‌جای برگشت عمومی به RNA-seq، ابتدا آمادگی داده و طراحی برای WGCNA و تحلیل شبکه بررسی شود."
+      >
+        <a
+          href="/consultation"
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
+        >
+          درخواست بازبینی آمادگی WGCNA
+        </a>
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
+        >
+          <RotateCcw className="size-4" />
+          بررسی دوباره پروژه
+        </button>
+      </ActionBox>
+    );
+  }
+
+  if (recommendation.destination === "biomarker-discovery") {
+    return (
+      <ActionBox
+        title="مسیر بعدی شما باید بر طراحی کشف و اعتبارسنجی کاندیداها تمرکز کند."
+        description="پیش از اجرای مجموعه‌ای از روش‌ها، باید تعریف نشانگر زیستی، نوع خروجی و برنامه اعتبارسنجی مشخص شود."
+      >
+        <a
+          href="/consultation"
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
+        >
+          بازبینی راهبرد کشف نشانگر زیستی
+        </a>
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
+        >
+          <RotateCcw className="size-4" />
+          بررسی دوباره پروژه
+        </button>
+      </ActionBox>
+    );
+  }
+
+  if (recommendation.destination === "functional-analysis") {
+    return (
+      <ActionBox
+        title="قدم بعدی شما طراحی تحلیل عملکردی متناسب با نوع نتیجه است."
+        description="باید مشخص شود تحلیل از یک فهرست ژنی شروع می‌شود یا از رتبه‌بندی گسترده ژن‌ها و چه سؤال زیستی قرار است پاسخ داده شود."
+      >
+        {recommendation.level === "review" ? (
+          <a
+            href="/consultation"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
+          >
+            بازبینی راهبرد تحلیل عملکردی
+          </a>
+        ) : (
+          <a
+            href="/learn/rna-seq/navigator"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-5 py-3 font-bold text-white transition hover:bg-teal-800"
+          >
+            مرور بخش تحلیل عملکردی RNA-seq
+          </a>
+        )}
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
+        >
+          <RotateCcw className="size-4" />
+          بررسی دوباره پروژه
+        </button>
+      </ActionBox>
+    );
+  }
+
+  if (
+    recommendation.destination === "differential-expression"
+  ) {
+    return (
+      <ActionBox
+        title="مسیر بعدی شما تحلیل بیان افتراقی است."
+        description="طراحی مطالعه، نوع داده و مقایسه آماری باید به یک طرح تحلیل مشخص تبدیل شوند."
+      >
+        {recommendation.level === "review" ? (
+          <a
+            href="/consultation"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
+          >
+            بازبینی طراحی تحلیل بیان افتراقی
+          </a>
+        ) : (
+          <a
+            href="/learn/rna-seq/navigator"
+            className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-5 py-3 font-bold text-white transition hover:bg-teal-800"
+          >
+            ادامه مسیر تحلیل بیان افتراقی
+          </a>
+        )}
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
+        >
+          <RotateCcw className="size-4" />
+          بررسی دوباره پروژه
+        </button>
+      </ActionBox>
+    );
+  }
+
+  if (recommendation.destination === "data-exploration") {
+    return (
+      <ActionBox
+        title="فعلاً بهترین قدم، شناخت ساختار داده است."
+        description="قبل از انتخاب تحلیل نهایی، کنترل کیفیت، ساختار نمونه‌ها، PCA و اطلاعات فراداده را بررسی کنید."
+      >
+        <a
+          href="/learn/rna-seq/navigator"
+          className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-5 py-3 font-bold text-white transition hover:bg-teal-800"
+        >
+          مرور مسیر بررسی داده RNA-seq
+        </a>
+
+        <button
+          type="button"
+          onClick={onRestart}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
+        >
+          <RotateCcw className="size-4" />
+          بررسی دوباره پروژه
+        </button>
+      </ActionBox>
+    );
+  }
+
+  return (
+    <ActionBox
+      title="قبل از انتخاب روش، چند پیش‌نیاز پایه را روشن کنید."
+      description="وقتی سؤال پژوهشی، نوع داده و ساختار نمونه‌ها روشن‌تر شوند، انتخاب تحلیل معنی‌دارتر خواهد شد."
+    >
+      <a
+        href="/learn/rna-seq/navigator"
+        className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
+      >
+        مرور پیش‌نیازهای RNA-seq
+      </a>
+
+      <button
+        type="button"
+        onClick={onRestart}
+        className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-3 font-semibold text-slate-700"
+      >
+        <RotateCcw className="size-4" />
+        بررسی دوباره پروژه
+      </button>
+    </ActionBox>
+  );
+}
+
+function ActionBox({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
+      <p className="text-sm font-semibold text-teal-700">
+        ادامه مسیر
+      </p>
+
+      <h3 className="mt-2 text-2xl font-bold text-slate-950">
+        {title}
+      </h3>
+
+      <p className="mt-3 leading-8 text-slate-600">
+        {description}
+      </p>
+
+      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+        {children}
+      </div>
+    </div>
   );
 }
 
@@ -971,7 +1178,15 @@ function buildRecommendation(
   const concerns: string[] = [];
   const nextSteps: string[] = [];
 
-  let level: RecommendationLevel = "design";
+  let severity = 0;
+
+  function requireReview() {
+    severity = Math.max(severity, 1);
+  }
+
+  function requireLearning() {
+    severity = Math.max(severity, 2);
+  }
 
   if (
     answers.questionType === "group-comparison" ||
@@ -987,10 +1202,11 @@ function buildRecommendation(
     concerns.push(
       "سؤال پژوهشی هنوز به یک مقایسه یا هدف تحلیلی مشخص تبدیل نشده است.",
     );
-    level = "learn";
+
+    requireLearning();
 
     nextSteps.push(
-      "ابتدا سؤال زیستی را به گروه‌ها، شرایط یا متغیر قابل مقایسه تبدیل کنید.",
+      "ابتدا سؤال زیستی را به گروه‌ها، شرایط یا متغیر قابل بررسی تبدیل کنید.",
     );
   }
 
@@ -999,9 +1215,7 @@ function buildRecommendation(
       "پروژه در حال حاضر بیشتر ماهیت اکتشافی دارد و هنوز سؤال اصلی برای آزمون مشخص نشده است.",
     );
 
-    if (level !== "learn") {
-      level = "review";
-    }
+    requireReview();
   }
 
   if (answers.dataStage === "planning") {
@@ -1028,9 +1242,7 @@ function buildRecommendation(
       "قبل از انتخاب تحلیل باید مشخص شود ماتریس پردازش‌شده دقیقاً چه نوع مقادیری دارد و چگونه تولید شده است.",
     );
 
-    if (level === "design") {
-      level = "review";
-    }
+    requireReview();
 
     nextSteps.push(
       "نوع ماتریس را مشخص کنید: شمارش خام، TPM، FPKM یا داده تبدیل‌شده.",
@@ -1042,8 +1254,10 @@ function buildRecommendation(
       "تناسب مجموعه‌داده عمومی با سؤال پژوهشی باید پیش از اجرای تحلیل بررسی شود.",
     );
 
+    requireReview();
+
     nextSteps.push(
-      "طراحی مطالعه و فراداده مجموعه‌داده عمومی را با سؤال خود تطبیق دهید.",
+      "طراحی مطالعه و فراداده مجموعه‌داده عمومی را با سؤال پژوهشی خود تطبیق دهید.",
     );
   }
 
@@ -1052,7 +1266,7 @@ function buildRecommendation(
       "نوع داده فعلی پروژه مشخص نیست؛ بنابراین انتخاب روش تحلیل هنوز زود است.",
     );
 
-    level = "learn";
+    requireLearning();
 
     nextSteps.push(
       "ابتدا نوع فایل یا ماتریس و مرحله فعلی داده را مشخص کنید.",
@@ -1070,12 +1284,10 @@ function buildRecommendation(
       "تعداد تکرارهای زیستی محدود است و توان تحلیل آماری باید با احتیاط بررسی شود.",
     );
 
-    if (level === "design") {
-      level = "review";
-    }
+    requireReview();
 
     nextSteps.push(
-      "قبل از نتیجه‌گیری، محدودیت تعداد نمونه‌های مستقل را در طراحی آماری لحاظ کنید.",
+      "محدودیت تعداد نمونه‌های مستقل را در طراحی آماری و تفسیر نتیجه در نظر بگیرید.",
     );
   }
 
@@ -1084,21 +1296,23 @@ function buildRecommendation(
       "وجود تنها یک نمونه زیستی در هر گروه محدودیت جدی برای استنباط آماری ایجاد می‌کند.",
     );
 
-    level = "review";
+    requireReview();
 
     nextSteps.push(
-      "قبل از اجرای تحلیل بیان افتراقی، طراحی مطالعه و امکان افزایش تکرارهای زیستی را بررسی کنید.",
+      "قبل از تحلیل بیان افتراقی یا سایر تحلیل‌های استنباطی، طراحی مطالعه و امکان افزایش نمونه‌های مستقل را بررسی کنید.",
     );
   }
 
   if (answers.replicates === "none") {
+    concerns.push(
+      "تعداد تکرارهای زیستی هنوز در طراحی پروژه نهایی نشده است.",
+    );
+
+    requireReview();
+
     nextSteps.push(
       "تعداد تکرارهای زیستی را پیش از شروع نمونه‌گیری و توالی‌یابی تعیین کنید.",
     );
-
-    if (level === "design") {
-      level = "review";
-    }
   }
 
   if (answers.replicates === "unsure") {
@@ -1106,10 +1320,10 @@ function buildRecommendation(
       "هنوز مشخص نیست کدام نمونه‌ها تکرار زیستی مستقل محسوب می‌شوند.",
     );
 
-    level = "learn";
+    requireLearning();
 
     nextSteps.push(
-      "تفاوت تکرار زیستی و تکرار فنی را پیش از ادامه مرور کنید.",
+      "تفاوت تکرار زیستی و تکرار فنی را پیش از ادامه روشن کنید.",
     );
   }
 
@@ -1124,12 +1338,10 @@ function buildRecommendation(
       "فراداده ناقص است و ممکن است برخی عوامل فنی یا زیستی در مدل تحلیل وارد نشوند.",
     );
 
-    if (level === "design") {
-      level = "review";
-    }
+    requireReview();
 
     nextSteps.push(
-      "فراداده نمونه‌ها را قبل از ساخت مدل آماری کامل کنید.",
+      "فراداده نمونه‌ها را پیش از ساخت مدل آماری تا حد ممکن کامل کنید.",
     );
   }
 
@@ -1138,7 +1350,7 @@ function buildRecommendation(
       "نبود فراداده می‌تواند تفسیر نمونه‌ها و تعریف مقایسه آماری را دشوار یا غیرممکن کند.",
     );
 
-    level = "review";
+    requireReview();
 
     nextSteps.push(
       "اطلاعات گروه، شرایط آزمایش و عوامل مهم هر نمونه را بازیابی کنید.",
@@ -1150,92 +1362,116 @@ function buildRecommendation(
       "هنوز مشخص نیست چه فراداده‌ای برای تحلیل پروژه لازم است.",
     );
 
-    if (level === "design") {
-      level = "learn";
-    }
+    requireLearning();
 
     nextSteps.push(
       "حداقل گروه، شناسه نمونه، تکرار زیستی و عوامل احتمالی مداخله‌گر را مشخص کنید.",
     );
   }
 
+  const destination = destinationFromGoal(
+    answers.goal,
+  );
+
+  /*
+   * Goal-specific reasoning
+   */
+
   if (answers.goal === "differential-expression") {
     nextSteps.push(
-      "مقایسه آماری اصلی را به‌صورت دقیق تعریف کنید.",
+      "مقایسه آماری اصلی را دقیق تعریف کنید؛ مثلاً کنترل در برابر تیمار یا قبل در برابر بعد.",
     );
   }
 
   if (answers.goal === "functional") {
     nextSteps.push(
-      "ابتدا مشخص کنید ورودی تحلیل عملکردی فهرست ژنی است یا رتبه‌بندی گسترده ژن‌ها.",
+      "مشخص کنید تحلیل عملکردی قرار است از فهرست ژنی انتخاب‌شده شروع شود یا از رتبه‌بندی گسترده ژن‌ها.",
+    );
+
+    nextSteps.push(
+      "سؤال زیستی مرتبط با مسیرها و فرآیندهای مورد انتظار را پیش از تفسیر مشخص کنید.",
     );
   }
 
   if (answers.goal === "network") {
-    nextSteps.push(
-      "قبل از WGCNA یا تحلیل شبکه، مناسب بودن تعداد نمونه‌ها و ساختار ماتریس بیان را جداگانه بررسی کنید.",
+    concerns.push(
+      "پرسش «تعداد تکرار در هر گروه» به‌تنهایی برای تعیین آمادگی WGCNA کافی نیست؛ تعداد کل نمونه‌های مستقل و ساختار داده باید جداگانه بررسی شوند.",
     );
 
-    if (
-      answers.replicates === "one" ||
-      answers.replicates === "two" ||
-      answers.replicates === "unsure"
-    ) {
-      concerns.push(
-        "با تعداد نمونه محدود، انتخاب تحلیل شبکه نیاز به بازبینی جدی دارد.",
-      );
+    concerns.push(
+      "نوع ماتریس بیان، نحوه آماده‌سازی داده و فیلتر ژن‌ها می‌تواند روی تحلیل شبکه اثر جدی داشته باشد.",
+    );
 
-      level = "review";
-    }
+    requireReview();
+
+    nextSteps.push(
+      "تعداد کل نمونه‌های مستقل پروژه را مشخص کنید و کفایت آن را برای تحلیل شبکه بررسی کنید.",
+    );
+
+    nextSteps.push(
+      "نوع ماتریس بیان و مراحل آماده‌سازی آن را پیش از WGCNA مشخص کنید.",
+    );
+
+    nextSteps.push(
+      "ویژگی یا فنوتیپی را که قرار است با ماژول‌های شبکه مقایسه شود، از قبل تعریف کنید.",
+    );
   }
 
   if (answers.goal === "biomarker") {
     concerns.push(
-      "کشف نشانگر زیستی فقط با پیدا کردن DEG یا ژن هاب کامل نمی‌شود و به برنامه اعتبارسنجی نیاز دارد.",
+      "کشف نشانگر زیستی فقط با پیدا کردن DEG یا ژن هاب کامل نمی‌شود و به راهبرد اعتبارسنجی نیاز دارد.",
+    );
+
+    requireReview();
+
+    nextSteps.push(
+      "تعریف کنید نشانگر زیستی قرار است تشخیصی، پیش‌آگهی، پیش‌بینی‌کننده یا با هدف دیگری باشد.",
     );
 
     nextSteps.push(
-      "از همین ابتدا مشخص کنید کاندیداها چگونه در داده مستقل یا آزمایش دیگری اعتبارسنجی خواهند شد.",
+      "از ابتدا مشخص کنید کاندیداها چگونه در داده مستقل یا آزمایش دیگری اعتبارسنجی خواهند شد.",
     );
-
-    if (level === "design") {
-      level = "review";
-    }
   }
 
   if (answers.goal === "explore") {
     nextSteps.push(
-      "با بررسی ساختار نمونه‌ها، PCA، همبستگی و کنترل کیفیت از داده شروع کنید.",
+      "با کنترل کیفیت، بررسی ساختار نمونه‌ها، PCA، همبستگی و بررسی نمونه‌های پرت شروع کنید.",
     );
   }
 
   if (answers.goal === "unsure") {
     concerns.push(
-      "هدف تحلیل هنوز مشخص نشده است؛ بهتر است ابزار را قبل از روشن‌شدن سؤال انتخاب نکنید.",
+      "هدف تحلیل هنوز مشخص نشده است؛ بهتر است ابزار را پیش از روشن‌شدن سؤال انتخاب نکنید.",
     );
 
-    if (level === "design") {
-      level = "learn";
-    }
+    requireLearning();
 
     nextSteps.push(
-      "ابتدا مشخص کنید خروجی مورد انتظار پروژه چیست: تغییر بیان، مسیر زیستی، شبکه یا هدف دیگری.",
+      "ابتدا مشخص کنید خروجی مورد انتظار پروژه چیست: تغییر بیان، مسیر زیستی، شبکه، نشانگر زیستی یا هدف دیگری.",
     );
   }
 
   if (nextSteps.length === 0) {
     nextSteps.push(
-      "سؤال پژوهشی، طراحی مطالعه و مقایسه آماری را به یک نقشه تحلیل مشخص تبدیل کنید.",
+      "سؤال پژوهشی، طراحی مطالعه و نوع داده را به یک نقشه تحلیل مشخص تبدیل کنید.",
     );
   }
+
+  const level: RecommendationLevel =
+    severity >= 2
+      ? "learn"
+      : severity === 1
+        ? "review"
+        : "design";
 
   if (level === "learn") {
     return {
       level,
-      title: "ابتدا چند مفهوم یا بخش از طراحی را روشن کنید",
-      englishTitle: "Learn More",
+      destination,
+      title:
+        "قبل از انتخاب نهایی روش، چند جزء پایه پروژه را روشن کنید",
       description:
-        "در وضعیت فعلی هنوز یک یا چند جزء پایه برای انتخاب مسیر تحلیل مشخص نیست. بهتر است قبل از ورود به اجرای تحلیل، همان بخش‌ها را روشن کنید.",
+        "در وضعیت فعلی هنوز یک یا چند پیش‌نیاز اساسی برای انتخاب مسیر تحلیل مشخص نیست. روشن‌کردن این موارد از اجرای زودهنگام یک روش جلوگیری می‌کند.",
       strengths,
       concerns,
       nextSteps,
@@ -1245,10 +1481,11 @@ function buildRecommendation(
   if (level === "review") {
     return {
       level,
-      title: "پروژه شما قبل از تحلیل به بازبینی نیاز دارد",
-      englishTitle: "Expert Review Recommended",
+      destination,
+      title:
+        "مسیر علمی پروژه مشخص است، اما قبل از اجرا به بازبینی نیاز دارد",
       description:
-        "مسیر کلی پروژه قابل تشخیص است، اما یک یا چند تصمیم طراحی می‌تواند روی اعتبار نتیجه اثر جدی بگذارد. اجرای تحلیل بدون بررسی این موارد توصیه نمی‌شود.",
+        "هدف تحلیل قابل تشخیص است، اما یک یا چند تصمیم طراحی یا ویژگی داده می‌تواند روی اعتبار نتیجه اثر جدی بگذارد. قدم بعدی باید متناسب با همان هدف علمی انجام شود.",
       strengths,
       concerns,
       nextSteps,
@@ -1257,14 +1494,94 @@ function buildRecommendation(
 
   return {
     level,
-    title: "اطلاعات اولیه برای طراحی مسیر تحلیل مناسب است",
-    englishTitle: "Ready to Design",
+    destination,
+    title:
+      "اطلاعات اولیه برای طراحی مسیر تحلیل مناسب است",
     description:
       "بر اساس پاسخ‌های فعلی، اجزای اصلی پروژه تا حد خوبی مشخص هستند. قدم بعدی تبدیل این اطلاعات به یک طرح تحلیل دقیق و قابل دفاع است.",
     strengths,
     concerns,
     nextSteps,
   };
+}
+
+function destinationFromGoal(
+  goal?: AnalysisGoal,
+): RecommendationDestination {
+  if (goal === "differential-expression") {
+    return "differential-expression";
+  }
+
+  if (goal === "functional") {
+    return "functional-analysis";
+  }
+
+  if (goal === "network") {
+    return "network-biology";
+  }
+
+  if (goal === "biomarker") {
+    return "biomarker-discovery";
+  }
+
+  if (goal === "explore") {
+    return "data-exploration";
+  }
+
+  return "rna-seq-foundations";
+}
+
+function getDestinationInfo(
+  destination: RecommendationDestination,
+): DestinationInfo {
+  const destinations: Record<
+    RecommendationDestination,
+    DestinationInfo
+  > = {
+    "rna-seq-foundations": {
+      title: "روشن‌کردن پیش‌نیازهای RNA-seq",
+      englishTitle: "RNA-seq Foundations",
+      description:
+        "قبل از انتخاب روش، سؤال پژوهشی، نوع داده، تکرارهای زیستی و فراداده باید روشن‌تر شوند.",
+    },
+
+    "differential-expression": {
+      title: "طراحی تحلیل بیان افتراقی",
+      englishTitle: "Differential Expression Analysis",
+      description:
+        "قدم بعدی تعریف دقیق مقایسه آماری، ساختار مدل و داده مناسب برای تحلیل بیان افتراقی است.",
+    },
+
+    "functional-analysis": {
+      title: "تحلیل عملکردی و مسیرهای زیستی",
+      englishTitle: "Functional Analysis",
+      description:
+        "قدم بعدی مشخص‌کردن نوع ورودی، روش مناسب تحلیل عملکردی و سؤال زیستی مربوط به مسیرها و فرآیندهاست.",
+    },
+
+    "network-biology": {
+      title: "بررسی آمادگی برای تحلیل شبکه و WGCNA",
+      englishTitle: "Network Biology / WGCNA Readiness",
+      description:
+        "قدم بعدی بررسی تعداد کل نمونه‌های مستقل، ساختار ماتریس بیان، ویژگی‌های مورد بررسی و مناسب بودن داده برای تحلیل هم‌بیانی است.",
+    },
+
+    "biomarker-discovery": {
+      title: "طراحی مسیر کشف و اعتبارسنجی نشانگر زیستی",
+      englishTitle: "Biomarker Discovery & Validation",
+      description:
+        "قدم بعدی تعریف دقیق هدف نشانگر زیستی، انتخاب راهبرد کشف کاندیدا و طراحی اعتبارسنجی مستقل است.",
+    },
+
+    "data-exploration": {
+      title: "بررسی ساختار و کیفیت داده",
+      englishTitle: "RNA-seq Data Exploration",
+      description:
+        "قدم بعدی شناخت رفتار کلی نمونه‌ها، کنترل کیفیت، PCA، همبستگی و شناسایی عوامل غیرعادی است.",
+    },
+  };
+
+  return destinations[destination];
 }
 
 function ProjectSnapshot({
@@ -1319,13 +1636,6 @@ function ProjectMap() {
         <div>
           <p className="font-bold">
             نقشه تصمیم‌گیری پروژه
-          </p>
-
-          <p
-            dir="ltr"
-            className="mt-0.5 text-left text-xs text-slate-500"
-          >
-            Project Decision Map
           </p>
         </div>
       </div>
