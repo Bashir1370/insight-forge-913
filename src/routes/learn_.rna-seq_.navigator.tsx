@@ -1653,7 +1653,7 @@ function LearningSummary({
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a
-              href="/learn/rna-seq#project-mode"
+              href="/learn/rna-seq/project"
               className="inline-flex min-h-11 items-center justify-center rounded-xl bg-slate-950 px-5 py-2.5 font-bold text-white transition hover:bg-slate-800"
             >
               برای پروژه من چطور؟
