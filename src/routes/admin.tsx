@@ -1,12 +1,21 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+} from "react";
 import {
   Activity,
   CheckCircle2,
+  CloudUpload,
   Download,
   Eye,
+  FileBarChart,
   FileText,
   FolderKanban,
+  Image,
   Loader2,
   MessageSquare,
   RefreshCw,
@@ -51,6 +60,12 @@ type ProjectFileRow = {
   category: string;
   created_at: string;
 };
+
+type OutputCategory = "report" | "result";
+
+const PROJECT_FILES_BUCKET = "project-files";
+
+const MAX_STANDARD_UPLOAD_BYTES = 6 * 1024 * 1024;
 
 const statusOptions = [
   { value: "submitted", label: "ثبت پروژه" },
@@ -128,11 +143,18 @@ function Admin() {
    */
   const [projectFiles, setProjectFiles] = useState<ProjectFileRow[]>([]);
   const [filesLoading, setFilesLoading] = useState(false);
+
   const [downloadingFileId, setDownloadingFileId] =
     useState<string | null>(null);
 
+  const [uploadingCategory, setUploadingCategory] =
+    useState<OutputCategory | null>(null);
+
+  const reportInputRef = useRef<HTMLInputElement | null>(null);
+  const resultInputRef = useRef<HTMLInputElement | null>(null);
+
   /*
-   * Load projects + profiles
+   * Load projects and profiles
    */
   useEffect(() => {
     let mounted = true;
@@ -193,10 +215,22 @@ function Admin() {
   const selectedWizard = (selectedProject?.wizard_data ??
     {}) as WizardAnswers;
 
+  const incomingFiles = projectFiles.filter(
+    (file) => file.category === "data" || file.category === "other",
+  );
+
+  const reportFiles = projectFiles.filter(
+    (file) => file.category === "report",
+  );
+
+  const resultFiles = projectFiles.filter(
+    (file) => file.category === "result",
+  );
+
   /*
-   * =========================
-   * STATUS
-   * =========================
+   * ========================================
+   * PROJECT STATUS
+   * ========================================
    */
 
   const updateStatus = async (
@@ -245,9 +279,9 @@ function Admin() {
   };
 
   /*
-   * =========================
+   * ========================================
    * MESSAGES
-   * =========================
+   * ========================================
    */
 
   const loadMessages = async (projectId: string) => {
@@ -260,8 +294,9 @@ function Admin() {
       .order("created_at", { ascending: true });
 
     if (error) {
-      toast.error("دریافت پیام‌های پروژه انجام نشد.");
+      setMessages([]);
       setMessagesLoading(false);
+      toast.error("دریافت پیام‌های پروژه انجام نشد.");
       return;
     }
 
@@ -320,9 +355,9 @@ function Admin() {
   };
 
   /*
-   * =========================
-   * FILES
-   * =========================
+   * ========================================
+   * PROJECT FILES
+   * ========================================
    */
 
   const loadProjectFiles = async (projectId: string) => {
@@ -348,6 +383,9 @@ function Admin() {
     setFilesLoading(false);
   };
 
+  /*
+   * Download private project file
+   */
   const downloadProjectFile = async (file: ProjectFileRow) => {
     setDownloadingFileId(file.id);
 
@@ -371,7 +409,6 @@ function Admin() {
     anchor.download = file.original_name;
 
     document.body.appendChild(anchor);
-
     anchor.click();
     anchor.remove();
 
@@ -381,8 +418,137 @@ function Admin() {
   };
 
   /*
-   * When admin opens a project,
-   * load both messages and files.
+   * Upload official HubGene output
+   */
+  const uploadOutputFile = async (
+    file: File,
+    category: OutputCategory,
+  ) => {
+    if (!selectedProject) {
+      toast.error("ابتدا یک پروژه را باز کنید.");
+      return;
+    }
+
+    if (file.size <= 0) {
+      toast.error("فایل انتخاب‌شده خالی است.");
+      return;
+    }
+
+    if (file.size > MAX_STANDARD_UPLOAD_BYTES) {
+      toast.error(
+        "در این مرحله حداکثر حجم آپلود مستقیم ۶ مگابایت است.",
+      );
+      return;
+    }
+
+    /*
+     * Official reports are PDF only.
+     */
+    if (
+      category === "report" &&
+      file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      toast.error("گزارش رسمی باید فایل PDF باشد.");
+      return;
+    }
+
+    setUploadingCategory(category);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      toast.error("نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.");
+      setUploadingCategory(null);
+      return;
+    }
+
+    const extension = safeExtension(file.name);
+
+    const storagePath =
+      `${selectedProject.id}/outputs/${category}/` +
+      `${crypto.randomUUID()}${extension}`;
+
+    /*
+     * Upload actual file to private Supabase Storage.
+     */
+    const { error: storageError } = await supabase.storage
+      .from(PROJECT_FILES_BUCKET)
+      .upload(storagePath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type || undefined,
+      });
+
+    if (storageError) {
+      console.error(storageError);
+
+      toast.error("آپلود فایل انجام نشد.");
+      setUploadingCategory(null);
+      return;
+    }
+
+    /*
+     * Save file metadata.
+     */
+    const { data, error: metadataError } = await supabase
+      .from("project_files")
+      .insert({
+        project_id: selectedProject.id,
+        uploader_id: user.id,
+        bucket_id: PROJECT_FILES_BUCKET,
+        storage_path: storagePath,
+        original_name: file.name,
+        mime_type: file.type || null,
+        size_bytes: file.size,
+        category,
+      })
+      .select("*")
+      .single();
+
+    if (metadataError) {
+      console.error(metadataError);
+
+      toast.error(
+        "فایل آپلود شد اما ثبت اطلاعات آن با خطا مواجه شد.",
+      );
+
+      setUploadingCategory(null);
+      return;
+    }
+
+    setProjectFiles((current) => [
+      data as ProjectFileRow,
+      ...current,
+    ]);
+
+    setUploadingCategory(null);
+
+    if (category === "report") {
+      toast.success("گزارش پروژه با موفقیت بارگذاری شد.");
+    } else {
+      toast.success("نتیجه پروژه با موفقیت بارگذاری شد.");
+    }
+  };
+
+  const handleOutputInputChange = async (
+    event: ChangeEvent<HTMLInputElement>,
+    category: OutputCategory,
+  ) => {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file) return;
+
+    await uploadOutputFile(file, category);
+  };
+
+  /*
+   * Load messages and files when project changes.
    */
   useEffect(() => {
     if (!selectedProject) {
@@ -400,6 +566,12 @@ function Admin() {
     loadProjectFiles(selectedProject.id);
   }, [selectedProject?.id]);
 
+  /*
+   * ========================================
+   * LOADING
+   * ========================================
+   */
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-2">
@@ -412,11 +584,15 @@ function Admin() {
     );
   }
 
+  /*
+   * ========================================
+   * PAGE
+   * ========================================
+   */
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-14">
-      {/* =========================
-          HEADER
-      ========================= */}
+      {/* HEADER */}
 
       <div>
         <p className="text-sm font-semibold text-primary">
@@ -428,13 +604,12 @@ function Admin() {
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          مدیریت پروژه‌های پژوهشی و وضعیت اجرای آن‌ها
+          مدیریت پروژه‌های پژوهشی، فایل‌ها، نتایج و ارتباط با
+          پژوهشگران
         </p>
       </div>
 
-      {/* =========================
-          STATISTICS
-      ========================= */}
+      {/* STATS */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -462,9 +637,7 @@ function Admin() {
         />
       </div>
 
-      {/* =========================
-          PROJECT TABLE
-      ========================= */}
+      {/* PROJECT TABLE */}
 
       <div className="card-elevated mt-8 overflow-hidden">
         <div className="border-b border-border p-5">
@@ -570,11 +743,11 @@ function Admin() {
 
                       <td className="p-4">
                         <button
+                          type="button"
                           onClick={() => setSelectedProject(project)}
                           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
                         >
                           <Eye className="size-4 text-primary" />
-
                           مشاهده پروژه
                         </button>
                       </td>
@@ -587,12 +760,12 @@ function Admin() {
         )}
       </div>
 
-      {/* =========================
-          SELECTED PROJECT
-      ========================= */}
+      {/* SELECTED PROJECT */}
 
       {selectedProject && (
         <section className="card-elevated mt-8 p-6">
+          {/* PROJECT HEADER */}
+
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold text-primary">
@@ -612,6 +785,7 @@ function Admin() {
             </div>
 
             <button
+              type="button"
               onClick={() => setSelectedProject(null)}
               className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary"
             >
@@ -619,9 +793,7 @@ function Admin() {
             </button>
           </div>
 
-          {/* =========================
-              PROJECT DETAILS
-          ========================= */}
+          {/* DETAILS */}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <DetailCard
@@ -665,9 +837,7 @@ function Admin() {
             />
           </div>
 
-          {/* =========================
-              WIZARD DATA
-          ========================= */}
+          {/* WIZARD */}
 
           <div className="mt-8 border-t border-border pt-6">
             <h3 className="text-base font-bold text-navy">
@@ -711,21 +881,150 @@ function Admin() {
             </div>
           </div>
 
-          {/* =========================
-              REAL PROJECT FILES
-          ========================= */}
+          {/* ================================================
+              HUBGENE OUTPUT DELIVERY
+          ================================================ */}
+
+          <div className="mt-8 border-t border-border pt-6">
+            <div>
+              <p className="text-xs font-semibold text-primary">
+                تحویل خروجی پروژه
+              </p>
+
+              <h3 className="mt-1 text-lg font-bold text-navy">
+                گزارش‌ها و نتایج هاب‌ژن
+              </h3>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                فایل‌های این بخش به‌عنوان خروجی رسمی پروژه برای
+                پژوهشگر ثبت می‌شوند.
+              </p>
+            </div>
+
+            {/* HIDDEN INPUTS */}
+
+            <input
+              ref={reportInputRef}
+              type="file"
+              accept=".pdf,application/pdf"
+              className="hidden"
+              onChange={(event) =>
+                handleOutputInputChange(event, "report")
+              }
+            />
+
+            <input
+              ref={resultInputRef}
+              type="file"
+              className="hidden"
+              onChange={(event) =>
+                handleOutputInputChange(event, "result")
+              }
+            />
+
+            {/* UPLOAD CARDS */}
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              {/* REPORT */}
+
+              <div className="rounded-2xl border border-primary/20 bg-accent/30 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-background p-3">
+                    <FileBarChart className="size-5 text-primary" />
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold text-navy">
+                      گزارش پروژه
+                    </h4>
+
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      گزارش رسمی تحلیل، QC، تفسیر زیستی یا گزارش
+                      نهایی پروژه.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={uploadingCategory !== null}
+                  onClick={() => reportInputRef.current?.click()}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {uploadingCategory === "report" ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CloudUpload className="size-4" />
+                  )}
+
+                  {uploadingCategory === "report"
+                    ? "در حال بارگذاری…"
+                    : "آپلود گزارش PDF"}
+                </button>
+
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  فقط PDF · حداکثر ۶ مگابایت
+                </p>
+              </div>
+
+              {/* RESULT */}
+
+              <div className="rounded-2xl border border-primary/20 bg-accent/30 p-5">
+                <div className="flex items-start gap-3">
+                  <div className="rounded-xl bg-background p-3">
+                    <Image className="size-5 text-primary" />
+                  </div>
+
+                  <div>
+                    <h4 className="text-sm font-bold text-navy">
+                      نتیجه / خروجی تحلیل
+                    </h4>
+
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      Figure، جدول، Excel، CSV، ZIP یا سایر خروجی‌های
+                      تحلیل.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  disabled={uploadingCategory !== null}
+                  onClick={() => resultInputRef.current?.click()}
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {uploadingCategory === "result" ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CloudUpload className="size-4" />
+                  )}
+
+                  {uploadingCategory === "result"
+                    ? "در حال بارگذاری…"
+                    : "آپلود نتیجه"}
+                </button>
+
+                <p className="mt-3 text-[11px] text-muted-foreground">
+                  حداکثر ۶ مگابایت در این نسخه
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ================================================
+              ALL PROJECT FILES
+          ================================================ */}
 
           <div className="mt-8 border-t border-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="flex items-center gap-2 text-base font-bold text-navy">
                   <FileText className="size-5 text-primary" />
-
                   فایل‌های پروژه
                 </h3>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  فایل‌هایی که پژوهشگر برای این پروژه بارگذاری کرده است.
+                  داده‌های پژوهشگر و خروجی‌های تحویلی هاب‌ژن
                 </p>
               </div>
 
@@ -748,106 +1047,51 @@ function Admin() {
             </div>
 
             {filesLoading ? (
-              <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-border py-12 text-sm text-muted-foreground">
+              <div className="mt-5 flex items-center justify-center gap-2 rounded-2xl border border-border py-12 text-sm text-muted-foreground">
                 <Loader2 className="size-4 animate-spin" />
-
                 در حال دریافت فایل‌ها…
               </div>
-            ) : projectFiles.length === 0 ? (
-              <div className="mt-4 rounded-2xl border border-border p-10 text-center">
-                <FileText className="mx-auto size-7 text-primary/50" />
-
-                <p className="mt-3 text-sm font-bold text-navy">
-                  هنوز فایلی برای این پروژه ثبت نشده است.
-                </p>
-
-                <p className="mt-1 text-xs text-muted-foreground">
-                  فایل‌هایی که پژوهشگر بارگذاری کند در این بخش
-                  نمایش داده می‌شوند.
-                </p>
-              </div>
             ) : (
-              <div className="mt-4 overflow-hidden rounded-2xl border border-border">
-                <div className="border-b border-border bg-secondary/30 px-4 py-3">
-                  <p className="text-xs text-muted-foreground">
-                    تعداد فایل‌های پروژه:{" "}
-                    <span className="font-bold text-navy">
-                      {new Intl.NumberFormat("fa-IR").format(
-                        projectFiles.length,
-                      )}
-                    </span>
-                  </p>
-                </div>
+              <div className="mt-5 space-y-6">
+                <FileListSection
+                  title="داده‌های دریافتی از پژوهشگر"
+                  description="فایل‌های داده و متادیتای بارگذاری‌شده توسط پژوهشگر"
+                  files={incomingFiles}
+                  emptyText="هنوز داده‌ای از پژوهشگر دریافت نشده است."
+                  downloadingFileId={downloadingFileId}
+                  onDownload={downloadProjectFile}
+                />
 
-                <ul className="divide-y divide-border">
-                  {projectFiles.map((file) => (
-                    <li
-                      key={file.id}
-                      className="flex flex-wrap items-center justify-between gap-4 p-4"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <FileText className="size-4 shrink-0 text-primary" />
+                <FileListSection
+                  title="گزارش‌های تحویلی"
+                  description="گزارش‌های PDF رسمی هاب‌ژن"
+                  files={reportFiles}
+                  emptyText="هنوز گزارشی برای این پروژه بارگذاری نشده است."
+                  downloadingFileId={downloadingFileId}
+                  onDownload={downloadProjectFile}
+                />
 
-                          <p
-                            className="truncate text-sm font-semibold text-navy"
-                            dir="auto"
-                          >
-                            {file.original_name}
-                          </p>
-                        </div>
-
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {formatFileSize(file.size_bytes)}
-
-                          {" · "}
-
-                          {file.mime_type || "نوع فایل نامشخص"}
-
-                          {" · "}
-
-                          {formatDateTime(file.created_at)}
-                        </p>
-
-                        <p
-                          className="mt-1 max-w-xl truncate text-[10px] text-muted-foreground/70"
-                          dir="ltr"
-                        >
-                          {file.storage_path}
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={downloadingFileId === file.id}
-                        onClick={() => downloadProjectFile(file)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {downloadingFileId === file.id ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Download className="size-4 text-primary" />
-                        )}
-
-                        دانلود فایل
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <FileListSection
+                  title="نتایج و خروجی‌های تحلیل"
+                  description="Figures، جداول و سایر خروجی‌های پروژه"
+                  files={resultFiles}
+                  emptyText="هنوز نتیجه‌ای برای این پروژه بارگذاری نشده است."
+                  downloadingFileId={downloadingFileId}
+                  onDownload={downloadProjectFile}
+                />
               </div>
             )}
           </div>
 
-          {/* =========================
-              REAL MESSAGES
-          ========================= */}
+          {/* ================================================
+              MESSAGES
+          ================================================ */}
 
           <div className="mt-8 border-t border-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="flex items-center gap-2 text-base font-bold text-navy">
                   <MessageSquare className="size-5 text-primary" />
-
                   پیام‌های پروژه
                 </h3>
 
@@ -878,7 +1122,6 @@ function Admin() {
               {messagesLoading ? (
                 <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />
-
                   در حال دریافت پیام‌ها…
                 </div>
               ) : messages.length === 0 ? (
@@ -954,7 +1197,7 @@ function Admin() {
                 }
                 rows={4}
                 maxLength={5000}
-                placeholder="برای مثال: متادیتای نمونه‌ها دریافت شد. لطفاً گروه کنترل را مشخص کنید."
+                placeholder="برای مثال: گزارش اولیه آماده شده است و در بخش گزارش‌ها قرار گرفت."
                 className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
               />
 
@@ -996,9 +1239,9 @@ function Admin() {
 }
 
 /*
- * =========================
+ * ========================================
  * STAT CARD
- * =========================
+ * ========================================
  */
 
 function StatCard({
@@ -1026,9 +1269,9 @@ function StatCard({
 }
 
 /*
- * =========================
+ * ========================================
  * DETAIL CARD
- * =========================
+ * ========================================
  */
 
 function DetailCard({
@@ -1052,9 +1295,112 @@ function DetailCard({
 }
 
 /*
- * =========================
+ * ========================================
+ * FILE LIST SECTION
+ * ========================================
+ */
+
+function FileListSection({
+  title,
+  description,
+  files,
+  emptyText,
+  downloadingFileId,
+  onDownload,
+}: {
+  title: string;
+  description: string;
+  files: ProjectFileRow[];
+  emptyText: string;
+  downloadingFileId: string | null;
+  onDownload: (file: ProjectFileRow) => Promise<void>;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border">
+      <div className="border-b border-border bg-secondary/30 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h4 className="text-sm font-bold text-navy">
+              {title}
+            </h4>
+
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              {description}
+            </p>
+          </div>
+
+          <span className="rounded-full bg-background px-3 py-1 text-[11px] font-semibold text-navy">
+            {new Intl.NumberFormat("fa-IR").format(files.length)} فایل
+          </span>
+        </div>
+      </div>
+
+      {files.length === 0 ? (
+        <div className="p-8 text-center">
+          <FileText className="mx-auto size-6 text-primary/50" />
+
+          <p className="mt-3 text-xs text-muted-foreground">
+            {emptyText}
+          </p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-border">
+          {files.map((file) => (
+            <li
+              key={file.id}
+              className="flex flex-wrap items-center justify-between gap-4 p-4"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <FileText className="size-4 shrink-0 text-primary" />
+
+                  <p
+                    className="truncate text-sm font-semibold text-navy"
+                    dir="auto"
+                  >
+                    {file.original_name}
+                  </p>
+                </div>
+
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {formatFileSize(file.size_bytes)}
+
+                  {" · "}
+
+                  {file.mime_type || "نوع فایل نامشخص"}
+
+                  {" · "}
+
+                  {formatDateTime(file.created_at)}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={downloadingFileId === file.id}
+                onClick={() => onDownload(file)}
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {downloadingFileId === file.id ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4 text-primary" />
+                )}
+
+                دانلود
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/*
+ * ========================================
  * DATE + TIME
- * =========================
+ * ========================================
  */
 
 function formatDateTime(iso: string) {
@@ -1069,9 +1415,9 @@ function formatDateTime(iso: string) {
 }
 
 /*
- * =========================
+ * ========================================
  * FILE SIZE
- * =========================
+ * ========================================
  */
 
 function formatFileSize(bytes: number) {
@@ -1097,11 +1443,36 @@ function formatFileSize(bytes: number) {
     unitIndex += 1;
   }
 
-  const formatted =
-    new Intl.NumberFormat("fa-IR", {
-      maximumFractionDigits:
-        unitIndex === 0 ? 0 : 1,
-    }).format(value);
+  const formatted = new Intl.NumberFormat("fa-IR", {
+    maximumFractionDigits: unitIndex === 0 ? 0 : 1,
+  }).format(value);
 
   return `${formatted} ${units[unitIndex]}`;
+}
+
+/*
+ * ========================================
+ * SAFE EXTENSION
+ * ========================================
+ */
+
+function safeExtension(fileName: string) {
+  const lastDot = fileName.lastIndexOf(".");
+
+  if (
+    lastDot <= 0 ||
+    lastDot === fileName.length - 1
+  ) {
+    return "";
+  }
+
+  const rawExtension = fileName
+    .slice(lastDot + 1)
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "")
+    .slice(0, 12);
+
+  return rawExtension
+    ? `.${rawExtension}`
+    : "";
 }
