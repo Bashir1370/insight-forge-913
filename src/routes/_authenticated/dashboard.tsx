@@ -7,9 +7,11 @@ import {
 } from "react";
 import {
   BadgeDollarSign,
+  CalendarClock,
   CheckCircle2,
   CloudUpload,
   Download,
+  ExternalLink,
   FileBarChart,
   FileText,
   FolderKanban,
@@ -55,7 +57,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       {
         name: "description",
         content:
-          "پیگیری مراحل پروژه، داده‌ها، پیام‌ها، گزارش‌ها، نتایج و پرداخت‌ها در داشبورد پژوهشگر هاب‌ژن.",
+          "پیگیری پروژه، داده‌ها، پیام‌ها، مشاوره‌ها، گزارش‌ها و نتایج در داشبورد پژوهشگر هاب‌ژن.",
       },
       {
         property: "og:title",
@@ -66,6 +68,12 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
   component: Dashboard,
 });
+
+/*
+ * ========================================
+ * TYPES
+ * ========================================
+ */
 
 type ProjectMessageRow = {
   id: string;
@@ -88,10 +96,54 @@ type ProjectFileRow = {
   created_at: string;
 };
 
+type ConsultationRow = {
+  id: string;
+  user_id: string;
+  project_id: string | null;
+  consultation_type: string;
+  subject: string;
+  description: string | null;
+  status: string;
+  scheduled_at: string | null;
+  duration_minutes: number | null;
+  meeting_url: string | null;
+  admin_note: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+/*
+ * ========================================
+ * CONSTANTS
+ * ========================================
+ */
+
 const PROJECT_FILES_BUCKET = "project-files";
 
 const MAX_STANDARD_UPLOAD_BYTES =
   6 * 1024 * 1024;
+
+const consultationTypeLabels: Record<string, string> = {
+  initial: "بررسی اولیه پروژه",
+  research_design: "طراحی پژوهش",
+  bioinformatics: "مشاوره بیوانفورماتیک",
+  results_interpretation: "تفسیر نتایج",
+  custom: "مشاوره سفارشی",
+};
+
+const consultationStatusLabels: Record<string, string> = {
+  requested: "درخواست ثبت شده",
+  reviewing: "در حال بررسی",
+  scheduled: "زمان‌بندی شده",
+  completed: "برگزار شده",
+  cancelled: "لغو شده",
+};
+
+/*
+ * ========================================
+ * STAGE TRACKER
+ * ========================================
+ */
 
 function StageTracker({
   stage,
@@ -102,32 +154,35 @@ function StageTracker({
     <div className="mt-4">
       <Progress
         value={
-          (stage / projectStages.length) *
-          100
+          (stage / projectStages.length) * 100
         }
         className="h-1.5"
       />
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-        {projectStages.map(
-          (stageName, index) => (
-            <span
-              key={stageName}
-              className={`text-[11px] ${
-                index < stage
-                  ? "font-semibold text-primary"
-                  : "text-muted-foreground"
-              }`}
-            >
-              {index < stage ? "● " : "○ "}
-              {stageName}
-            </span>
-          ),
-        )}
+        {projectStages.map((stageName, index) => (
+          <span
+            key={stageName}
+            className={`text-[11px] ${
+              index < stage
+                ? "font-semibold text-primary"
+                : "text-muted-foreground"
+            }`}
+          >
+            {index < stage ? "● " : "○ "}
+            {stageName}
+          </span>
+        ))}
       </div>
     </div>
   );
 }
+
+/*
+ * ========================================
+ * DASHBOARD
+ * ========================================
+ */
 
 function Dashboard() {
   const { user } = useAuth();
@@ -140,9 +195,7 @@ function Dashboard() {
     "پژوهشگر";
 
   /*
-   * ========================================
    * PROJECTS
-   * ========================================
    */
 
   const [projects, setProjects] =
@@ -158,17 +211,13 @@ function Dashboard() {
     useState<string | null>(null);
 
   /*
-   * ========================================
    * MESSAGES
-   * ========================================
    */
 
   const [
     projectMessages,
     setProjectMessages,
-  ] = useState<ProjectMessageRow[]>(
-    [],
-  );
+  ] = useState<ProjectMessageRow[]>([]);
 
   const [
     messagesLoading,
@@ -186,9 +235,7 @@ function Dashboard() {
   ] = useState(false);
 
   /*
-   * ========================================
    * FILES
-   * ========================================
    */
 
   const [
@@ -209,9 +256,7 @@ function Dashboard() {
   const [
     downloadingFileId,
     setDownloadingFileId,
-  ] = useState<string | null>(
-    null,
-  );
+  ] = useState<string | null>(null);
 
   const [
     totalFileCount,
@@ -224,13 +269,25 @@ function Dashboard() {
   ] = useState(0);
 
   const fileInputRef =
-    useRef<HTMLInputElement | null>(
-      null,
-    );
+    useRef<HTMLInputElement | null>(null);
+
+  /*
+   * CONSULTATIONS
+   */
+
+  const [
+    consultations,
+    setConsultations,
+  ] = useState<ConsultationRow[]>([]);
+
+  const [
+    consultationsLoading,
+    setConsultationsLoading,
+  ] = useState(false);
 
   /*
    * ========================================
-   * LOAD PROJECTS + GLOBAL COUNTS
+   * LOAD PROJECTS + COUNTS
    * ========================================
    */
 
@@ -255,8 +312,7 @@ function Dashboard() {
         }
 
         const rows =
-          (data ??
-            []) as ProjectRow[];
+          (data ?? []) as ProjectRow[];
 
         setProjects(rows);
         setLoadError(null);
@@ -313,31 +369,27 @@ function Dashboard() {
 
         if (!fileCountResult.error) {
           setTotalFileCount(
-            fileCountResult.count ??
-              0,
+            fileCountResult.count ?? 0,
           );
         }
 
         if (!reportCountResult.error) {
           setTotalReportCount(
-            reportCountResult.count ??
-              0,
+            reportCountResult.count ?? 0,
           );
         }
       })
-      .catch(
-        (error: unknown) => {
-          if (!mounted) return;
+      .catch((error: unknown) => {
+        if (!mounted) return;
 
-          setLoadError(
-            projectErrorMessage(
-              error instanceof Error
-                ? error.message
-                : "",
-            ),
-          );
-        },
-      )
+        setLoadError(
+          projectErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "",
+          ),
+        );
+      })
       .finally(() => {
         if (mounted) {
           setLoading(false);
@@ -348,6 +400,57 @@ function Dashboard() {
       mounted = false;
     };
   }, [user?.id]);
+
+  /*
+   * ========================================
+   * LOAD ALL USER CONSULTATIONS
+   * ========================================
+   */
+
+  const loadConsultations = async () => {
+    if (!user?.id) return;
+
+    setConsultationsLoading(true);
+
+    const { data, error } = await supabase
+      .from("consultations")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      console.error(error);
+
+      setConsultations([]);
+      setConsultationsLoading(false);
+
+      toast.error(
+        "دریافت درخواست‌های مشاوره انجام نشد.",
+      );
+
+      return;
+    }
+
+    setConsultations(
+      (data ?? []) as ConsultationRow[],
+    );
+
+    setConsultationsLoading(false);
+  };
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    loadConsultations();
+  }, [user?.id]);
+
+  /*
+   * ========================================
+   * CURRENT PROJECT
+   * ========================================
+   */
 
   const current =
     projects.find(
@@ -360,14 +463,26 @@ function Dashboard() {
   const activeCount =
     projects.filter(
       (project) =>
-        project.status !==
-          "completed" &&
-        project.status !==
-          "cancelled",
+        project.status !== "completed" &&
+        project.status !== "cancelled",
     ).length;
 
   /*
-   * Separate file categories.
+   * Consultations related to current project
+   * plus general consultations.
+   */
+
+  const currentConsultations =
+    current
+      ? consultations.filter(
+          (consultation) =>
+            consultation.project_id === current.id ||
+            consultation.project_id === null,
+        )
+      : consultations;
+
+  /*
+   * FILE CATEGORIES
    */
 
   const dataFiles =
@@ -402,9 +517,7 @@ function Dashboard() {
 
     const { data, error } =
       await supabase
-        .from(
-          "project_messages",
-        )
+        .from("project_messages")
         .select("*")
         .eq(
           "project_id",
@@ -433,60 +546,51 @@ function Dashboard() {
     setMessagesLoading(false);
   };
 
-  const sendMessage =
-    async () => {
-      if (!current || !user)
-        return;
+  const sendMessage = async () => {
+    if (!current || !user)
+      return;
 
-      const cleanMessage =
-        messageText.trim();
+    const cleanMessage =
+      messageText.trim();
 
-      if (!cleanMessage) return;
+    if (!cleanMessage) return;
 
-      setSendingMessage(true);
+    setSendingMessage(true);
 
-      const { data, error } =
-        await supabase
-          .from(
-            "project_messages",
-          )
-          .insert({
-            project_id:
-              current.id,
-            sender_id:
-              user.id,
-            message:
-              cleanMessage,
-          })
-          .select("*")
-          .single();
+    const { data, error } =
+      await supabase
+        .from("project_messages")
+        .insert({
+          project_id: current.id,
+          sender_id: user.id,
+          message: cleanMessage,
+        })
+        .select("*")
+        .single();
 
-      if (error) {
-        toast.error(
-          "ارسال پیام انجام نشد.",
-        );
-
-        setSendingMessage(
-          false,
-        );
-
-        return;
-      }
-
-      setProjectMessages(
-        (previous) => [
-          ...previous,
-          data as ProjectMessageRow,
-        ],
+    if (error) {
+      toast.error(
+        "ارسال پیام انجام نشد.",
       );
 
-      setMessageText("");
       setSendingMessage(false);
+      return;
+    }
 
-      toast.success(
-        "پیام شما ارسال شد.",
-      );
-    };
+    setProjectMessages(
+      (previous) => [
+        ...previous,
+        data as ProjectMessageRow,
+      ],
+    );
+
+    setMessageText("");
+    setSendingMessage(false);
+
+    toast.success(
+      "پیام شما ارسال شد.",
+    );
+  };
 
   /*
    * ========================================
@@ -531,9 +635,10 @@ function Dashboard() {
   };
 
   /*
-   * When selected project changes,
-   * reload files and messages.
+   * Reload project resources when
+   * selected project changes.
    */
+
   useEffect(() => {
     if (!current?.id) {
       setProjectMessages([]);
@@ -552,7 +657,7 @@ function Dashboard() {
 
   /*
    * ========================================
-   * RESEARCHER DATA UPLOAD
+   * RESEARCHER FILE UPLOAD
    * ========================================
    */
 
@@ -585,9 +690,7 @@ function Dashboard() {
       setUploadingFile(true);
 
       const extension =
-        safeExtension(
-          file.name,
-        );
+        safeExtension(file.name);
 
       const storagePath =
         `${current.id}/` +
@@ -631,10 +734,8 @@ function Dashboard() {
       } = await supabase
         .from("project_files")
         .insert({
-          project_id:
-            current.id,
-          uploader_id:
-            user.id,
+          project_id: current.id,
+          uploader_id: user.id,
           bucket_id:
             PROJECT_FILES_BUCKET,
           storage_path:
@@ -700,7 +801,7 @@ function Dashboard() {
 
   /*
    * ========================================
-   * PRIVATE FILE DOWNLOAD
+   * PRIVATE DOWNLOAD
    * ========================================
    */
 
@@ -716,9 +817,7 @@ function Dashboard() {
         data,
         error,
       } = await supabase.storage
-        .from(
-          file.bucket_id,
-        )
+        .from(file.bucket_id)
         .download(
           file.storage_path,
         );
@@ -738,17 +837,12 @@ function Dashboard() {
       }
 
       const objectUrl =
-        URL.createObjectURL(
-          data,
-        );
+        URL.createObjectURL(data);
 
       const anchor =
-        document.createElement(
-          "a",
-        );
+        document.createElement("a");
 
       anchor.href = objectUrl;
-
       anchor.download =
         file.original_name;
 
@@ -757,7 +851,6 @@ function Dashboard() {
       );
 
       anchor.click();
-
       anchor.remove();
 
       URL.revokeObjectURL(
@@ -786,8 +879,7 @@ function Dashboard() {
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            خوش آمدید،{" "}
-            {displayName}
+            خوش آمدید، {displayName}
           </p>
         </div>
 
@@ -801,7 +893,7 @@ function Dashboard() {
         </Button>
       </div>
 
-      {/* STATISTICS */}
+      {/* REAL STATISTICS */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardStat
@@ -818,8 +910,8 @@ function Dashboard() {
 
         <DashboardStat
           icon={Users2}
-          label="جلسات مشاوره"
-          value={5}
+          label="درخواست‌های مشاوره"
+          value={consultations.length}
         />
 
         <DashboardStat
@@ -842,24 +934,18 @@ function Dashboard() {
       {loading ? (
         <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-
-          در حال بارگذاری
-          پروژه‌ها…
+          در حال بارگذاری پروژه‌ها…
         </div>
-      ) : projects.length ===
-        0 ? (
+      ) : projects.length === 0 ? (
         <div className="card-elevated mt-8 p-12 text-center">
           <FolderKanban className="mx-auto size-8 text-primary" />
 
           <p className="mt-4 text-base font-bold text-navy">
-            هنوز پروژه‌ای ثبت
-            نکرده‌اید.
+            هنوز پروژه‌ای ثبت نکرده‌اید.
           </p>
 
           <p className="mt-2 text-xs text-muted-foreground">
-            با طراح پروژه پژوهشی،
-            اولین پروژه خود را ثبت
-            کنید.
+            با طراح پروژه پژوهشی، اولین پروژه خود را ثبت کنید.
           </p>
 
           <Button
@@ -882,50 +968,36 @@ function Dashboard() {
             </h2>
 
             <ul className="mt-4 space-y-2">
-              {projects.map(
-                (project) => (
-                  <li
-                    key={
-                      project.id
+              {projects.map((project) => (
+                <li key={project.id}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActive(project.id)
                     }
+                    className={`w-full rounded-xl border p-3 text-start transition-colors ${
+                      current?.id === project.id
+                        ? "border-primary bg-accent/60"
+                        : "border-border hover:bg-secondary"
+                    }`}
                   >
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActive(
-                          project.id,
-                        )
-                      }
-                      className={`w-full rounded-xl border p-3 text-start transition-colors ${
-                        current?.id ===
-                        project.id
-                          ? "border-primary bg-accent/60"
-                          : "border-border hover:bg-secondary"
-                      }`}
+                    <span
+                      className="block text-[11px] text-muted-foreground"
+                      dir="ltr"
                     >
-                      <span
-                        className="block text-[11px] text-muted-foreground"
-                        dir="ltr"
-                      >
-                        {shortId(
-                          project.id,
-                        )}
-                      </span>
+                      {shortId(project.id)}
+                    </span>
 
-                      <span className="mt-1 block text-sm font-semibold leading-6 text-navy">
-                        {
-                          project.title
-                        }
-                      </span>
+                    <span className="mt-1 block text-sm font-semibold leading-6 text-navy">
+                      {project.title}
+                    </span>
 
-                      <span className="mt-1 block text-[11px] text-primary">
-                        {project.analysis_type ??
-                          "—"}
-                      </span>
-                    </button>
-                  </li>
-                ),
-              )}
+                    <span className="mt-1 block text-[11px] text-primary">
+                      {project.analysis_type ?? "—"}
+                    </span>
+                  </button>
+                </li>
+              ))}
             </ul>
           </aside>
 
@@ -940,37 +1012,25 @@ function Dashboard() {
 
                 <p className="mt-1 text-xs text-muted-foreground">
                   <span dir="ltr">
-                    {shortId(
-                      current!.id,
-                    )}
+                    {shortId(current!.id)}
                   </span>
 
                   {" · "}
 
-                  {current!
-                    .analysis_type ??
-                    "—"}
+                  {current!.analysis_type ?? "—"}
 
                   {" · ثبت "}
 
-                  {formatDate(
-                    current!
-                      .created_at,
-                  )}
+                  {formatDate(current!.created_at)}
 
                   {" · آخرین بروزرسانی "}
 
-                  {formatDate(
-                    current!
-                      .updated_at,
-                  )}
+                  {formatDate(current!.updated_at)}
                 </p>
               </div>
 
               <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-accent-foreground">
-                {statusLabel(
-                  current!.status,
-                )}
+                {statusLabel(current!.status)}
               </span>
             </div>
 
@@ -1011,7 +1071,7 @@ function Dashboard() {
               </TabsList>
 
               {/* ========================================
-                  REAL DATA FILES
+                  DATA FILES
               ======================================== */}
 
               <TabsContent
@@ -1035,18 +1095,14 @@ function Dashboard() {
                   </p>
 
                   <p className="mx-auto mt-1 max-w-xl text-xs leading-6 text-muted-foreground">
-                    برای متادیتا،
-                    CSV، Excel، ماتریس‌های
-                    داده و فایل‌های کوچک
-                    پژوهشی.
+                    برای متادیتا، CSV، Excel، ماتریس‌های داده و
+                    فایل‌های کوچک پژوهشی.
                   </p>
 
                   <Button
                     variant="soft"
                     className="mt-4"
-                    disabled={
-                      uploadingFile
-                    }
+                    disabled={uploadingFile}
                     onClick={() =>
                       fileInputRef.current?.click()
                     }
@@ -1065,8 +1121,7 @@ function Dashboard() {
                   </Button>
 
                   <p className="mt-3 text-[11px] text-muted-foreground">
-                    حداکثر حجم فعلی:
-                    ۶ مگابایت
+                    حداکثر حجم فعلی: ۶ مگابایت
                   </p>
                 </div>
 
@@ -1078,21 +1133,16 @@ function Dashboard() {
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        فایل‌هایی که شما
-                        برای تحلیل در اختیار
-                        هاب‌ژن قرار داده‌اید.
+                        فایل‌هایی که برای تحلیل در اختیار هاب‌ژن
+                        قرار داده‌اید.
                       </p>
                     </div>
 
                     <RefreshButton
-                      loading={
-                        filesLoading
-                      }
+                      loading={filesLoading}
                       onClick={() =>
                         current &&
-                        loadFiles(
-                          current.id,
-                        )
+                        loadFiles(current.id)
                       }
                     />
                   </div>
@@ -1113,7 +1163,7 @@ function Dashboard() {
               </TabsContent>
 
               {/* ========================================
-                  REAL MESSAGES
+                  MESSAGES
               ======================================== */}
 
               <TabsContent
@@ -1129,21 +1179,16 @@ function Dashboard() {
                       </h3>
 
                       <p className="mt-1 text-xs text-muted-foreground">
-                        ارتباط مستقیم شما
-                        با تیم هاب‌ژن درباره
+                        ارتباط مستقیم شما با تیم هاب‌ژن درباره
                         همین پروژه
                       </p>
                     </div>
 
                     <RefreshButton
-                      loading={
-                        messagesLoading
-                      }
+                      loading={messagesLoading}
                       onClick={() =>
                         current &&
-                        loadMessages(
-                          current.id,
-                        )
+                        loadMessages(current.id)
                       }
                     />
                   </div>
@@ -1151,60 +1196,49 @@ function Dashboard() {
                   <div className="min-h-[220px] bg-secondary/10 p-4">
                     {messagesLoading ? (
                       <LoadingBox text="در حال دریافت پیام‌ها…" />
-                    ) : projectMessages.length ===
-                      0 ? (
+                    ) : projectMessages.length === 0 ? (
                       <div className="py-14 text-center">
                         <MessageSquare className="mx-auto size-8 text-primary/50" />
 
                         <p className="mt-4 text-sm font-bold text-navy">
-                          هنوز پیامی ثبت
-                          نشده است.
+                          هنوز پیامی ثبت نشده است.
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {projectMessages.map(
-                          (
-                            message,
-                          ) => {
-                            const isMine =
-                              message.sender_id ===
-                              user?.id;
+                        {projectMessages.map((message) => {
+                          const isMine =
+                            message.sender_id === user?.id;
 
-                            return (
-                              <div
-                                key={
-                                  message.id
-                                }
-                                className={`max-w-3xl rounded-2xl border p-4 ${
-                                  isMine
-                                    ? "mr-auto border-primary/20 bg-accent/40"
-                                    : "ml-auto border-border bg-background"
-                                }`}
-                              >
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                  <span className="text-xs font-bold text-navy">
-                                    {isMine
-                                      ? "شما"
-                                      : "مدیریت هاب‌ژن"}
-                                  </span>
+                          return (
+                            <div
+                              key={message.id}
+                              className={`max-w-3xl rounded-2xl border p-4 ${
+                                isMine
+                                  ? "mr-auto border-primary/20 bg-accent/40"
+                                  : "ml-auto border-border bg-background"
+                              }`}
+                            >
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-xs font-bold text-navy">
+                                  {isMine
+                                    ? "شما"
+                                    : "مدیریت هاب‌ژن"}
+                                </span>
 
-                                  <span className="text-[11px] text-muted-foreground">
-                                    {formatDateTime(
-                                      message.created_at,
-                                    )}
-                                  </span>
-                                </div>
-
-                                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
-                                  {
-                                    message.message
-                                  }
-                                </p>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {formatDateTime(
+                                    message.created_at,
+                                  )}
+                                </span>
                               </div>
-                            );
-                          },
-                        )}
+
+                              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
+                                {message.message}
+                              </p>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1219,16 +1253,10 @@ function Dashboard() {
 
                     <textarea
                       id="researcher-message"
-                      value={
-                        messageText
-                      }
-                      onChange={(
-                        event,
-                      ) =>
+                      value={messageText}
+                      onChange={(event) =>
                         setMessageText(
-                          event
-                            .target
-                            .value,
+                          event.target.value,
                         )
                       }
                       rows={4}
@@ -1256,9 +1284,7 @@ function Dashboard() {
                           sendingMessage ||
                           !messageText.trim()
                         }
-                        onClick={
-                          sendMessage
-                        }
+                        onClick={sendMessage}
                         className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {sendingMessage ? (
@@ -1275,33 +1301,89 @@ function Dashboard() {
               </TabsContent>
 
               {/* ========================================
-                  CONSULTATIONS — STILL DEMO
+                  REAL CONSULTATIONS
               ======================================== */}
 
               <TabsContent
                 value="consults"
-                className="mt-5 space-y-3"
+                className="mt-5"
               >
-                <div className="rounded-2xl border border-border p-4">
-                  <p className="text-sm font-bold text-navy">
-                    مشاوره طراحی پژوهش
-                  </p>
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <CalendarClock className="size-4 text-primary" />
+                      مشاوره‌های پژوهشی
+                    </h3>
 
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    این بخش هنوز به
-                    سیستم واقعی مشاوره
-                    متصل نشده است.
-                  </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      درخواست‌ها، زمان جلسات و اطلاعات مشاوره
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <RefreshButton
+                      loading={
+                        consultationsLoading
+                      }
+                      onClick={
+                        loadConsultations
+                      }
+                    />
+
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Link to="/consultation">
+                        درخواست مشاوره جدید
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
 
-                <Button
-                  asChild
-                  variant="outline"
-                >
-                  <Link to="/consultation">
-                    رزرو جلسه جدید
-                  </Link>
-                </Button>
+                {consultationsLoading ? (
+                  <div className="mt-4">
+                    <LoadingBox text="در حال دریافت مشاوره‌ها…" />
+                  </div>
+                ) : currentConsultations.length === 0 ? (
+                  <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+                    <CalendarClock className="mx-auto size-8 text-primary/50" />
+
+                    <p className="mt-4 text-sm font-bold text-navy">
+                      هنوز درخواست مشاوره‌ای ندارید.
+                    </p>
+
+                    <p className="mx-auto mt-2 max-w-lg text-xs leading-6 text-muted-foreground">
+                      برای بررسی طراحی مطالعه، انتخاب استراتژی
+                      بیوانفورماتیک یا تفسیر نتایج، یک درخواست
+                      مشاوره ثبت کنید.
+                    </p>
+
+                    <Button
+                      asChild
+                      variant="hero"
+                      className="mt-5"
+                    >
+                      <Link to="/consultation">
+                        ثبت درخواست مشاوره
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {currentConsultations.map(
+                      (consultation) => (
+                        <ConsultationCard
+                          key={consultation.id}
+                          consultation={
+                            consultation
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                )}
               </TabsContent>
 
               {/* ========================================
@@ -1320,32 +1402,22 @@ function Dashboard() {
                     </h3>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      گزارش‌های رسمی
-                      بارگذاری‌شده توسط
-                      تیم هاب‌ژن
+                      گزارش‌های رسمی بارگذاری‌شده توسط تیم هاب‌ژن
                     </p>
                   </div>
 
                   <RefreshButton
-                    loading={
-                      filesLoading
-                    }
+                    loading={filesLoading}
                     onClick={() =>
                       current &&
-                      loadFiles(
-                        current.id,
-                      )
+                      loadFiles(current.id)
                     }
                   />
                 </div>
 
                 <ProjectFileList
-                  files={
-                    reportFiles
-                  }
-                  loading={
-                    filesLoading
-                  }
+                  files={reportFiles}
+                  loading={filesLoading}
                   emptyTitle="هنوز گزارشی تحویل نشده است."
                   emptyDescription="پس از آماده‌شدن گزارش تحلیل، فایل آن در این قسمت نمایش داده می‌شود."
                   downloadingFileId={
@@ -1374,32 +1446,23 @@ function Dashboard() {
                     </h3>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      Figure، جدول،
-                      Excel، CSV، ZIP و
-                      سایر خروجی‌های تحلیلی
+                      Figure، جدول، Excel، CSV، ZIP و سایر
+                      خروجی‌های تحلیلی
                     </p>
                   </div>
 
                   <RefreshButton
-                    loading={
-                      filesLoading
-                    }
+                    loading={filesLoading}
                     onClick={() =>
                       current &&
-                      loadFiles(
-                        current.id,
-                      )
+                      loadFiles(current.id)
                     }
                   />
                 </div>
 
                 <ProjectFileList
-                  files={
-                    resultFiles
-                  }
-                  loading={
-                    filesLoading
-                  }
+                  files={resultFiles}
+                  loading={filesLoading}
                   emptyTitle="هنوز نتیجه‌ای تحویل نشده است."
                   emptyDescription="خروجی‌های تحلیل پس از آماده‌شدن در این قسمت قرار می‌گیرند."
                   downloadingFileId={
@@ -1418,55 +1481,216 @@ function Dashboard() {
 
               <TabsContent
                 value="payments"
-                className="mt-5 space-y-3"
+                className="mt-5"
               >
-                {[
-                  [
-                    "فاز طراحی مطالعه",
-                    "تسویه شده",
-                  ],
-                  [
-                    "فاز تحلیل اولیه",
-                    "تسویه شده",
-                  ],
-                  [
-                    "فاز تفسیر و مصورسازی",
-                    "در انتظار پرداخت",
-                  ],
-                ].map(
-                  ([
-                    title,
-                    paymentStatus,
-                  ]) => (
-                    <div
-                      key={
-                        title
-                      }
-                      className="flex items-center justify-between rounded-2xl border border-border p-4"
-                    >
-                      <span className="flex items-center gap-2 text-sm text-navy">
-                        <BadgeDollarSign className="size-4 text-primary" />
-                        {title}
-                      </span>
+                <div className="rounded-2xl border border-border p-8 text-center">
+                  <BadgeDollarSign className="mx-auto size-7 text-primary/50" />
 
-                      <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        {paymentStatus ===
-                          "تسویه شده" && (
-                          <CheckCircle2 className="size-4 text-primary" />
-                        )}
+                  <p className="mt-3 text-sm font-bold text-navy">
+                    سیستم پرداخت هنوز فعال نشده است.
+                  </p>
 
-                        {
-                          paymentStatus
-                        }
-                      </span>
-                    </div>
-                  ),
-                )}
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    وضعیت پرداخت‌ها در مرحله بعد به سیستم واقعی
+                    پروژه متصل خواهد شد.
+                  </p>
+                </div>
               </TabsContent>
             </Tabs>
           </section>
         </div>
       )}
+    </div>
+  );
+}
+
+/*
+ * ========================================
+ * CONSULTATION CARD
+ * ========================================
+ */
+
+function ConsultationCard({
+  consultation,
+}: {
+  consultation: ConsultationRow;
+}) {
+  const typeLabel =
+    consultationTypeLabels[
+      consultation.consultation_type
+    ] ??
+    consultation.consultation_type;
+
+  const statusText =
+    consultationStatusLabels[
+      consultation.status
+    ] ??
+    consultation.status;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-secondary/30 p-5">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-bold text-navy">
+              {consultation.subject}
+            </p>
+
+            {!consultation.project_id && (
+              <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[10px] text-muted-foreground">
+                مشاوره عمومی
+              </span>
+            )}
+          </div>
+
+          <p className="mt-2 text-xs text-primary">
+            {typeLabel}
+          </p>
+
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            ثبت درخواست:{" "}
+            {formatDateTime(
+              consultation.created_at,
+            )}
+          </p>
+        </div>
+
+        <ConsultationStatusBadge
+          status={consultation.status}
+          label={statusText}
+        />
+      </div>
+
+      <div className="p-5">
+        {consultation.description && (
+          <div>
+            <p className="text-xs font-semibold text-navy">
+              توضیحات درخواست
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {consultation.description}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ConsultationInfo
+            label="زمان جلسه"
+            value={
+              consultation.scheduled_at
+                ? formatDateTime(
+                    consultation.scheduled_at,
+                  )
+                : "هنوز تعیین نشده"
+            }
+          />
+
+          <ConsultationInfo
+            label="مدت جلسه"
+            value={
+              consultation.duration_minutes
+                ? `${new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    consultation.duration_minutes,
+                  )} دقیقه`
+                : "هنوز تعیین نشده"
+            }
+          />
+
+          <ConsultationInfo
+            label="آخرین بروزرسانی"
+            value={formatDateTime(
+              consultation.updated_at,
+            )}
+          />
+        </div>
+
+        {consultation.admin_note && (
+          <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <p className="text-xs font-bold text-navy">
+              یادداشت تیم هاب‌ژن
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {consultation.admin_note}
+            </p>
+          </div>
+        )}
+
+        {consultation.meeting_url &&
+          consultation.status !== "cancelled" && (
+            <div className="mt-5">
+              <a
+                href={consultation.meeting_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                <ExternalLink className="size-4" />
+                ورود به جلسه
+              </a>
+            </div>
+          )}
+      </div>
+    </article>
+  );
+}
+
+/*
+ * ========================================
+ * CONSULTATION STATUS
+ * ========================================
+ */
+
+function ConsultationStatusBadge({
+  status,
+  label,
+}: {
+  status: string;
+  label: string;
+}) {
+  const className =
+    status === "completed"
+      ? "border-primary/20 bg-accent text-primary"
+      : status === "cancelled"
+        ? "border-destructive/20 bg-destructive/5 text-destructive"
+        : status === "scheduled"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : "border-border bg-background text-muted-foreground";
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/*
+ * ========================================
+ * CONSULTATION INFO
+ * ========================================
+ */
+
+function ConsultationInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xs font-semibold leading-6 text-navy">
+        {value}
+      </p>
     </div>
   );
 }
@@ -1544,8 +1768,7 @@ function ProjectFileList({
       <div className="mt-4 rounded-2xl border border-border p-10 text-center">
         {icon === "report" ? (
           <FileBarChart className="mx-auto size-7 text-primary/50" />
-        ) : icon ===
-          "result" ? (
+        ) : icon === "result" ? (
           <Image className="mx-auto size-7 text-primary/50" />
         ) : (
           <FileText className="mx-auto size-7 text-primary/50" />
@@ -1570,83 +1793,73 @@ function ProjectFileList({
           <span className="font-bold text-navy">
             {new Intl.NumberFormat(
               "fa-IR",
-            ).format(
-              files.length,
-            )}
+            ).format(files.length)}
           </span>
         </p>
       </div>
 
       <ul className="divide-y divide-border">
-        {files.map(
-          (file) => (
-            <li
-              key={file.id}
-              className="flex flex-wrap items-center justify-between gap-4 p-4"
-            >
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  {icon ===
-                  "report" ? (
-                    <FileBarChart className="size-4 shrink-0 text-primary" />
-                  ) : icon ===
-                    "result" ? (
-                    <Image className="size-4 shrink-0 text-primary" />
-                  ) : (
-                    <FileText className="size-4 shrink-0 text-primary" />
-                  )}
+        {files.map((file) => (
+          <li
+            key={file.id}
+            className="flex flex-wrap items-center justify-between gap-4 p-4"
+          >
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                {icon === "report" ? (
+                  <FileBarChart className="size-4 shrink-0 text-primary" />
+                ) : icon === "result" ? (
+                  <Image className="size-4 shrink-0 text-primary" />
+                ) : (
+                  <FileText className="size-4 shrink-0 text-primary" />
+                )}
 
-                  <p
-                    className="truncate text-sm font-semibold text-navy"
-                    dir="auto"
-                  >
-                    {
-                      file.original_name
-                    }
-                  </p>
-                </div>
-
-                <p className="mt-1 text-[11px] text-muted-foreground">
-                  {formatFileSize(
-                    file.size_bytes,
-                  )}
-
-                  {" · "}
-
-                  {file.mime_type ||
-                    "نوع فایل نامشخص"}
-
-                  {" · "}
-
-                  {formatDateTime(
-                    file.created_at,
-                  )}
+                <p
+                  className="truncate text-sm font-semibold text-navy"
+                  dir="auto"
+                >
+                  {file.original_name}
                 </p>
               </div>
 
-              <button
-                type="button"
-                disabled={
-                  downloadingFileId ===
-                  file.id
-                }
-                onClick={() =>
-                  onDownload(file)
-                }
-                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {downloadingFileId ===
-                file.id ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Download className="size-4 text-primary" />
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                {formatFileSize(
+                  file.size_bytes,
                 )}
 
-                دانلود
-              </button>
-            </li>
-          ),
-        )}
+                {" · "}
+
+                {file.mime_type ||
+                  "نوع فایل نامشخص"}
+
+                {" · "}
+
+                {formatDateTime(
+                  file.created_at,
+                )}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              disabled={
+                downloadingFileId === file.id
+              }
+              onClick={() =>
+                onDownload(file)
+              }
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {downloadingFileId === file.id ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Download className="size-4 text-primary" />
+              )}
+
+              دانلود
+            </button>
+          </li>
+        ))}
       </ul>
     </div>
   );
