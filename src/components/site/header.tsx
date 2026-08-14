@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 const nav = [
   { to: "/", label: "خانه" },
   { to: "/services", label: "خدمات" },
+  { to: "/learn", label: "آموزش" },
   { to: "/wizard", label: "طراح پروژه" },
   { to: "/consultation", label: "مشاوره" },
   { to: "/dashboard", label: "داشبورد پژوهشگر" },
@@ -36,9 +37,15 @@ export function Header() {
           <span className="flex size-9 items-center justify-center rounded-xl surface-navy shadow-glow">
             <BrandMark className="size-5" />
           </span>
+
           <span className="leading-tight">
-            <span className="block text-sm font-extrabold text-navy">هاب‌ژن</span>
-            <span className="block text-[10px] text-muted-foreground">Bioinformatics & Computational Biology</span>
+            <span className="block text-sm font-extrabold text-navy">
+              هاب‌ژن
+            </span>
+
+            <span className="block text-[10px] text-muted-foreground">
+              Bioinformatics & Computational Biology
+            </span>
           </span>
         </Link>
 
@@ -48,8 +55,12 @@ export function Header() {
               key={item.to}
               to={item.to}
               className="rounded-lg px-3 py-2 text-sm font-medium text-navy-soft transition-colors hover:bg-accent hover:text-accent-foreground"
-              activeProps={{ className: "bg-accent text-accent-foreground" }}
-              activeOptions={{ exact: item.to === "/" }}
+              activeProps={{
+                className: "bg-accent text-accent-foreground",
+              }}
+              activeOptions={{
+                exact: item.to === "/",
+              }}
             >
               {item.label}
             </Link>
@@ -59,22 +70,40 @@ export function Header() {
         <div className="flex items-center gap-2">
           {session ? (
             <>
-              <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="hidden sm:inline-flex"
+              >
                 <Link to="/dashboard">داشبورد من</Link>
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleSignOut} className="hidden sm:inline-flex">
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="hidden sm:inline-flex"
+              >
                 <LogOut className="size-4" />
                 خروج
               </Button>
             </>
           ) : (
-            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
+            >
               <Link to="/auth">ورود پژوهشگر</Link>
             </Button>
           )}
+
           <Button asChild size="sm" variant="hero">
             <Link to="/wizard">شروع پروژه</Link>
           </Button>
+
           <Button
             variant="ghost"
             size="icon"
@@ -100,9 +129,15 @@ export function Header() {
                 {item.label}
               </Link>
             ))}
-            <Link to="/admin" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground">
+
+            <Link
+              to="/admin"
+              onClick={() => setOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm text-muted-foreground"
+            >
               پنل مدیریت
             </Link>
+
             {session ? (
               <button
                 onClick={() => {
@@ -114,7 +149,11 @@ export function Header() {
                 خروج از حساب
               </button>
             ) : (
-              <Link to="/auth" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-navy-soft hover:bg-accent">
+              <Link
+                to="/auth"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-navy-soft hover:bg-accent"
+              >
                 ورود پژوهشگر
               </Link>
             )}
