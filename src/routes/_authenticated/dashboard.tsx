@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Send,
   Users2,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,7 +58,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       {
         name: "description",
         content:
-          "پیگیری پروژه، داده‌ها، پیام‌ها، مشاوره‌ها، گزارش‌ها و نتایج در داشبورد پژوهشگر هاب‌ژن.",
+          "پیگیری پروژه، داده‌ها، پیام‌ها، مشاوره‌ها، گزارش‌ها، نتایج و پیشنهادهای قیمت در داشبورد پژوهشگر هاب‌ژن.",
       },
       {
         property: "og:title",
@@ -70,9 +71,9 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 /*
- * ========================================
+ * =========================================================
  * TYPES
- * ========================================
+ * =========================================================
  */
 
 type ProjectMessageRow = {
@@ -112,10 +113,29 @@ type ConsultationRow = {
   updated_at: string;
 };
 
+type ProjectQuoteRow = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  created_by: string;
+  title: string;
+  scope_summary: string | null;
+  deliverables: string | null;
+  amount: number | string;
+  currency: string;
+  estimated_days: number | null;
+  status: string;
+  valid_until: string | null;
+  admin_note: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /*
- * ========================================
+ * =========================================================
  * CONSTANTS
- * ========================================
+ * =========================================================
  */
 
 const PROJECT_FILES_BUCKET = "project-files";
@@ -139,10 +159,19 @@ const consultationStatusLabels: Record<string, string> = {
   cancelled: "لغو شده",
 };
 
+const quoteStatusLabels: Record<string, string> = {
+  draft: "پیش‌نویس",
+  sent: "در انتظار پاسخ شما",
+  accepted: "تأیید شده",
+  rejected: "رد شده",
+  expired: "منقضی شده",
+  cancelled: "لغو شده",
+};
+
 /*
- * ========================================
+ * =========================================================
  * STAGE TRACKER
- * ========================================
+ * =========================================================
  */
 
 function StageTracker({
@@ -154,40 +183,47 @@ function StageTracker({
     <div className="mt-4">
       <Progress
         value={
-          (stage / projectStages.length) * 100
+          (stage /
+            projectStages.length) *
+          100
         }
         className="h-1.5"
       />
 
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
-        {projectStages.map((stageName, index) => (
-          <span
-            key={stageName}
-            className={`text-[11px] ${
-              index < stage
-                ? "font-semibold text-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            {index < stage ? "● " : "○ "}
-            {stageName}
-          </span>
-        ))}
+        {projectStages.map(
+          (stageName, index) => (
+            <span
+              key={stageName}
+              className={`text-[11px] ${
+                index < stage
+                  ? "font-semibold text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {index < stage
+                ? "● "
+                : "○ "}
+              {stageName}
+            </span>
+          ),
+        )}
       </div>
     </div>
   );
 }
 
 /*
- * ========================================
+ * =========================================================
  * DASHBOARD
- * ========================================
+ * =========================================================
  */
 
 function Dashboard() {
   const { user } = useAuth();
 
-  const profile = useProfile(user?.id);
+  const profile =
+    useProfile(user?.id);
 
   const displayName =
     profile?.full_name?.trim() ||
@@ -286,9 +322,28 @@ function Dashboard() {
   ] = useState(false);
 
   /*
-   * ========================================
+   * QUOTES
+   */
+
+  const [
+    projectQuotes,
+    setProjectQuotes,
+  ] = useState<ProjectQuoteRow[]>([]);
+
+  const [
+    quotesLoading,
+    setQuotesLoading,
+  ] = useState(false);
+
+  const [
+    respondingQuoteId,
+    setRespondingQuoteId,
+  ] = useState<string | null>(null);
+
+  /*
+   * =======================================================
    * LOAD PROJECTS + COUNTS
-   * ========================================
+   * =======================================================
    */
 
   useEffect(() => {
@@ -312,7 +367,8 @@ function Dashboard() {
         }
 
         const rows =
-          (data ?? []) as ProjectRow[];
+          (data ??
+            []) as ProjectRow[];
 
         setProjects(rows);
         setLoadError(null);
@@ -330,9 +386,11 @@ function Dashboard() {
           return;
         }
 
-        const projectIds = rows.map(
-          (project) => project.id,
-        );
+        const projectIds =
+          rows.map(
+            (project) =>
+              project.id,
+          );
 
         const [
           fileCountResult,
@@ -367,29 +425,37 @@ function Dashboard() {
 
         if (!mounted) return;
 
-        if (!fileCountResult.error) {
+        if (
+          !fileCountResult.error
+        ) {
           setTotalFileCount(
-            fileCountResult.count ?? 0,
+            fileCountResult.count ??
+              0,
           );
         }
 
-        if (!reportCountResult.error) {
+        if (
+          !reportCountResult.error
+        ) {
           setTotalReportCount(
-            reportCountResult.count ?? 0,
+            reportCountResult.count ??
+              0,
           );
         }
       })
-      .catch((error: unknown) => {
-        if (!mounted) return;
+      .catch(
+        (error: unknown) => {
+          if (!mounted) return;
 
-        setLoadError(
-          projectErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "",
-          ),
-        );
-      })
+          setLoadError(
+            projectErrorMessage(
+              error instanceof Error
+                ? error.message
+                : "",
+            ),
+          );
+        },
+      )
       .finally(() => {
         if (mounted) {
           setLoading(false);
@@ -402,43 +468,55 @@ function Dashboard() {
   }, [user?.id]);
 
   /*
-   * ========================================
-   * LOAD ALL USER CONSULTATIONS
-   * ========================================
+   * =======================================================
+   * CONSULTATIONS
+   * =======================================================
    */
 
-  const loadConsultations = async () => {
-    if (!user?.id) return;
+  const loadConsultations =
+    async () => {
+      if (!user?.id) return;
 
-    setConsultationsLoading(true);
-
-    const { data, error } = await supabase
-      .from("consultations")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (error) {
-      console.error(error);
-
-      setConsultations([]);
-      setConsultationsLoading(false);
-
-      toast.error(
-        "دریافت درخواست‌های مشاوره انجام نشد.",
+      setConsultationsLoading(
+        true,
       );
 
-      return;
-    }
+      const { data, error } =
+        await supabase
+          .from("consultations")
+          .select("*")
+          .eq(
+            "user_id",
+            user.id,
+          )
+          .order("created_at", {
+            ascending: false,
+          });
 
-    setConsultations(
-      (data ?? []) as ConsultationRow[],
-    );
+      if (error) {
+        console.error(error);
 
-    setConsultationsLoading(false);
-  };
+        setConsultations([]);
+        setConsultationsLoading(
+          false,
+        );
+
+        toast.error(
+          "دریافت درخواست‌های مشاوره انجام نشد.",
+        );
+
+        return;
+      }
+
+      setConsultations(
+        (data ??
+          []) as ConsultationRow[],
+      );
+
+      setConsultationsLoading(
+        false,
+      );
+    };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -447,9 +525,9 @@ function Dashboard() {
   }, [user?.id]);
 
   /*
-   * ========================================
+   * =======================================================
    * CURRENT PROJECT
-   * ========================================
+   * =======================================================
    */
 
   const current =
@@ -463,21 +541,20 @@ function Dashboard() {
   const activeCount =
     projects.filter(
       (project) =>
-        project.status !== "completed" &&
-        project.status !== "cancelled",
+        project.status !==
+          "completed" &&
+        project.status !==
+          "cancelled",
     ).length;
-
-  /*
-   * Consultations related to current project
-   * plus general consultations.
-   */
 
   const currentConsultations =
     current
       ? consultations.filter(
           (consultation) =>
-            consultation.project_id === current.id ||
-            consultation.project_id === null,
+            consultation.project_id ===
+              current.id ||
+            consultation.project_id ===
+              null,
         )
       : consultations;
 
@@ -495,19 +572,21 @@ function Dashboard() {
   const reportFiles =
     projectFiles.filter(
       (file) =>
-        file.category === "report",
+        file.category ===
+        "report",
     );
 
   const resultFiles =
     projectFiles.filter(
       (file) =>
-        file.category === "result",
+        file.category ===
+        "result",
     );
 
   /*
-   * ========================================
+   * =======================================================
    * MESSAGES
-   * ========================================
+   * =======================================================
    */
 
   const loadMessages = async (
@@ -528,6 +607,8 @@ function Dashboard() {
         });
 
     if (error) {
+      console.error(error);
+
       setProjectMessages([]);
       setMessagesLoading(false);
 
@@ -546,56 +627,67 @@ function Dashboard() {
     setMessagesLoading(false);
   };
 
-  const sendMessage = async () => {
-    if (!current || !user)
-      return;
+  const sendMessage =
+    async () => {
+      if (!current || !user)
+        return;
 
-    const cleanMessage =
-      messageText.trim();
+      const cleanMessage =
+        messageText.trim();
 
-    if (!cleanMessage) return;
+      if (!cleanMessage) return;
 
-    setSendingMessage(true);
+      setSendingMessage(true);
 
-    const { data, error } =
-      await supabase
-        .from("project_messages")
-        .insert({
-          project_id: current.id,
-          sender_id: user.id,
-          message: cleanMessage,
-        })
-        .select("*")
-        .single();
+      const { data, error } =
+        await supabase
+          .from(
+            "project_messages",
+          )
+          .insert({
+            project_id:
+              current.id,
+            sender_id:
+              user.id,
+            message:
+              cleanMessage,
+          })
+          .select("*")
+          .single();
 
-    if (error) {
-      toast.error(
-        "ارسال پیام انجام نشد.",
+      if (error) {
+        console.error(error);
+
+        toast.error(
+          "ارسال پیام انجام نشد.",
+        );
+
+        setSendingMessage(
+          false,
+        );
+
+        return;
+      }
+
+      setProjectMessages(
+        (previous) => [
+          ...previous,
+          data as ProjectMessageRow,
+        ],
       );
 
+      setMessageText("");
       setSendingMessage(false);
-      return;
-    }
 
-    setProjectMessages(
-      (previous) => [
-        ...previous,
-        data as ProjectMessageRow,
-      ],
-    );
-
-    setMessageText("");
-    setSendingMessage(false);
-
-    toast.success(
-      "پیام شما ارسال شد.",
-    );
-  };
+      toast.success(
+        "پیام شما ارسال شد.",
+      );
+    };
 
   /*
-   * ========================================
+   * =======================================================
    * FILES
-   * ========================================
+   * =======================================================
    */
 
   const loadFiles = async (
@@ -616,6 +708,8 @@ function Dashboard() {
         });
 
     if (error) {
+      console.error(error);
+
       setProjectFiles([]);
       setFilesLoading(false);
 
@@ -635,30 +729,195 @@ function Dashboard() {
   };
 
   /*
-   * Reload project resources when
-   * selected project changes.
+   * =======================================================
+   * QUOTES
+   * =======================================================
+   */
+
+  const loadProjectQuotes =
+    async (
+      projectId: string,
+    ) => {
+      setQuotesLoading(true);
+
+      const { data, error } =
+        await supabase
+          .from("project_quotes")
+          .select("*")
+          .eq(
+            "project_id",
+            projectId,
+          )
+          .order("created_at", {
+            ascending: false,
+          });
+
+      if (error) {
+        console.error(error);
+
+        setProjectQuotes([]);
+        setQuotesLoading(false);
+
+        toast.error(
+          "دریافت پیشنهادهای قیمت انجام نشد.",
+        );
+
+        return;
+      }
+
+      setProjectQuotes(
+        (data ??
+          []) as ProjectQuoteRow[],
+      );
+
+      setQuotesLoading(false);
+    };
+
+  const respondToQuote =
+    async (
+      quote: ProjectQuoteRow,
+      response:
+        | "accepted"
+        | "rejected",
+    ) => {
+      if (
+        quote.status !== "sent"
+      ) {
+        toast.error(
+          "این پیشنهاد دیگر در انتظار پاسخ نیست.",
+        );
+        return;
+      }
+
+      if (
+        isQuoteExpired(quote)
+      ) {
+        toast.error(
+          "مهلت این پیشنهاد قیمت به پایان رسیده است.",
+        );
+        return;
+      }
+
+      if (
+        response === "rejected"
+      ) {
+        const confirmed =
+          window.confirm(
+            "آیا از رد این پیشنهاد قیمت مطمئن هستید؟",
+          );
+
+        if (!confirmed) return;
+      }
+
+      setRespondingQuoteId(
+        quote.id,
+      );
+
+      const { error } =
+        await supabase.rpc(
+          "respond_to_project_quote",
+          {
+            quote_id:
+              quote.id,
+            response,
+          },
+        );
+
+      if (error) {
+        console.error(error);
+
+        const message =
+          error.message.toLowerCase();
+
+        if (
+          message.includes(
+            "expired",
+          )
+        ) {
+          toast.error(
+            "مهلت این پیشنهاد قیمت به پایان رسیده است.",
+          );
+        } else if (
+          message.includes(
+            "awaiting response",
+          )
+        ) {
+          toast.error(
+            "این پیشنهاد قبلاً پاسخ داده شده است.",
+          );
+        } else {
+          toast.error(
+            "ثبت پاسخ پیشنهاد قیمت انجام نشد.",
+          );
+        }
+
+        setRespondingQuoteId(
+          null,
+        );
+
+        if (current) {
+          await loadProjectQuotes(
+            current.id,
+          );
+        }
+
+        return;
+      }
+
+      if (current) {
+        await loadProjectQuotes(
+          current.id,
+        );
+      }
+
+      setRespondingQuoteId(
+        null,
+      );
+
+      if (
+        response === "accepted"
+      ) {
+        toast.success(
+          "پیشنهاد قیمت با موفقیت تأیید شد.",
+        );
+      } else {
+        toast.success(
+          "پیشنهاد قیمت رد شد.",
+        );
+      }
+    };
+
+  /*
+   * =======================================================
+   * RELOAD CURRENT PROJECT RESOURCES
+   * =======================================================
    */
 
   useEffect(() => {
     if (!current?.id) {
       setProjectMessages([]);
       setProjectFiles([]);
+      setProjectQuotes([]);
       setMessageText("");
       return;
     }
 
     setProjectMessages([]);
     setProjectFiles([]);
+    setProjectQuotes([]);
     setMessageText("");
 
     loadMessages(current.id);
     loadFiles(current.id);
+    loadProjectQuotes(
+      current.id,
+    );
   }, [current?.id]);
 
   /*
-   * ========================================
-   * RESEARCHER FILE UPLOAD
-   * ========================================
+   * =======================================================
+   * DATA UPLOAD
+   * =======================================================
    */
 
   const uploadProjectFile =
@@ -690,7 +949,9 @@ function Dashboard() {
       setUploadingFile(true);
 
       const extension =
-        safeExtension(file.name);
+        safeExtension(
+          file.name,
+        );
 
       const storagePath =
         `${current.id}/` +
@@ -734,18 +995,27 @@ function Dashboard() {
       } = await supabase
         .from("project_files")
         .insert({
-          project_id: current.id,
-          uploader_id: user.id,
+          project_id:
+            current.id,
+
+          uploader_id:
+            user.id,
+
           bucket_id:
             PROJECT_FILES_BUCKET,
+
           storage_path:
             storagePath,
+
           original_name:
             file.name,
+
           mime_type:
             file.type || null,
+
           size_bytes:
             file.size,
+
           category: "data",
         })
         .select("*")
@@ -800,9 +1070,9 @@ function Dashboard() {
     };
 
   /*
-   * ========================================
+   * =======================================================
    * PRIVATE DOWNLOAD
-   * ========================================
+   * =======================================================
    */
 
   const downloadProjectFile =
@@ -817,7 +1087,9 @@ function Dashboard() {
         data,
         error,
       } = await supabase.storage
-        .from(file.bucket_id)
+        .from(
+          file.bucket_id,
+        )
         .download(
           file.storage_path,
         );
@@ -837,10 +1109,14 @@ function Dashboard() {
       }
 
       const objectUrl =
-        URL.createObjectURL(data);
+        URL.createObjectURL(
+          data,
+        );
 
       const anchor =
-        document.createElement("a");
+        document.createElement(
+          "a",
+        );
 
       anchor.href = objectUrl;
       anchor.download =
@@ -863,9 +1139,9 @@ function Dashboard() {
     };
 
   /*
-   * ========================================
+   * =======================================================
    * PAGE
-   * ========================================
+   * =======================================================
    */
 
   return (
@@ -879,7 +1155,8 @@ function Dashboard() {
           </h1>
 
           <p className="mt-2 text-sm text-muted-foreground">
-            خوش آمدید، {displayName}
+            خوش آمدید،{" "}
+            {displayName}
           </p>
         </div>
 
@@ -893,7 +1170,7 @@ function Dashboard() {
         </Button>
       </div>
 
-      {/* REAL STATISTICS */}
+      {/* STATS */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardStat
@@ -911,17 +1188,19 @@ function Dashboard() {
         <DashboardStat
           icon={Users2}
           label="درخواست‌های مشاوره"
-          value={consultations.length}
+          value={
+            consultations.length
+          }
         />
 
         <DashboardStat
           icon={FileBarChart}
           label="گزارش‌های تحویل‌شده"
-          value={totalReportCount}
+          value={
+            totalReportCount
+          }
         />
       </div>
-
-      {/* ERROR */}
 
       {loadError && (
         <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
@@ -929,23 +1208,20 @@ function Dashboard() {
         </p>
       )}
 
-      {/* PROJECTS */}
-
       {loading ? (
         <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          در حال بارگذاری پروژه‌ها…
+          در حال بارگذاری
+          پروژه‌ها…
         </div>
-      ) : projects.length === 0 ? (
+      ) : projects.length ===
+        0 ? (
         <div className="card-elevated mt-8 p-12 text-center">
           <FolderKanban className="mx-auto size-8 text-primary" />
 
           <p className="mt-4 text-base font-bold text-navy">
-            هنوز پروژه‌ای ثبت نکرده‌اید.
-          </p>
-
-          <p className="mt-2 text-xs text-muted-foreground">
-            با طراح پروژه پژوهشی، اولین پروژه خود را ثبت کنید.
+            هنوز پروژه‌ای ثبت
+            نکرده‌اید.
           </p>
 
           <Button
@@ -968,40 +1244,54 @@ function Dashboard() {
             </h2>
 
             <ul className="mt-4 space-y-2">
-              {projects.map((project) => (
-                <li key={project.id}>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setActive(project.id)
+              {projects.map(
+                (project) => (
+                  <li
+                    key={
+                      project.id
                     }
-                    className={`w-full rounded-xl border p-3 text-start transition-colors ${
-                      current?.id === project.id
-                        ? "border-primary bg-accent/60"
-                        : "border-border hover:bg-secondary"
-                    }`}
                   >
-                    <span
-                      className="block text-[11px] text-muted-foreground"
-                      dir="ltr"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActive(
+                          project.id,
+                        )
+                      }
+                      className={`w-full rounded-xl border p-3 text-start transition-colors ${
+                        current?.id ===
+                        project.id
+                          ? "border-primary bg-accent/60"
+                          : "border-border hover:bg-secondary"
+                      }`}
                     >
-                      {shortId(project.id)}
-                    </span>
+                      <span
+                        className="block text-[11px] text-muted-foreground"
+                        dir="ltr"
+                      >
+                        {shortId(
+                          project.id,
+                        )}
+                      </span>
 
-                    <span className="mt-1 block text-sm font-semibold leading-6 text-navy">
-                      {project.title}
-                    </span>
+                      <span className="mt-1 block text-sm font-semibold leading-6 text-navy">
+                        {
+                          project.title
+                        }
+                      </span>
 
-                    <span className="mt-1 block text-[11px] text-primary">
-                      {project.analysis_type ?? "—"}
-                    </span>
-                  </button>
-                </li>
-              ))}
+                      <span className="mt-1 block text-[11px] text-primary">
+                        {project.analysis_type ??
+                          "—"}
+                      </span>
+                    </button>
+                  </li>
+                ),
+              )}
             </ul>
           </aside>
 
-          {/* CURRENT PROJECT */}
+          {/* PROJECT */}
 
           <section className="card-elevated p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1012,25 +1302,30 @@ function Dashboard() {
 
                 <p className="mt-1 text-xs text-muted-foreground">
                   <span dir="ltr">
-                    {shortId(current!.id)}
+                    {shortId(
+                      current!.id,
+                    )}
                   </span>
 
                   {" · "}
 
-                  {current!.analysis_type ?? "—"}
+                  {current!
+                    .analysis_type ??
+                    "—"}
 
                   {" · ثبت "}
 
-                  {formatDate(current!.created_at)}
-
-                  {" · آخرین بروزرسانی "}
-
-                  {formatDate(current!.updated_at)}
+                  {formatDate(
+                    current!
+                      .created_at,
+                  )}
                 </p>
               </div>
 
               <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-accent-foreground">
-                {statusLabel(current!.status)}
+                {statusLabel(
+                  current!.status,
+                )}
               </span>
             </div>
 
@@ -1070,9 +1365,7 @@ function Dashboard() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* ========================================
-                  DATA FILES
-              ======================================== */}
+              {/* DATA */}
 
               <TabsContent
                 value="files"
@@ -1095,14 +1388,19 @@ function Dashboard() {
                   </p>
 
                   <p className="mx-auto mt-1 max-w-xl text-xs leading-6 text-muted-foreground">
-                    برای متادیتا، CSV، Excel، ماتریس‌های داده و
-                    فایل‌های کوچک پژوهشی.
+                    برای متادیتا،
+                    CSV، Excel،
+                    ماتریس داده و
+                    فایل‌های کوچک
+                    پژوهشی
                   </p>
 
                   <Button
                     variant="soft"
                     className="mt-4"
-                    disabled={uploadingFile}
+                    disabled={
+                      uploadingFile
+                    }
                     onClick={() =>
                       fileInputRef.current?.click()
                     }
@@ -1110,7 +1408,8 @@ function Dashboard() {
                     {uploadingFile ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        در حال بارگذاری…
+                        در حال
+                        بارگذاری…
                       </>
                     ) : (
                       <>
@@ -1121,37 +1420,39 @@ function Dashboard() {
                   </Button>
 
                   <p className="mt-3 text-[11px] text-muted-foreground">
-                    حداکثر حجم فعلی: ۶ مگابایت
+                    حداکثر حجم فعلی:
+                    ۶ مگابایت
                   </p>
                 </div>
 
                 <div className="mt-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-sm font-bold text-navy">
-                        داده‌های این پروژه
-                      </h3>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        فایل‌هایی که برای تحلیل در اختیار هاب‌ژن
-                        قرار داده‌اید.
-                      </p>
-                    </div>
+                    <h3 className="text-sm font-bold text-navy">
+                      داده‌های این پروژه
+                    </h3>
 
                     <RefreshButton
-                      loading={filesLoading}
+                      loading={
+                        filesLoading
+                      }
                       onClick={() =>
                         current &&
-                        loadFiles(current.id)
+                        loadFiles(
+                          current.id,
+                        )
                       }
                     />
                   </div>
 
                   <ProjectFileList
-                    files={dataFiles}
-                    loading={filesLoading}
+                    files={
+                      dataFiles
+                    }
+                    loading={
+                      filesLoading
+                    }
                     emptyTitle="هنوز داده‌ای بارگذاری نشده است."
-                    emptyDescription="اولین فایل داده پروژه را از بخش بالا بارگذاری کنید."
+                    emptyDescription="اولین فایل داده پروژه را بارگذاری کنید."
                     downloadingFileId={
                       downloadingFileId
                     }
@@ -1162,9 +1463,7 @@ function Dashboard() {
                 </div>
               </TabsContent>
 
-              {/* ========================================
-                  MESSAGES
-              ======================================== */}
+              {/* MESSAGES */}
 
               <TabsContent
                 value="messages"
@@ -1172,23 +1471,20 @@ function Dashboard() {
               >
                 <div className="rounded-2xl border border-border">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
-                    <div>
-                      <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
-                        <MessageSquare className="size-4 text-primary" />
-                        گفت‌وگوی پروژه
-                      </h3>
-
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        ارتباط مستقیم شما با تیم هاب‌ژن درباره
-                        همین پروژه
-                      </p>
-                    </div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <MessageSquare className="size-4 text-primary" />
+                      گفت‌وگوی پروژه
+                    </h3>
 
                     <RefreshButton
-                      loading={messagesLoading}
+                      loading={
+                        messagesLoading
+                      }
                       onClick={() =>
                         current &&
-                        loadMessages(current.id)
+                        loadMessages(
+                          current.id,
+                        )
                       }
                     />
                   </div>
@@ -1196,96 +1492,93 @@ function Dashboard() {
                   <div className="min-h-[220px] bg-secondary/10 p-4">
                     {messagesLoading ? (
                       <LoadingBox text="در حال دریافت پیام‌ها…" />
-                    ) : projectMessages.length === 0 ? (
-                      <div className="py-14 text-center">
-                        <MessageSquare className="mx-auto size-8 text-primary/50" />
-
-                        <p className="mt-4 text-sm font-bold text-navy">
-                          هنوز پیامی ثبت نشده است.
-                        </p>
+                    ) : projectMessages.length ===
+                      0 ? (
+                      <div className="py-14 text-center text-sm text-muted-foreground">
+                        هنوز پیامی ثبت
+                        نشده است.
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {projectMessages.map((message) => {
-                          const isMine =
-                            message.sender_id === user?.id;
+                        {projectMessages.map(
+                          (
+                            message,
+                          ) => {
+                            const isMine =
+                              message.sender_id ===
+                              user?.id;
 
-                          return (
-                            <div
-                              key={message.id}
-                              className={`max-w-3xl rounded-2xl border p-4 ${
-                                isMine
-                                  ? "mr-auto border-primary/20 bg-accent/40"
-                                  : "ml-auto border-border bg-background"
-                              }`}
-                            >
-                              <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="text-xs font-bold text-navy">
-                                  {isMine
-                                    ? "شما"
-                                    : "مدیریت هاب‌ژن"}
-                                </span>
+                            return (
+                              <div
+                                key={
+                                  message.id
+                                }
+                                className={`max-w-3xl rounded-2xl border p-4 ${
+                                  isMine
+                                    ? "mr-auto border-primary/20 bg-accent/40"
+                                    : "ml-auto border-border bg-background"
+                                }`}
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="text-xs font-bold text-navy">
+                                    {isMine
+                                      ? "شما"
+                                      : "مدیریت هاب‌ژن"}
+                                  </span>
 
-                                <span className="text-[11px] text-muted-foreground">
-                                  {formatDateTime(
-                                    message.created_at,
-                                  )}
-                                </span>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {formatDateTime(
+                                      message.created_at,
+                                    )}
+                                  </span>
+                                </div>
+
+                                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
+                                  {
+                                    message.message
+                                  }
+                                </p>
                               </div>
-
-                              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
-                                {message.message}
-                              </p>
-                            </div>
-                          );
-                        })}
+                            );
+                          },
+                        )}
                       </div>
                     )}
                   </div>
 
                   <div className="border-t border-border p-4">
-                    <label
-                      htmlFor="researcher-message"
-                      className="text-sm font-bold text-navy"
-                    >
-                      پاسخ به تیم هاب‌ژن
-                    </label>
-
                     <textarea
-                      id="researcher-message"
-                      value={messageText}
-                      onChange={(event) =>
+                      value={
+                        messageText
+                      }
+                      onChange={(
+                        event,
+                      ) =>
                         setMessageText(
-                          event.target.value,
+                          event
+                            .target
+                            .value,
                         )
                       }
                       rows={4}
-                      maxLength={5000}
+                      maxLength={
+                        5000
+                      }
                       placeholder="پیام خود را درباره این پروژه بنویسید..."
-                      className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+                      className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
                     />
 
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                      <span className="text-[11px] text-muted-foreground">
-                        {new Intl.NumberFormat(
-                          "fa-IR",
-                        ).format(
-                          messageText.length,
-                        )}
-
-                        {" / "}
-
-                        ۵۰۰۰ کاراکتر
-                      </span>
-
+                    <div className="mt-3 flex justify-end">
                       <button
                         type="button"
                         disabled={
                           sendingMessage ||
                           !messageText.trim()
                         }
-                        onClick={sendMessage}
-                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={
+                          sendMessage
+                        }
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
                       >
                         {sendingMessage ? (
                           <Loader2 className="size-4 animate-spin" />
@@ -1300,9 +1593,7 @@ function Dashboard() {
                 </div>
               </TabsContent>
 
-              {/* ========================================
-                  REAL CONSULTATIONS
-              ======================================== */}
+              {/* CONSULTATIONS */}
 
               <TabsContent
                 value="consults"
@@ -1314,13 +1605,9 @@ function Dashboard() {
                       <CalendarClock className="size-4 text-primary" />
                       مشاوره‌های پژوهشی
                     </h3>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      درخواست‌ها، زمان جلسات و اطلاعات مشاوره
-                    </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex gap-2">
                     <RefreshButton
                       loading={
                         consultationsLoading
@@ -1336,7 +1623,7 @@ function Dashboard() {
                       size="sm"
                     >
                       <Link to="/consultation">
-                        درخواست مشاوره جدید
+                        درخواست جدید
                       </Link>
                     </Button>
                   </div>
@@ -1346,18 +1633,14 @@ function Dashboard() {
                   <div className="mt-4">
                     <LoadingBox text="در حال دریافت مشاوره‌ها…" />
                   </div>
-                ) : currentConsultations.length === 0 ? (
+                ) : currentConsultations.length ===
+                  0 ? (
                   <div className="mt-4 rounded-2xl border border-border p-10 text-center">
                     <CalendarClock className="mx-auto size-8 text-primary/50" />
 
                     <p className="mt-4 text-sm font-bold text-navy">
-                      هنوز درخواست مشاوره‌ای ندارید.
-                    </p>
-
-                    <p className="mx-auto mt-2 max-w-lg text-xs leading-6 text-muted-foreground">
-                      برای بررسی طراحی مطالعه، انتخاب استراتژی
-                      بیوانفورماتیک یا تفسیر نتایج، یک درخواست
-                      مشاوره ثبت کنید.
+                      هنوز درخواست
+                      مشاوره‌ای ندارید.
                     </p>
 
                     <Button
@@ -1373,9 +1656,13 @@ function Dashboard() {
                 ) : (
                   <div className="mt-4 space-y-4">
                     {currentConsultations.map(
-                      (consultation) => (
+                      (
+                        consultation,
+                      ) => (
                         <ConsultationCard
-                          key={consultation.id}
+                          key={
+                            consultation.id
+                          }
                           consultation={
                             consultation
                           }
@@ -1386,40 +1673,40 @@ function Dashboard() {
                 )}
               </TabsContent>
 
-              {/* ========================================
-                  REAL REPORTS
-              ======================================== */}
+              {/* REPORTS */}
 
               <TabsContent
                 value="reports"
                 className="mt-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
-                      <FileBarChart className="size-4 text-primary" />
-                      گزارش‌های پروژه
-                    </h3>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      گزارش‌های رسمی بارگذاری‌شده توسط تیم هاب‌ژن
-                    </p>
-                  </div>
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                    <FileBarChart className="size-4 text-primary" />
+                    گزارش‌های پروژه
+                  </h3>
 
                   <RefreshButton
-                    loading={filesLoading}
+                    loading={
+                      filesLoading
+                    }
                     onClick={() =>
                       current &&
-                      loadFiles(current.id)
+                      loadFiles(
+                        current.id,
+                      )
                     }
                   />
                 </div>
 
                 <ProjectFileList
-                  files={reportFiles}
-                  loading={filesLoading}
+                  files={
+                    reportFiles
+                  }
+                  loading={
+                    filesLoading
+                  }
                   emptyTitle="هنوز گزارشی تحویل نشده است."
-                  emptyDescription="پس از آماده‌شدن گزارش تحلیل، فایل آن در این قسمت نمایش داده می‌شود."
+                  emptyDescription="گزارش‌های هاب‌ژن پس از آماده‌شدن اینجا نمایش داده می‌شوند."
                   downloadingFileId={
                     downloadingFileId
                   }
@@ -1430,41 +1717,40 @@ function Dashboard() {
                 />
               </TabsContent>
 
-              {/* ========================================
-                  REAL RESULTS
-              ======================================== */}
+              {/* RESULTS */}
 
               <TabsContent
                 value="results"
                 className="mt-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
-                      <Image className="size-4 text-primary" />
-                      نتایج و خروجی‌های تحلیل
-                    </h3>
-
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Figure، جدول، Excel، CSV، ZIP و سایر
-                      خروجی‌های تحلیلی
-                    </p>
-                  </div>
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                    <Image className="size-4 text-primary" />
+                    نتایج و خروجی‌های تحلیل
+                  </h3>
 
                   <RefreshButton
-                    loading={filesLoading}
+                    loading={
+                      filesLoading
+                    }
                     onClick={() =>
                       current &&
-                      loadFiles(current.id)
+                      loadFiles(
+                        current.id,
+                      )
                     }
                   />
                 </div>
 
                 <ProjectFileList
-                  files={resultFiles}
-                  loading={filesLoading}
+                  files={
+                    resultFiles
+                  }
+                  loading={
+                    filesLoading
+                  }
                   emptyTitle="هنوز نتیجه‌ای تحویل نشده است."
-                  emptyDescription="خروجی‌های تحلیل پس از آماده‌شدن در این قسمت قرار می‌گیرند."
+                  emptyDescription="خروجی‌های تحلیل پس از آماده‌شدن اینجا قرار می‌گیرند."
                   downloadingFileId={
                     downloadingFileId
                   }
@@ -1475,24 +1761,100 @@ function Dashboard() {
                 />
               </TabsContent>
 
-              {/* ========================================
-                  PAYMENTS — STILL DEMO
-              ======================================== */}
+              {/* ===========================================
+                  REAL QUOTES / PAYMENTS
+              =========================================== */}
 
               <TabsContent
                 value="payments"
                 className="mt-5"
               >
-                <div className="rounded-2xl border border-border p-8 text-center">
-                  <BadgeDollarSign className="mx-auto size-7 text-primary/50" />
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <BadgeDollarSign className="size-4 text-primary" />
+                      پیشنهاد قیمت پروژه
+                    </h3>
 
-                  <p className="mt-3 text-sm font-bold text-navy">
-                    سیستم پرداخت هنوز فعال نشده است.
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      پیشنهادهای رسمی هاب‌ژن برای اجرای این پروژه
+                    </p>
+                  </div>
+
+                  <RefreshButton
+                    loading={
+                      quotesLoading
+                    }
+                    onClick={() =>
+                      current &&
+                      loadProjectQuotes(
+                        current.id,
+                      )
+                    }
+                  />
+                </div>
+
+                {quotesLoading ? (
+                  <div className="mt-4">
+                    <LoadingBox text="در حال دریافت پیشنهاد قیمت…" />
+                  </div>
+                ) : projectQuotes.length ===
+                  0 ? (
+                  <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+                    <BadgeDollarSign className="mx-auto size-8 text-primary/50" />
+
+                    <p className="mt-4 text-sm font-bold text-navy">
+                      هنوز پیشنهاد قیمتی برای این پروژه ارسال نشده است.
+                    </p>
+
+                    <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-muted-foreground">
+                      پس از بررسی علمی پروژه، پیشنهاد شامل Scope،
+                      خروجی‌ها، هزینه و زمان تقریبی اجرا در این قسمت
+                      نمایش داده می‌شود.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-5">
+                    {projectQuotes.map(
+                      (quote) => (
+                        <ResearcherQuoteCard
+                          key={
+                            quote.id
+                          }
+                          quote={
+                            quote
+                          }
+                          responding={
+                            respondingQuoteId ===
+                            quote.id
+                          }
+                          onAccept={() =>
+                            respondToQuote(
+                              quote,
+                              "accepted",
+                            )
+                          }
+                          onReject={() =>
+                            respondToQuote(
+                              quote,
+                              "rejected",
+                            )
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                )}
+
+                <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-4">
+                  <p className="text-xs font-bold text-navy">
+                    پرداخت آنلاین
                   </p>
 
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    وضعیت پرداخت‌ها در مرحله بعد به سیستم واقعی
-                    پروژه متصل خواهد شد.
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                    در این مرحله ابتدا پیشنهاد قیمت را بررسی و تأیید
+                    می‌کنید. سیستم پرداخت آنلاین در مرحله بعد به هاب‌ژن
+                    اضافه خواهد شد.
                   </p>
                 </div>
               </TabsContent>
@@ -1505,9 +1867,317 @@ function Dashboard() {
 }
 
 /*
- * ========================================
- * CONSULTATION CARD
- * ========================================
+ * =========================================================
+ * RESEARCHER QUOTE CARD
+ * =========================================================
+ */
+
+function ResearcherQuoteCard({
+  quote,
+  responding,
+  onAccept,
+  onReject,
+}: {
+  quote: ProjectQuoteRow;
+  responding: boolean;
+  onAccept: () => void;
+  onReject: () => void;
+}) {
+  const expired =
+    isQuoteExpired(quote);
+
+  const effectiveStatus =
+    expired &&
+    quote.status === "sent"
+      ? "expired"
+      : quote.status;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-secondary/30 p-5">
+        <div>
+          <p className="text-xs font-semibold text-primary">
+            پیشنهاد رسمی هاب‌ژن
+          </p>
+
+          <h4 className="mt-2 text-lg font-bold text-navy">
+            {quote.title}
+          </h4>
+
+          <p className="mt-3 text-2xl font-extrabold text-primary">
+            {formatToman(
+              Number(
+                quote.amount,
+              ),
+            )}
+          </p>
+        </div>
+
+        <QuoteStatusBadge
+          status={
+            effectiveStatus
+          }
+        />
+      </div>
+
+      <div className="p-5">
+        {quote.scope_summary && (
+          <QuoteTextBlock
+            label="Scope پروژه"
+            value={
+              quote.scope_summary
+            }
+          />
+        )}
+
+        {quote.deliverables && (
+          <div className="mt-5">
+            <QuoteTextBlock
+              label="خروجی‌های قابل تحویل"
+              value={
+                quote.deliverables
+              }
+            />
+          </div>
+        )}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <QuoteInfo
+            label="زمان تقریبی انجام"
+            value={
+              quote.estimated_days
+                ? `${new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    quote.estimated_days,
+                  )} روز`
+                : "تعیین نشده"
+            }
+          />
+
+          <QuoteInfo
+            label="اعتبار پیشنهاد"
+            value={
+              quote.valid_until
+                ? formatDateTime(
+                    quote.valid_until,
+                  )
+                : "بدون تاریخ انقضا"
+            }
+          />
+
+          <QuoteInfo
+            label="تاریخ ارسال"
+            value={formatDateTime(
+              quote.created_at,
+            )}
+          />
+        </div>
+
+        {quote.admin_note && (
+          <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <p className="text-xs font-bold text-navy">
+              توضیح تیم هاب‌ژن
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {quote.admin_note}
+            </p>
+          </div>
+        )}
+
+        {quote.status ===
+          "accepted" && (
+          <div className="mt-5 flex gap-3 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
+
+            <div>
+              <p className="text-sm font-bold text-navy">
+                پیشنهاد قیمت تأیید شده است
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                تیم هاب‌ژن می‌تواند مراحل بعدی پروژه را بر اساس Scope
+                تأییدشده ادامه دهد.
+              </p>
+
+              {quote.responded_at && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  زمان تأیید:{" "}
+                  {formatDateTime(
+                    quote.responded_at,
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {quote.status ===
+          "rejected" && (
+          <div className="mt-5 flex gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+            <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
+
+            <div>
+              <p className="text-sm font-bold text-navy">
+                این پیشنهاد رد شده است
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                برای بررسی Scope یا هزینه جدید می‌توانید از بخش پیام‌ها
+                با تیم هاب‌ژن در ارتباط باشید.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {expired &&
+          quote.status ===
+            "sent" && (
+            <div className="mt-5 rounded-2xl border border-border bg-secondary/40 p-4">
+              <p className="text-sm font-bold text-navy">
+                اعتبار این پیشنهاد به پایان رسیده است.
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                برای دریافت پیشنهاد جدید از بخش پیام‌های پروژه با
+                مدیریت هاب‌ژن در ارتباط باشید.
+              </p>
+            </div>
+          )}
+
+        {quote.status ===
+          "sent" &&
+          !expired && (
+            <div className="mt-6 border-t border-border pt-5">
+              <p className="text-sm font-bold text-navy">
+                پاسخ شما به این پیشنهاد
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                پس از تأیید یا رد، پاسخ شما برای مدیریت هاب‌ژن ثبت
+                می‌شود.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={
+                    responding
+                  }
+                  onClick={
+                    onAccept
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {responding ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-4" />
+                  )}
+
+                  تأیید پیشنهاد
+                </button>
+
+                <button
+                  type="button"
+                  disabled={
+                    responding
+                  }
+                  onClick={
+                    onReject
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl border border-destructive/30 px-5 py-2.5 text-sm font-bold text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <XCircle className="size-4" />
+
+                  رد پیشنهاد
+                </button>
+              </div>
+            </div>
+          )}
+      </div>
+    </article>
+  );
+}
+
+function QuoteTextBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-navy">
+        {label}
+      </p>
+
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuoteInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xs font-semibold leading-6 text-navy">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuoteStatusBadge({
+  status,
+}: {
+  status: string;
+}) {
+  const label =
+    quoteStatusLabels[
+      status
+    ] ?? status;
+
+  const className =
+    status === "accepted"
+      ? "border-primary/20 bg-accent text-primary"
+      : status ===
+          "rejected"
+        ? "border-destructive/20 bg-destructive/5 text-destructive"
+        : status ===
+            "sent"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : status ===
+              "expired"
+            ? "border-border bg-secondary text-muted-foreground"
+            : "border-border bg-background text-muted-foreground";
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/*
+ * =========================================================
+ * CONSULTATION
+ * =========================================================
  */
 
 function ConsultationCard({
@@ -1531,47 +2201,34 @@ function ConsultationCard({
     <article className="overflow-hidden rounded-2xl border border-border">
       <div className="flex flex-wrap items-start justify-between gap-4 bg-secondary/30 p-5">
         <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-bold text-navy">
-              {consultation.subject}
-            </p>
-
-            {!consultation.project_id && (
-              <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[10px] text-muted-foreground">
-                مشاوره عمومی
-              </span>
-            )}
-          </div>
+          <p className="text-sm font-bold text-navy">
+            {
+              consultation.subject
+            }
+          </p>
 
           <p className="mt-2 text-xs text-primary">
             {typeLabel}
           </p>
-
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            ثبت درخواست:{" "}
-            {formatDateTime(
-              consultation.created_at,
-            )}
-          </p>
         </div>
 
         <ConsultationStatusBadge
-          status={consultation.status}
-          label={statusText}
+          status={
+            consultation.status
+          }
+          label={
+            statusText
+          }
         />
       </div>
 
       <div className="p-5">
         {consultation.description && (
-          <div>
-            <p className="text-xs font-semibold text-navy">
-              توضیحات درخواست
-            </p>
-
-            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-              {consultation.description}
-            </p>
-          </div>
+          <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+            {
+              consultation.description
+            }
+          </p>
         )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1614,19 +2271,24 @@ function ConsultationCard({
             </p>
 
             <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-              {consultation.admin_note}
+              {
+                consultation.admin_note
+              }
             </p>
           </div>
         )}
 
         {consultation.meeting_url &&
-          consultation.status !== "cancelled" && (
+          consultation.status !==
+            "cancelled" && (
             <div className="mt-5">
               <a
-                href={consultation.meeting_url}
+                href={
+                  consultation.meeting_url
+                }
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground"
               >
                 <ExternalLink className="size-4" />
                 ورود به جلسه
@@ -1638,12 +2300,6 @@ function ConsultationCard({
   );
 }
 
-/*
- * ========================================
- * CONSULTATION STATUS
- * ========================================
- */
-
 function ConsultationStatusBadge({
   status,
   label,
@@ -1654,9 +2310,11 @@ function ConsultationStatusBadge({
   const className =
     status === "completed"
       ? "border-primary/20 bg-accent text-primary"
-      : status === "cancelled"
+      : status ===
+          "cancelled"
         ? "border-destructive/20 bg-destructive/5 text-destructive"
-        : status === "scheduled"
+        : status ===
+            "scheduled"
           ? "border-primary/30 bg-primary/10 text-primary"
           : "border-border bg-background text-muted-foreground";
 
@@ -1668,12 +2326,6 @@ function ConsultationStatusBadge({
     </span>
   );
 }
-
-/*
- * ========================================
- * CONSULTATION INFO
- * ========================================
- */
 
 function ConsultationInfo({
   label,
@@ -1696,9 +2348,137 @@ function ConsultationInfo({
 }
 
 /*
- * ========================================
- * DASHBOARD STAT
- * ========================================
+ * =========================================================
+ * FILE LIST
+ * =========================================================
+ */
+
+function ProjectFileList({
+  files,
+  loading,
+  emptyTitle,
+  emptyDescription,
+  downloadingFileId,
+  onDownload,
+  icon = "file",
+}: {
+  files: ProjectFileRow[];
+  loading: boolean;
+  emptyTitle: string;
+  emptyDescription: string;
+  downloadingFileId:
+    | string
+    | null;
+  onDownload: (
+    file: ProjectFileRow,
+  ) => Promise<void>;
+  icon?:
+    | "file"
+    | "report"
+    | "result";
+}) {
+  if (loading) {
+    return (
+      <div className="mt-4">
+        <LoadingBox text="در حال دریافت فایل‌ها…" />
+      </div>
+    );
+  }
+
+  if (files.length === 0) {
+    return (
+      <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+        {icon ===
+        "report" ? (
+          <FileBarChart className="mx-auto size-7 text-primary/50" />
+        ) : icon ===
+          "result" ? (
+          <Image className="mx-auto size-7 text-primary/50" />
+        ) : (
+          <FileText className="mx-auto size-7 text-primary/50" />
+        )}
+
+        <p className="mt-3 text-sm font-bold text-navy">
+          {emptyTitle}
+        </p>
+
+        <p className="mt-2 text-xs leading-6 text-muted-foreground">
+          {
+            emptyDescription
+          }
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-border">
+      <ul className="divide-y divide-border">
+        {files.map(
+          (file) => (
+            <li
+              key={
+                file.id
+              }
+              className="flex flex-wrap items-center justify-between gap-4 p-4"
+            >
+              <div className="min-w-0">
+                <p
+                  className="truncate text-sm font-semibold text-navy"
+                  dir="auto"
+                >
+                  {
+                    file.original_name
+                  }
+                </p>
+
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  {formatFileSize(
+                    file.size_bytes,
+                  )}
+
+                  {" · "}
+
+                  {formatDateTime(
+                    file.created_at,
+                  )}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={
+                  downloadingFileId ===
+                  file.id
+                }
+                onClick={() =>
+                  onDownload(
+                    file,
+                  )
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-accent disabled:opacity-50"
+              >
+                {downloadingFileId ===
+                file.id ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Download className="size-4 text-primary" />
+                )}
+
+                دانلود
+              </button>
+            </li>
+          ),
+        )}
+      </ul>
+    </div>
+  );
+}
+
+/*
+ * =========================================================
+ * GENERAL
+ * =========================================================
  */
 
 function DashboardStat({
@@ -1727,150 +2507,6 @@ function DashboardStat({
   );
 }
 
-/*
- * ========================================
- * PROJECT FILE LIST
- * ========================================
- */
-
-function ProjectFileList({
-  files,
-  loading,
-  emptyTitle,
-  emptyDescription,
-  downloadingFileId,
-  onDownload,
-  icon = "file",
-}: {
-  files: ProjectFileRow[];
-  loading: boolean;
-  emptyTitle: string;
-  emptyDescription: string;
-  downloadingFileId: string | null;
-  onDownload: (
-    file: ProjectFileRow,
-  ) => Promise<void>;
-  icon?:
-    | "file"
-    | "report"
-    | "result";
-}) {
-  if (loading) {
-    return (
-      <div className="mt-4">
-        <LoadingBox text="در حال دریافت فایل‌ها…" />
-      </div>
-    );
-  }
-
-  if (files.length === 0) {
-    return (
-      <div className="mt-4 rounded-2xl border border-border p-10 text-center">
-        {icon === "report" ? (
-          <FileBarChart className="mx-auto size-7 text-primary/50" />
-        ) : icon === "result" ? (
-          <Image className="mx-auto size-7 text-primary/50" />
-        ) : (
-          <FileText className="mx-auto size-7 text-primary/50" />
-        )}
-
-        <p className="mt-3 text-sm font-bold text-navy">
-          {emptyTitle}
-        </p>
-
-        <p className="mt-2 text-xs leading-6 text-muted-foreground">
-          {emptyDescription}
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mt-4 overflow-hidden rounded-2xl border border-border">
-      <div className="border-b border-border bg-secondary/30 px-4 py-3">
-        <p className="text-xs text-muted-foreground">
-          تعداد فایل‌ها:{" "}
-          <span className="font-bold text-navy">
-            {new Intl.NumberFormat(
-              "fa-IR",
-            ).format(files.length)}
-          </span>
-        </p>
-      </div>
-
-      <ul className="divide-y divide-border">
-        {files.map((file) => (
-          <li
-            key={file.id}
-            className="flex flex-wrap items-center justify-between gap-4 p-4"
-          >
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                {icon === "report" ? (
-                  <FileBarChart className="size-4 shrink-0 text-primary" />
-                ) : icon === "result" ? (
-                  <Image className="size-4 shrink-0 text-primary" />
-                ) : (
-                  <FileText className="size-4 shrink-0 text-primary" />
-                )}
-
-                <p
-                  className="truncate text-sm font-semibold text-navy"
-                  dir="auto"
-                >
-                  {file.original_name}
-                </p>
-              </div>
-
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                {formatFileSize(
-                  file.size_bytes,
-                )}
-
-                {" · "}
-
-                {file.mime_type ||
-                  "نوع فایل نامشخص"}
-
-                {" · "}
-
-                {formatDateTime(
-                  file.created_at,
-                )}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              disabled={
-                downloadingFileId === file.id
-              }
-              onClick={() =>
-                onDownload(file)
-              }
-              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {downloadingFileId === file.id ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4 text-primary" />
-              )}
-
-              دانلود
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/*
- * ========================================
- * REFRESH BUTTON
- * ========================================
- */
-
 function RefreshButton({
   loading,
   onClick,
@@ -1883,7 +2519,7 @@ function RefreshButton({
       type="button"
       disabled={loading}
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary disabled:opacity-50"
     >
       <RefreshCw
         className={`size-4 ${
@@ -1898,19 +2534,13 @@ function RefreshButton({
   );
 }
 
-/*
- * ========================================
- * LOADING BOX
- * ========================================
- */
-
 function LoadingBox({
   text,
 }: {
   text: string;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 rounded-2xl border border-border py-12 text-sm text-muted-foreground">
+    <div className="flex items-center justify-center gap-2 rounded-2xl border border-border p-10 text-sm text-muted-foreground">
       <Loader2 className="size-4 animate-spin" />
       {text}
     </div>
@@ -1918,10 +2548,46 @@ function LoadingBox({
 }
 
 /*
- * ========================================
- * DATE + TIME
- * ========================================
+ * =========================================================
+ * HELPERS
+ * =========================================================
  */
+
+function isQuoteExpired(
+  quote: ProjectQuoteRow,
+) {
+  if (
+    !quote.valid_until
+  ) {
+    return false;
+  }
+
+  const expiration =
+    new Date(
+      quote.valid_until,
+    ).getTime();
+
+  if (
+    Number.isNaN(
+      expiration,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    expiration <
+    Date.now()
+  );
+}
+
+function formatToman(
+  amount: number,
+) {
+  return `${new Intl.NumberFormat(
+    "fa-IR",
+  ).format(amount)} تومان`;
+}
 
 function formatDateTime(
   iso: string,
@@ -1940,12 +2606,6 @@ function formatDateTime(
     return iso;
   }
 }
-
-/*
- * ========================================
- * FILE SIZE
- * ========================================
- */
 
 function formatFileSize(
   bytes: number,
@@ -1989,12 +2649,6 @@ function formatFileSize(
 
   return `${formatted} ${units[unitIndex]}`;
 }
-
-/*
- * ========================================
- * SAFE EXTENSION
- * ========================================
- */
 
 function safeExtension(
   fileName: string,
