@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useEffect,
   useMemo,
@@ -7,50 +7,76 @@ import {
   type ChangeEvent,
 } from "react";
 import {
-  Activity,
   BadgeDollarSign,
   CalendarClock,
   CheckCircle2,
   CloudUpload,
   Download,
   ExternalLink,
-  Eye,
   FileBarChart,
   FileText,
   FolderKanban,
   Image,
   Loader2,
   MessageSquare,
-  Pencil,
   ReceiptText,
   RefreshCw,
-  Save,
   Send,
   Users2,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+
+import { projectStages } from "@/lib/content";
+import { useAuth, useProfile } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+
 import {
   formatDate,
+  listMyProjects,
+  projectErrorMessage,
   shortId,
   statusLabel,
+  statusToStage,
   type ProjectRow,
 } from "@/lib/projects";
-import { labelFor, type WizardAnswers } from "@/lib/wizard";
+
+export const Route = createFileRoute("/_authenticated/dashboard")({
+  head: () => ({
+    meta: [
+      {
+        title:
+          "داشبورد پژوهشگر هاب‌ژن | مدیریت پروژه‌های بیوانفورماتیک",
+      },
+      {
+        name: "description",
+        content:
+          "پیگیری پروژه، داده‌ها، پیام‌ها، مشاوره‌ها، گزارش‌ها، نتایج، پیشنهادهای قیمت و پرداخت‌ها در هاب‌ژن.",
+      },
+      {
+        property: "og:title",
+        content: "داشبورد پژوهشگر",
+      },
+    ],
+  }),
+
+  component: Dashboard,
+});
 
 /*
  * =========================================================
  * TYPES
  * =========================================================
  */
-
-type ProfileRow = {
-  id: string;
-  full_name: string | null;
-  organization: string | null;
-  research_field: string | null;
-};
 
 type ProjectMessageRow = {
   id: string;
@@ -127,8 +153,6 @@ type ProjectInvoiceRow = {
   updated_at: string;
 };
 
-type OutputCategory = "report" | "result";
-
 /*
  * =========================================================
  * CONSTANTS
@@ -140,40 +164,13 @@ const PROJECT_FILES_BUCKET = "project-files";
 const MAX_STANDARD_UPLOAD_BYTES =
   6 * 1024 * 1024;
 
-const projectStatusOptions = [
-  { value: "submitted", label: "ثبت پروژه" },
-  { value: "scientific_review", label: "بررسی اولیه" },
-  { value: "design_confirmation", label: "تأیید طراحی" },
-  { value: "data_received", label: "دریافت داده" },
-  { value: "qc", label: "کنترل کیفیت" },
-  { value: "analysis", label: "تحلیل" },
-  { value: "interpretation", label: "تفسیر زیستی" },
-  { value: "completed", label: "تکمیل‌شده" },
-  { value: "cancelled", label: "لغوشده" },
-];
-
-const consultationStatusOptions = [
-  {
-    value: "requested",
-    label: "درخواست ثبت شده",
-  },
-  {
-    value: "reviewing",
-    label: "در حال بررسی",
-  },
-  {
-    value: "scheduled",
-    label: "زمان‌بندی شده",
-  },
-  {
-    value: "completed",
-    label: "برگزار شده",
-  },
-  {
-    value: "cancelled",
-    label: "لغو شده",
-  },
-];
+const consultationTypeLabels: Record<string, string> = {
+  initial: "بررسی اولیه پروژه",
+  research_design: "طراحی پژوهش",
+  bioinformatics: "مشاوره بیوانفورماتیک",
+  results_interpretation: "تفسیر نتایج",
+  custom: "مشاوره سفارشی",
+};
 
 const consultationStatusLabels: Record<string, string> = {
   requested: "درخواست ثبت شده",
@@ -183,165 +180,142 @@ const consultationStatusLabels: Record<string, string> = {
   cancelled: "لغو شده",
 };
 
-const consultationTypeLabels: Record<string, string> = {
-  initial: "بررسی اولیه پروژه",
-  research_design: "طراحی پژوهش",
-  bioinformatics: "مشاوره بیوانفورماتیک",
-  results_interpretation: "تفسیر نتایج",
-  custom: "مشاوره سفارشی",
-};
-
 const quoteStatusLabels: Record<string, string> = {
   draft: "پیش‌نویس",
-  sent: "ارسال‌شده",
-  accepted: "تأییدشده توسط پژوهشگر",
-  rejected: "ردشده توسط پژوهشگر",
-  expired: "منقضی‌شده",
-  cancelled: "لغوشده",
+  sent: "در انتظار پاسخ شما",
+  accepted: "تأیید شده",
+  rejected: "رد شده",
+  expired: "منقضی شده",
+  cancelled: "لغو شده",
 };
 
 const invoiceStatusLabels: Record<string, string> = {
   draft: "پیش‌نویس",
   issued: "در انتظار پرداخت",
-  paid: "پرداخت‌شده",
+  paid: "پرداخت شده",
   overdue: "سررسید گذشته",
-  cancelled: "لغوشده",
+  cancelled: "لغو شده",
 };
 
-const invoiceStatusOptions = [
-  {
-    value: "draft",
-    label: "پیش‌نویس",
-  },
-  {
-    value: "issued",
-    label: "در انتظار پرداخت",
-  },
-  {
-    value: "paid",
-    label: "پرداخت‌شده",
-  },
-  {
-    value: "overdue",
-    label: "سررسید گذشته",
-  },
-  {
-    value: "cancelled",
-    label: "لغوشده",
-  },
-];
-
 /*
  * =========================================================
- * ROUTE
+ * STAGE TRACKER
  * =========================================================
  */
 
-export const Route = createFileRoute("/admin")({
-  ssr: false,
+function StageTracker({
+  stage,
+}: {
+  stage: number;
+}) {
+  return (
+    <div className="mt-4">
+      <Progress
+        value={
+          (stage / projectStages.length) *
+          100
+        }
+        className="h-1.5"
+      />
 
-  beforeLoad: async () => {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      throw redirect({ to: "/auth" });
-    }
-
-    const { data: role, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .maybeSingle();
-
-    if (roleError || !role) {
-      throw redirect({ to: "/dashboard" });
-    }
-
-    return { user };
-  },
-
-  head: () => ({
-    meta: [
-      {
-        title: "پنل مدیریت | هاب‌ژن",
-      },
-      {
-        name: "description",
-        content:
-          "مدیریت پروژه‌ها، پیشنهاد قیمت، پرداخت، مشاوره و خروجی‌های هاب‌ژن",
-      },
-      {
-        name: "robots",
-        content: "noindex",
-      },
-    ],
-  }),
-
-  component: Admin,
-});
+      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+        {projectStages.map(
+          (stageName, index) => (
+            <span
+              key={stageName}
+              className={`text-[11px] ${
+                index < stage
+                  ? "font-semibold text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {index < stage
+                ? "● "
+                : "○ "}
+              {stageName}
+            </span>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
 
 /*
  * =========================================================
- * ADMIN
+ * DASHBOARD
  * =========================================================
  */
 
-function Admin() {
+function Dashboard() {
+  const { user } = useAuth();
+
+  const profile =
+    useProfile(user?.id);
+
+  const displayName =
+    profile?.full_name?.trim() ||
+    user?.email ||
+    "پژوهشگر";
+
   /*
-   * Main
+   * PROJECTS
    */
 
   const [projects, setProjects] =
     useState<ProjectRow[]>([]);
 
-  const [profiles, setProfiles] =
-    useState<ProfileRow[]>([]);
-
-  const [consultations, setConsultations] =
-    useState<ConsultationRow[]>([]);
-
   const [loading, setLoading] =
     useState(true);
 
-  /*
-   * Project
-   */
-
-  const [updatingId, setUpdatingId] =
+  const [loadError, setLoadError] =
     useState<string | null>(null);
 
-  const [selectedProject, setSelectedProject] =
-    useState<ProjectRow | null>(null);
+  const [active, setActive] =
+    useState<string | null>(null);
 
   /*
-   * Messages
+   * MESSAGES
    */
 
-  const [messages, setMessages] =
-    useState<ProjectMessageRow[]>([]);
+  const [
+    projectMessages,
+    setProjectMessages,
+  ] = useState<ProjectMessageRow[]>([]);
 
-  const [messagesLoading, setMessagesLoading] =
-    useState(false);
+  const [
+    messagesLoading,
+    setMessagesLoading,
+  ] = useState(false);
 
-  const [messageText, setMessageText] =
-    useState("");
+  const [
+    messageText,
+    setMessageText,
+  ] = useState("");
 
-  const [sendingMessage, setSendingMessage] =
-    useState(false);
+  const [
+    sendingMessage,
+    setSendingMessage,
+  ] = useState(false);
 
   /*
-   * Files
+   * FILES
    */
 
-  const [projectFiles, setProjectFiles] =
-    useState<ProjectFileRow[]>([]);
+  const [
+    projectFiles,
+    setProjectFiles,
+  ] = useState<ProjectFileRow[]>([]);
 
-  const [filesLoading, setFilesLoading] =
-    useState(false);
+  const [
+    filesLoading,
+    setFilesLoading,
+  ] = useState(false);
+
+  const [
+    uploadingFile,
+    setUploadingFile,
+  ] = useState(false);
 
   const [
     downloadingFileId,
@@ -349,114 +323,53 @@ function Admin() {
   ] = useState<string | null>(null);
 
   const [
-    uploadingCategory,
-    setUploadingCategory,
-  ] = useState<OutputCategory | null>(null);
+    totalFileCount,
+    setTotalFileCount,
+  ] = useState(0);
 
-  const reportInputRef =
-    useRef<HTMLInputElement | null>(null);
+  const [
+    totalReportCount,
+    setTotalReportCount,
+  ] = useState(0);
 
-  const resultInputRef =
+  const fileInputRef =
     useRef<HTMLInputElement | null>(null);
 
   /*
-   * Consultations
+   * CONSULTATIONS
    */
+
+  const [
+    consultations,
+    setConsultations,
+  ] = useState<ConsultationRow[]>([]);
 
   const [
     consultationsLoading,
     setConsultationsLoading,
   ] = useState(false);
 
-  const [
-    selectedConsultation,
-    setSelectedConsultation,
-  ] = useState<ConsultationRow | null>(null);
-
-  const [
-    consultationStatus,
-    setConsultationStatus,
-  ] = useState("requested");
-
-  const [
-    consultationScheduledAt,
-    setConsultationScheduledAt,
-  ] = useState("");
-
-  const [
-    consultationDuration,
-    setConsultationDuration,
-  ] = useState("");
-
-  const [
-    consultationMeetingUrl,
-    setConsultationMeetingUrl,
-  ] = useState("");
-
-  const [
-    consultationAdminNote,
-    setConsultationAdminNote,
-  ] = useState("");
-
-  const [
-    savingConsultation,
-    setSavingConsultation,
-  ] = useState(false);
-
   /*
-   * Quotes
+   * QUOTES
    */
 
-  const [projectQuotes, setProjectQuotes] =
-    useState<ProjectQuoteRow[]>([]);
-
-  const [quotesLoading, setQuotesLoading] =
-    useState(false);
-
-  const [savingQuote, setSavingQuote] =
-    useState(false);
+  const [
+    projectQuotes,
+    setProjectQuotes,
+  ] = useState<ProjectQuoteRow[]>([]);
 
   const [
-    sendingQuoteId,
-    setSendingQuoteId,
+    quotesLoading,
+    setQuotesLoading,
+  ] = useState(false);
+
+  const [
+    respondingQuoteId,
+    setRespondingQuoteId,
   ] = useState<string | null>(null);
-
-  const [
-    editingQuoteId,
-    setEditingQuoteId,
-  ] = useState<string | null>(null);
-
-  const [quoteTitle, setQuoteTitle] =
-    useState("");
-
-  const [quoteScope, setQuoteScope] =
-    useState("");
-
-  const [
-    quoteDeliverables,
-    setQuoteDeliverables,
-  ] = useState("");
-
-  const [quoteAmount, setQuoteAmount] =
-    useState("");
-
-  const [
-    quoteEstimatedDays,
-    setQuoteEstimatedDays,
-  ] = useState("");
-
-  const [
-    quoteValidUntil,
-    setQuoteValidUntil,
-  ] = useState("");
-
-  const [
-    quoteAdminNote,
-    setQuoteAdminNote,
-  ] = useState("");
 
   /*
-   * Invoices
+   * INVOICES
    */
 
   const [
@@ -469,226 +382,239 @@ function Admin() {
     setInvoicesLoading,
   ] = useState(false);
 
-  const [
-    editingInvoiceId,
-    setEditingInvoiceId,
-  ] = useState<string | null>(null);
-
-  const [
-    invoiceQuoteId,
-    setInvoiceQuoteId,
-  ] = useState<string | null>(null);
-
-  const [
-    invoiceTitle,
-    setInvoiceTitle,
-  ] = useState("");
-
-  const [
-    invoiceAmount,
-    setInvoiceAmount,
-  ] = useState("");
-
-  const [
-    invoiceDueAt,
-    setInvoiceDueAt,
-  ] = useState("");
-
-  const [
-    invoiceInstructions,
-    setInvoiceInstructions,
-  ] = useState("");
-
-  const [
-    invoiceAdminNote,
-    setInvoiceAdminNote,
-  ] = useState("");
-
-  const [
-    invoiceStatus,
-    setInvoiceStatus,
-  ] = useState("draft");
-
-  const [
-    invoicePaidAt,
-    setInvoicePaidAt,
-  ] = useState("");
-
-  const [
-    invoicePaymentReference,
-    setInvoicePaymentReference,
-  ] = useState("");
-
-  const [
-    savingInvoice,
-    setSavingInvoice,
-  ] = useState(false);
-
   /*
    * =======================================================
-   * INITIAL LOAD
+   * LOAD PROJECTS + COUNTS
    * =======================================================
    */
 
   useEffect(() => {
+    if (!user?.id) return;
+
     let mounted = true;
 
-    async function loadData() {
-      setLoading(true);
+    setLoading(true);
 
-      const [
-        projectsResult,
-        profilesResult,
-        consultationsResult,
-      ] = await Promise.all([
-        supabase
-          .from("projects")
-          .select("*")
-          .order("created_at", {
-            ascending: false,
-          }),
+    listMyProjects(user.id)
+      .then(async ({ data, error }) => {
+        if (!mounted) return;
 
-        supabase
-          .from("profiles")
-          .select(
-            "id, full_name, organization, research_field",
-          ),
+        if (error) {
+          setLoadError(
+            projectErrorMessage(
+              error.message,
+            ),
+          );
 
-        supabase
+          return;
+        }
+
+        const rows =
+          (data ??
+            []) as ProjectRow[];
+
+        setProjects(rows);
+        setLoadError(null);
+
+        setActive(
+          (previous) =>
+            previous ??
+            rows[0]?.id ??
+            null,
+        );
+
+        if (rows.length === 0) {
+          setTotalFileCount(0);
+          setTotalReportCount(0);
+          return;
+        }
+
+        const projectIds =
+          rows.map(
+            (project) =>
+              project.id,
+          );
+
+        const [
+          fileCountResult,
+          reportCountResult,
+        ] = await Promise.all([
+          supabase
+            .from("project_files")
+            .select("id", {
+              count: "exact",
+              head: true,
+            })
+            .in(
+              "project_id",
+              projectIds,
+            ),
+
+          supabase
+            .from("project_files")
+            .select("id", {
+              count: "exact",
+              head: true,
+            })
+            .in(
+              "project_id",
+              projectIds,
+            )
+            .eq(
+              "category",
+              "report",
+            ),
+        ]);
+
+        if (!mounted) return;
+
+        if (!fileCountResult.error) {
+          setTotalFileCount(
+            fileCountResult.count ??
+              0,
+          );
+        }
+
+        if (!reportCountResult.error) {
+          setTotalReportCount(
+            reportCountResult.count ??
+              0,
+          );
+        }
+      })
+      .catch(
+        (error: unknown) => {
+          if (!mounted) return;
+
+          setLoadError(
+            projectErrorMessage(
+              error instanceof Error
+                ? error.message
+                : "",
+            ),
+          );
+        },
+      )
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [user?.id]);
+
+  /*
+   * =======================================================
+   * CONSULTATIONS
+   * =======================================================
+   */
+
+  const loadConsultations =
+    async () => {
+      if (!user?.id) return;
+
+      setConsultationsLoading(
+        true,
+      );
+
+      const { data, error } =
+        await supabase
           .from("consultations")
           .select("*")
+          .eq(
+            "user_id",
+            user.id,
+          )
           .order("created_at", {
             ascending: false,
-          }),
-      ]);
+          });
 
-      if (!mounted) return;
+      if (error) {
+        console.error(error);
 
-      if (
-        projectsResult.error ||
-        profilesResult.error
-      ) {
-        console.error(
-          projectsResult.error ||
-            profilesResult.error,
-        );
-
-        toast.error(
-          "دریافت اطلاعات پنل مدیریت با خطا مواجه شد.",
-        );
-
-        setLoading(false);
-        return;
-      }
-
-      setProjects(
-        (projectsResult.data ??
-          []) as ProjectRow[],
-      );
-
-      setProfiles(
-        (profilesResult.data ??
-          []) as ProfileRow[],
-      );
-
-      if (consultationsResult.error) {
-        console.error(
-          consultationsResult.error,
+        setConsultations([]);
+        setConsultationsLoading(
+          false,
         );
 
         toast.error(
           "دریافت درخواست‌های مشاوره انجام نشد.",
         );
-      } else {
-        setConsultations(
-          (consultationsResult.data ??
-            []) as ConsultationRow[],
-        );
+
+        return;
       }
 
-      setLoading(false);
-    }
+      setConsultations(
+        (data ??
+          []) as ConsultationRow[],
+      );
 
-    loadData();
-
-    return () => {
-      mounted = false;
+      setConsultationsLoading(
+        false,
+      );
     };
-  }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    loadConsultations();
+  }, [user?.id]);
 
   /*
    * =======================================================
-   * MAPS + COUNTS
+   * CURRENT PROJECT
    * =======================================================
    */
 
-  const profileMap = useMemo(
-    () =>
-      new Map(
-        profiles.map((profile) => [
-          profile.id,
-          profile,
-        ]),
-      ),
-    [profiles],
-  );
+  const current =
+    projects.find(
+      (project) =>
+        project.id === active,
+    ) ??
+    projects[0] ??
+    null;
 
-  const projectMap = useMemo(
-    () =>
-      new Map(
-        projects.map((project) => [
-          project.id,
-          project,
-        ]),
-      ),
-    [projects],
-  );
+  const activeCount =
+    projects.filter(
+      (project) =>
+        project.status !==
+          "completed" &&
+        project.status !==
+          "cancelled",
+    ).length;
 
-  const invoiceByQuoteId = useMemo(
+  const currentConsultations =
+    current
+      ? consultations.filter(
+          (consultation) =>
+            consultation.project_id ===
+              current.id ||
+            consultation.project_id ===
+              null,
+        )
+      : consultations;
+
+  const quoteMap = useMemo(
     () =>
       new Map(
-        projectInvoices.map(
-          (invoice) => [
-            invoice.quote_id,
-            invoice,
+        projectQuotes.map(
+          (quote) => [
+            quote.id,
+            quote,
           ],
         ),
       ),
-    [projectInvoices],
+    [projectQuotes],
   );
 
-  const activeProjects =
-    projects.filter(
-      (project) =>
-        project.status !== "completed" &&
-        project.status !== "cancelled",
-    ).length;
+  /*
+   * FILE CATEGORIES
+   */
 
-  const completedProjects =
-    projects.filter(
-      (project) =>
-        project.status === "completed",
-    ).length;
-
-  const activeConsultations =
-    consultations.filter(
-      (consultation) =>
-        consultation.status !== "completed" &&
-        consultation.status !== "cancelled",
-    ).length;
-
-  const selectedResearcher =
-    selectedProject
-      ? profileMap.get(
-          selectedProject.user_id,
-        )
-      : undefined;
-
-  const selectedWizard =
-    (selectedProject?.wizard_data ??
-      {}) as WizardAnswers;
-
-  const incomingFiles =
+  const dataFiles =
     projectFiles.filter(
       (file) =>
         file.category === "data" ||
@@ -698,74 +624,16 @@ function Admin() {
   const reportFiles =
     projectFiles.filter(
       (file) =>
-        file.category === "report",
+        file.category ===
+        "report",
     );
 
   const resultFiles =
     projectFiles.filter(
       (file) =>
-        file.category === "result",
+        file.category ===
+        "result",
     );
-
-  /*
-   * =======================================================
-   * PROJECT STATUS
-   * =======================================================
-   */
-
-  const updateStatus = async (
-    projectId: string,
-    status: string,
-  ) => {
-    setUpdatingId(projectId);
-
-    const { error } = await supabase
-      .from("projects")
-      .update({ status })
-      .eq("id", projectId);
-
-    if (error) {
-      console.error(error);
-
-      toast.error(
-        "تغییر وضعیت پروژه انجام نشد.",
-      );
-
-      setUpdatingId(null);
-      return;
-    }
-
-    const updatedAt =
-      new Date().toISOString();
-
-    setProjects((current) =>
-      current.map((project) =>
-        project.id === projectId
-          ? {
-              ...project,
-              status,
-              updated_at: updatedAt,
-            }
-          : project,
-      ),
-    );
-
-    setSelectedProject((current) =>
-      current?.id === projectId
-        ? {
-            ...current,
-            status,
-            updated_at: updatedAt,
-          }
-        : current,
-    );
-
-    toast.success(
-      "وضعیت پروژه به‌روزرسانی شد.",
-    );
-
-    setUpdatingId(null);
-  };
 
   /*
    * =======================================================
@@ -782,7 +650,10 @@ function Admin() {
       await supabase
         .from("project_messages")
         .select("*")
-        .eq("project_id", projectId)
+        .eq(
+          "project_id",
+          projectId,
+        )
         .order("created_at", {
           ascending: true,
         });
@@ -790,7 +661,7 @@ function Admin() {
     if (error) {
       console.error(error);
 
-      setMessages([]);
+      setProjectMessages([]);
       setMessagesLoading(false);
 
       toast.error(
@@ -800,7 +671,7 @@ function Admin() {
       return;
     }
 
-    setMessages(
+    setProjectMessages(
       (data ??
         []) as ProjectMessageRow[],
     );
@@ -808,70 +679,64 @@ function Admin() {
     setMessagesLoading(false);
   };
 
-  const sendMessage = async () => {
-    if (!selectedProject) return;
+  const sendMessage =
+    async () => {
+      if (!current || !user)
+        return;
 
-    const cleanMessage =
-      messageText.trim();
+      const cleanMessage =
+        messageText.trim();
 
-    if (!cleanMessage) {
-      toast.error(
-        "متن پیام را وارد کنید.",
+      if (!cleanMessage) return;
+
+      setSendingMessage(true);
+
+      const { data, error } =
+        await supabase
+          .from(
+            "project_messages",
+          )
+          .insert({
+            project_id:
+              current.id,
+
+            sender_id:
+              user.id,
+
+            message:
+              cleanMessage,
+          })
+          .select("*")
+          .single();
+
+      if (error) {
+        console.error(error);
+
+        toast.error(
+          "ارسال پیام انجام نشد.",
+        );
+
+        setSendingMessage(
+          false,
+        );
+
+        return;
+      }
+
+      setProjectMessages(
+        (previous) => [
+          ...previous,
+          data as ProjectMessageRow,
+        ],
       );
-      return;
-    }
 
-    setSendingMessage(true);
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error(
-        "نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.",
-      );
-
+      setMessageText("");
       setSendingMessage(false);
-      return;
-    }
 
-    const { data, error } =
-      await supabase
-        .from("project_messages")
-        .insert({
-          project_id:
-            selectedProject.id,
-          sender_id: user.id,
-          message: cleanMessage,
-        })
-        .select("*")
-        .single();
-
-    if (error) {
-      console.error(error);
-
-      toast.error(
-        "ارسال پیام انجام نشد.",
+      toast.success(
+        "پیام شما ارسال شد.",
       );
-
-      setSendingMessage(false);
-      return;
-    }
-
-    setMessages((current) => [
-      ...current,
-      data as ProjectMessageRow,
-    ]);
-
-    setMessageText("");
-    setSendingMessage(false);
-
-    toast.success(
-      "پیام برای پژوهشگر ارسال شد.",
-    );
-  };
+    };
 
   /*
    * =======================================================
@@ -879,7 +744,7 @@ function Admin() {
    * =======================================================
    */
 
-  const loadProjectFiles = async (
+  const loadFiles = async (
     projectId: string,
   ) => {
     setFilesLoading(true);
@@ -888,7 +753,10 @@ function Admin() {
       await supabase
         .from("project_files")
         .select("*")
-        .eq("project_id", projectId)
+        .eq(
+          "project_id",
+          projectId,
+        )
         .order("created_at", {
           ascending: false,
         });
@@ -914,665 +782,164 @@ function Admin() {
     setFilesLoading(false);
   };
 
-  const downloadProjectFile =
-    async (
-      file: ProjectFileRow,
-    ) => {
-      setDownloadingFileId(
-        file.id,
-      );
-
-      const {
-        data,
-        error,
-      } = await supabase.storage
-        .from(file.bucket_id)
-        .download(
-          file.storage_path,
-        );
-
-      if (error || !data) {
-        console.error(error);
-
-        toast.error(
-          "دانلود فایل انجام نشد.",
-        );
-
-        setDownloadingFileId(
-          null,
-        );
-
-        return;
-      }
-
-      const objectUrl =
-        URL.createObjectURL(data);
-
-      const anchor =
-        document.createElement("a");
-
-      anchor.href = objectUrl;
-
-      anchor.download =
-        file.original_name;
-
-      document.body.appendChild(
-        anchor,
-      );
-
-      anchor.click();
-      anchor.remove();
-
-      URL.revokeObjectURL(
-        objectUrl,
-      );
-
-      setDownloadingFileId(null);
-    };
-
-  /*
-   * =======================================================
-   * OUTPUT UPLOAD
-   * =======================================================
-   */
-
-  const uploadOutputFile = async (
-    file: File,
-    category: OutputCategory,
-  ) => {
-    if (!selectedProject) {
-      toast.error(
-        "ابتدا یک پروژه را باز کنید.",
-      );
-      return;
-    }
-
-    if (file.size <= 0) {
-      toast.error(
-        "فایل انتخاب‌شده خالی است.",
-      );
-      return;
-    }
-
-    if (
-      file.size >
-      MAX_STANDARD_UPLOAD_BYTES
-    ) {
-      toast.error(
-        "در این مرحله حداکثر حجم آپلود مستقیم ۶ مگابایت است.",
-      );
-      return;
-    }
-
-    if (
-      category === "report" &&
-      file.type !== "application/pdf" &&
-      !file.name
-        .toLowerCase()
-        .endsWith(".pdf")
-    ) {
-      toast.error(
-        "گزارش رسمی باید فایل PDF باشد.",
-      );
-      return;
-    }
-
-    setUploadingCategory(category);
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error(
-        "نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.",
-      );
-
-      setUploadingCategory(null);
-      return;
-    }
-
-    const extension =
-      safeExtension(file.name);
-
-    const storagePath =
-      `${selectedProject.id}/outputs/${category}/` +
-      `${crypto.randomUUID()}${extension}`;
-
-    const {
-      error: storageError,
-    } = await supabase.storage
-      .from(
-        PROJECT_FILES_BUCKET,
-      )
-      .upload(
-        storagePath,
-        file,
-        {
-          cacheControl: "3600",
-          upsert: false,
-          contentType:
-            file.type ||
-            undefined,
-        },
-      );
-
-    if (storageError) {
-      console.error(
-        storageError,
-      );
-
-      toast.error(
-        "آپلود فایل انجام نشد.",
-      );
-
-      setUploadingCategory(null);
-      return;
-    }
-
-    const {
-      data,
-      error: metadataError,
-    } = await supabase
-      .from("project_files")
-      .insert({
-        project_id:
-          selectedProject.id,
-
-        uploader_id:
-          user.id,
-
-        bucket_id:
-          PROJECT_FILES_BUCKET,
-
-        storage_path:
-          storagePath,
-
-        original_name:
-          file.name,
-
-        mime_type:
-          file.type || null,
-
-        size_bytes:
-          file.size,
-
-        category,
-      })
-      .select("*")
-      .single();
-
-    if (metadataError) {
-      console.error(
-        metadataError,
-      );
-
-      toast.error(
-        "فایل آپلود شد اما ثبت اطلاعات آن با خطا مواجه شد.",
-      );
-
-      setUploadingCategory(null);
-      return;
-    }
-
-    setProjectFiles(
-      (current) => [
-        data as ProjectFileRow,
-        ...current,
-      ],
-    );
-
-    setUploadingCategory(null);
-
-    toast.success(
-      category === "report"
-        ? "گزارش پروژه با موفقیت بارگذاری شد."
-        : "نتیجه پروژه با موفقیت بارگذاری شد.",
-    );
-  };
-
-  const handleOutputInputChange =
-    async (
-      event: ChangeEvent<HTMLInputElement>,
-      category: OutputCategory,
-    ) => {
-      const file =
-        event.target.files?.[0];
-
-      event.target.value = "";
-
-      if (!file) return;
-
-      await uploadOutputFile(
-        file,
-        category,
-      );
-    };
-
   /*
    * =======================================================
    * QUOTES
    * =======================================================
    */
 
-  const resetQuoteForm = () => {
-    setEditingQuoteId(null);
-    setQuoteTitle("");
-    setQuoteScope("");
-    setQuoteDeliverables("");
-    setQuoteAmount("");
-    setQuoteEstimatedDays("");
-    setQuoteValidUntil("");
-    setQuoteAdminNote("");
-  };
+  const loadProjectQuotes =
+    async (
+      projectId: string,
+    ) => {
+      setQuotesLoading(true);
 
-  const loadProjectQuotes = async (
-    projectId: string,
-  ) => {
-    setQuotesLoading(true);
-
-    const { data, error } =
-      await supabase
-        .from("project_quotes")
-        .select("*")
-        .eq("project_id", projectId)
-        .order("created_at", {
-          ascending: false,
-        });
-
-    if (error) {
-      console.error(error);
-
-      setProjectQuotes([]);
-      setQuotesLoading(false);
-
-      toast.error(
-        "دریافت پیشنهادهای قیمت انجام نشد.",
-      );
-
-      return;
-    }
-
-    setProjectQuotes(
-      (data ??
-        []) as ProjectQuoteRow[],
-    );
-
-    setQuotesLoading(false);
-  };
-
-  const editDraftQuote = (
-    quote: ProjectQuoteRow,
-  ) => {
-    if (quote.status !== "draft") {
-      toast.error(
-        "فقط پیش‌نویس قابل ویرایش است.",
-      );
-      return;
-    }
-
-    setEditingQuoteId(
-      quote.id,
-    );
-
-    setQuoteTitle(
-      quote.title,
-    );
-
-    setQuoteScope(
-      quote.scope_summary ?? "",
-    );
-
-    setQuoteDeliverables(
-      quote.deliverables ?? "",
-    );
-
-    setQuoteAmount(
-      String(quote.amount),
-    );
-
-    setQuoteEstimatedDays(
-      quote.estimated_days
-        ? String(
-            quote.estimated_days,
+      const { data, error } =
+        await supabase
+          .from("project_quotes")
+          .select("*")
+          .eq(
+            "project_id",
+            projectId,
           )
-        : "",
-    );
+          .order("created_at", {
+            ascending: false,
+          });
 
-    setQuoteValidUntil(
-      toDateTimeLocalValue(
-        quote.valid_until,
-      ),
-    );
+      if (error) {
+        console.error(error);
 
-    setQuoteAdminNote(
-      quote.admin_note ?? "",
-    );
+        setProjectQuotes([]);
+        setQuotesLoading(false);
 
-    setTimeout(() => {
-      document
-        .getElementById(
-          "quote-editor",
-        )
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 50);
-  };
-
-  const saveQuote = async (
-    targetStatus:
-      | "draft"
-      | "sent",
-  ) => {
-    if (!selectedProject) {
-      toast.error(
-        "ابتدا یک پروژه را باز کنید.",
-      );
-      return;
-    }
-
-    const cleanTitle =
-      quoteTitle.trim();
-
-    if (!cleanTitle) {
-      toast.error(
-        "عنوان پیشنهاد قیمت را وارد کنید.",
-      );
-      return;
-    }
-
-    const amount =
-      parseIntegerInput(
-        quoteAmount,
-      );
-
-    if (
-      amount === null ||
-      amount <= 0
-    ) {
-      toast.error(
-        "مبلغ معتبر را به تومان وارد کنید.",
-      );
-      return;
-    }
-
-    let estimatedDays:
-      | number
-      | null = null;
-
-    if (
-      quoteEstimatedDays.trim()
-    ) {
-      estimatedDays =
-        parseIntegerInput(
-          quoteEstimatedDays,
-        );
-
-      if (
-        estimatedDays === null ||
-        estimatedDays < 1 ||
-        estimatedDays > 365
-      ) {
         toast.error(
-          "زمان تقریبی انجام باید بین ۱ تا ۳۶۵ روز باشد.",
-        );
-        return;
-      }
-    }
-
-    let validUntil:
-      | string
-      | null = null;
-
-    if (quoteValidUntil) {
-      const date =
-        new Date(
-          quoteValidUntil,
+          "دریافت پیشنهادهای قیمت انجام نشد.",
         );
 
-      if (
-        Number.isNaN(
-          date.getTime(),
-        )
-      ) {
-        toast.error(
-          "تاریخ اعتبار پیشنهاد معتبر نیست.",
-        );
         return;
       }
 
-      if (
-        targetStatus === "sent" &&
-        date.getTime() <= Date.now()
-      ) {
-        toast.error(
-          "تاریخ اعتبار پیشنهاد باید در آینده باشد.",
-        );
-        return;
-      }
-
-      validUntil =
-        date.toISOString();
-    }
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error(
-        "نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.",
+      setProjectQuotes(
+        (data ??
+          []) as ProjectQuoteRow[],
       );
-      return;
-    }
 
-    setSavingQuote(true);
-
-    const payload = {
-      project_id:
-        selectedProject.id,
-
-      user_id:
-        selectedProject.user_id,
-
-      title:
-        cleanTitle,
-
-      scope_summary:
-        quoteScope.trim() ||
-        null,
-
-      deliverables:
-        quoteDeliverables.trim() ||
-        null,
-
-      amount,
-
-      currency: "TOMAN",
-
-      estimated_days:
-        estimatedDays,
-
-      status:
-        targetStatus,
-
-      valid_until:
-        validUntil,
-
-      admin_note:
-        quoteAdminNote.trim() ||
-        null,
+      setQuotesLoading(false);
     };
 
-    if (editingQuoteId) {
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("project_quotes")
-        .update(payload)
-        .eq(
-          "id",
-          editingQuoteId,
-        )
-        .eq(
-          "status",
-          "draft",
-        )
-        .select("*")
-        .single();
-
-      if (error) {
-        console.error(error);
-
-        toast.error(
-          "ذخیره پیشنهاد قیمت انجام نشد.",
-        );
-
-        setSavingQuote(false);
-        return;
-      }
-
-      const updated =
-        data as ProjectQuoteRow;
-
-      setProjectQuotes(
-        (current) =>
-          current.map(
-            (quote) =>
-              quote.id ===
-              updated.id
-                ? updated
-                : quote,
-          ),
-      );
-    } else {
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("project_quotes")
-        .insert({
-          ...payload,
-          created_by:
-            user.id,
-        })
-        .select("*")
-        .single();
-
-      if (error) {
-        console.error(error);
-
-        toast.error(
-          "ثبت پیشنهاد قیمت انجام نشد.",
-        );
-
-        setSavingQuote(false);
-        return;
-      }
-
-      setProjectQuotes(
-        (current) => [
-          data as ProjectQuoteRow,
-          ...current,
-        ],
-      );
-    }
-
-    setSavingQuote(false);
-    resetQuoteForm();
-
-    toast.success(
-      targetStatus === "sent"
-        ? "پیشنهاد قیمت برای پژوهشگر ارسال شد."
-        : "پیشنهاد قیمت به‌صورت پیش‌نویس ذخیره شد.",
-    );
-  };
-
-  const sendExistingDraftQuote =
+  const respondToQuote =
     async (
       quote: ProjectQuoteRow,
+      response:
+        | "accepted"
+        | "rejected",
     ) => {
       if (
-        quote.status !==
-        "draft"
-      ) {
-        return;
-      }
-
-      if (
-        quote.valid_until &&
-        new Date(
-          quote.valid_until,
-        ).getTime() <= Date.now()
+        quote.status !== "sent"
       ) {
         toast.error(
-          "تاریخ اعتبار این پیش‌نویس گذشته است؛ ابتدا آن را ویرایش کنید.",
+          "این پیشنهاد دیگر در انتظار پاسخ نیست.",
         );
         return;
       }
 
-      setSendingQuoteId(
+      if (
+        isQuoteExpired(quote)
+      ) {
+        toast.error(
+          "مهلت این پیشنهاد قیمت به پایان رسیده است.",
+        );
+        return;
+      }
+
+      if (
+        response === "rejected"
+      ) {
+        const confirmed =
+          window.confirm(
+            "آیا از رد این پیشنهاد قیمت مطمئن هستید؟",
+          );
+
+        if (!confirmed) return;
+      }
+
+      setRespondingQuoteId(
         quote.id,
       );
 
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("project_quotes")
-        .update({
-          status: "sent",
-        })
-        .eq("id", quote.id)
-        .eq("status", "draft")
-        .select("*")
-        .single();
+      const { error } =
+        await supabase.rpc(
+          "respond_to_project_quote",
+          {
+            quote_id:
+              quote.id,
+
+            response,
+          },
+        );
 
       if (error) {
         console.error(error);
 
-        toast.error(
-          "ارسال پیشنهاد قیمت انجام نشد.",
-        );
+        const message =
+          error.message.toLowerCase();
 
-        setSendingQuoteId(
+        if (
+          message.includes(
+            "expired",
+          )
+        ) {
+          toast.error(
+            "مهلت این پیشنهاد قیمت به پایان رسیده است.",
+          );
+        } else if (
+          message.includes(
+            "awaiting response",
+          )
+        ) {
+          toast.error(
+            "این پیشنهاد قبلاً پاسخ داده شده است.",
+          );
+        } else {
+          toast.error(
+            "ثبت پاسخ پیشنهاد قیمت انجام نشد.",
+          );
+        }
+
+        setRespondingQuoteId(
           null,
         );
+
+        if (current) {
+          await loadProjectQuotes(
+            current.id,
+          );
+        }
 
         return;
       }
 
-      const updated =
-        data as ProjectQuoteRow;
+      if (current) {
+        await loadProjectQuotes(
+          current.id,
+        );
+      }
 
-      setProjectQuotes(
-        (current) =>
-          current.map(
-            (item) =>
-              item.id ===
-              updated.id
-                ? updated
-                : item,
-          ),
+      setRespondingQuoteId(
+        null,
       );
 
       if (
-        editingQuoteId ===
-        quote.id
+        response === "accepted"
       ) {
-        resetQuoteForm();
+        toast.success(
+          "پیشنهاد قیمت با موفقیت تأیید شد.",
+        );
+      } else {
+        toast.success(
+          "پیشنهاد قیمت رد شد.",
+        );
       }
-
-      setSendingQuoteId(null);
-
-      toast.success(
-        "پیشنهاد قیمت برای پژوهشگر ارسال شد.",
-      );
     };
 
   /*
@@ -1580,19 +947,6 @@ function Admin() {
    * INVOICES
    * =======================================================
    */
-
-  const resetInvoiceForm = () => {
-    setEditingInvoiceId(null);
-    setInvoiceQuoteId(null);
-    setInvoiceTitle("");
-    setInvoiceAmount("");
-    setInvoiceDueAt("");
-    setInvoiceInstructions("");
-    setInvoiceAdminNote("");
-    setInvoiceStatus("draft");
-    setInvoicePaidAt("");
-    setInvoicePaymentReference("");
-  };
 
   const loadProjectInvoices =
     async (
@@ -1633,742 +987,283 @@ function Admin() {
       setInvoicesLoading(false);
     };
 
-  const openNewInvoice = (
-    quote: ProjectQuoteRow,
-  ) => {
-    if (
-      quote.status !==
-      "accepted"
-    ) {
-      toast.error(
-        "فقط برای پیشنهاد قیمت تأییدشده می‌توان درخواست پرداخت ایجاد کرد.",
-      );
-      return;
-    }
+  const refreshFinance =
+    async () => {
+      if (!current) return;
 
-    if (
-      invoiceByQuoteId.has(
-        quote.id,
-      )
-    ) {
-      toast.error(
-        "برای این پیشنهاد قیمت قبلاً درخواست پرداخت ایجاد شده است.",
-      );
-      return;
-    }
+      await Promise.all([
+        loadProjectQuotes(
+          current.id,
+        ),
 
-    resetInvoiceForm();
-
-    setInvoiceQuoteId(
-      quote.id,
-    );
-
-    setInvoiceTitle(
-      `درخواست پرداخت — ${quote.title}`,
-    );
-
-    setInvoiceAmount(
-      String(quote.amount),
-    );
-
-    setInvoiceStatus(
-      "draft",
-    );
-
-    setTimeout(() => {
-      document
-        .getElementById(
-          "invoice-editor",
-        )
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 50);
-  };
-
-  const editInvoice = (
-    invoice: ProjectInvoiceRow,
-  ) => {
-    setEditingInvoiceId(
-      invoice.id,
-    );
-
-    setInvoiceQuoteId(
-      invoice.quote_id,
-    );
-
-    setInvoiceTitle(
-      invoice.title,
-    );
-
-    setInvoiceAmount(
-      String(invoice.amount),
-    );
-
-    setInvoiceDueAt(
-      toDateTimeLocalValue(
-        invoice.due_at,
-      ),
-    );
-
-    setInvoiceInstructions(
-      invoice.payment_instructions ??
-        "",
-    );
-
-    setInvoiceAdminNote(
-      invoice.admin_note ??
-        "",
-    );
-
-    setInvoiceStatus(
-      invoice.status,
-    );
-
-    setInvoicePaidAt(
-      toDateTimeLocalValue(
-        invoice.paid_at,
-      ),
-    );
-
-    setInvoicePaymentReference(
-      invoice.payment_reference ??
-        "",
-    );
-
-    setTimeout(() => {
-      document
-        .getElementById(
-          "invoice-editor",
-        )
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 50);
-  };
-
-  const saveInvoice = async (
-    forcedStatus?: "draft" | "issued",
-  ) => {
-    if (
-      !selectedProject ||
-      !invoiceQuoteId
-    ) {
-      toast.error(
-        "پیشنهاد قیمت مربوط به این درخواست پرداخت مشخص نیست.",
-      );
-      return;
-    }
-
-    const relatedQuote =
-      projectQuotes.find(
-        (quote) =>
-          quote.id ===
-          invoiceQuoteId,
-      );
-
-    if (
-      !relatedQuote ||
-      relatedQuote.status !==
-        "accepted"
-    ) {
-      toast.error(
-        "درخواست پرداخت فقط برای Quote تأییدشده قابل ثبت است.",
-      );
-      return;
-    }
-
-    const status =
-      forcedStatus ??
-      invoiceStatus;
-
-    const cleanTitle =
-      invoiceTitle.trim();
-
-    if (!cleanTitle) {
-      toast.error(
-        "عنوان درخواست پرداخت را وارد کنید.",
-      );
-      return;
-    }
-
-    const amount =
-      parseIntegerInput(
-        invoiceAmount,
-      );
-
-    if (
-      amount === null ||
-      amount <= 0
-    ) {
-      toast.error(
-        "مبلغ معتبر را به تومان وارد کنید.",
-      );
-      return;
-    }
-
-    let dueAt:
-      | string
-      | null = null;
-
-    if (invoiceDueAt) {
-      const date =
-        new Date(
-          invoiceDueAt,
-        );
-
-      if (
-        Number.isNaN(
-          date.getTime(),
-        )
-      ) {
-        toast.error(
-          "مهلت پرداخت معتبر نیست.",
-        );
-        return;
-      }
-
-      dueAt =
-        date.toISOString();
-    }
-
-    if (
-      status === "issued" &&
-      !dueAt
-    ) {
-      toast.error(
-        "برای صدور درخواست پرداخت، مهلت پرداخت را تعیین کنید.",
-      );
-      return;
-    }
-
-    if (
-      status === "issued" &&
-      dueAt &&
-      new Date(
-        dueAt,
-      ).getTime() <= Date.now()
-    ) {
-      toast.error(
-        "مهلت پرداخت باید در آینده باشد.",
-      );
-      return;
-    }
-
-    if (
-      status === "overdue" &&
-      !dueAt
-    ) {
-      toast.error(
-        "برای وضعیت سررسید گذشته، تاریخ سررسید باید مشخص باشد.",
-      );
-      return;
-    }
-
-    let paidAt:
-      | string
-      | null = null;
-
-    if (
-      status === "paid"
-    ) {
-      if (invoicePaidAt) {
-        const date =
-          new Date(
-            invoicePaidAt,
-          );
-
-        if (
-          Number.isNaN(
-            date.getTime(),
-          )
-        ) {
-          toast.error(
-            "زمان پرداخت معتبر نیست.",
-          );
-          return;
-        }
-
-        paidAt =
-          date.toISOString();
-      } else {
-        paidAt =
-          new Date().toISOString();
-      }
-    }
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      toast.error(
-        "نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.",
-      );
-      return;
-    }
-
-    setSavingInvoice(true);
-
-    const payload = {
-      title:
-        cleanTitle,
-
-      amount,
-
-      currency:
-        "TOMAN",
-
-      status,
-
-      due_at:
-        dueAt,
-
-      payment_instructions:
-        invoiceInstructions.trim() ||
-        null,
-
-      admin_note:
-        invoiceAdminNote.trim() ||
-        null,
-
-      paid_at:
-        status === "paid"
-          ? paidAt
-          : null,
-
-      payment_reference:
-        status === "paid"
-          ? invoicePaymentReference.trim() ||
-            null
-          : null,
+        loadProjectInvoices(
+          current.id,
+        ),
+      ]);
     };
-
-    if (editingInvoiceId) {
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("project_invoices")
-        .update(payload)
-        .eq(
-          "id",
-          editingInvoiceId,
-        )
-        .select("*")
-        .single();
-
-      if (error) {
-        console.error(error);
-
-        toast.error(
-          "ذخیره درخواست پرداخت انجام نشد.",
-        );
-
-        setSavingInvoice(false);
-        return;
-      }
-
-      const updated =
-        data as ProjectInvoiceRow;
-
-      setProjectInvoices(
-        (current) =>
-          current.map(
-            (invoice) =>
-              invoice.id ===
-              updated.id
-                ? updated
-                : invoice,
-          ),
-      );
-    } else {
-      if (
-        invoiceByQuoteId.has(
-          invoiceQuoteId,
-        )
-      ) {
-        toast.error(
-          "برای این Quote قبلاً درخواست پرداخت ایجاد شده است.",
-        );
-
-        setSavingInvoice(false);
-        return;
-      }
-
-      const {
-        data,
-        error,
-      } = await supabase
-        .from("project_invoices")
-        .insert({
-          ...payload,
-
-          project_id:
-            selectedProject.id,
-
-          quote_id:
-            invoiceQuoteId,
-
-          user_id:
-            selectedProject.user_id,
-
-          created_by:
-            user.id,
-        })
-        .select("*")
-        .single();
-
-      if (error) {
-        console.error(error);
-
-        if (
-          error.message
-            .toLowerCase()
-            .includes(
-              "duplicate",
-            )
-        ) {
-          toast.error(
-            "برای این پیشنهاد قیمت قبلاً درخواست پرداخت ایجاد شده است.",
-          );
-        } else {
-          toast.error(
-            "ایجاد درخواست پرداخت انجام نشد.",
-          );
-        }
-
-        setSavingInvoice(false);
-        return;
-      }
-
-      setProjectInvoices(
-        (current) => [
-          data as ProjectInvoiceRow,
-          ...current,
-        ],
-      );
-    }
-
-    setSavingInvoice(false);
-    resetInvoiceForm();
-
-    toast.success(
-      status === "issued"
-        ? "درخواست پرداخت برای پژوهشگر صادر شد."
-        : status === "paid"
-          ? "پرداخت با موفقیت ثبت شد."
-          : "اطلاعات درخواست پرداخت ذخیره شد.",
-    );
-  };
 
   /*
    * =======================================================
-   * PROJECT RESOURCE RELOAD
+   * RELOAD CURRENT PROJECT
    * =======================================================
    */
 
   useEffect(() => {
-    if (!selectedProject) {
-      setMessages([]);
+    if (!current?.id) {
+      setProjectMessages([]);
       setProjectFiles([]);
       setProjectQuotes([]);
       setProjectInvoices([]);
       setMessageText("");
-
-      resetQuoteForm();
-      resetInvoiceForm();
-
       return;
     }
 
-    setMessages([]);
+    setProjectMessages([]);
     setProjectFiles([]);
     setProjectQuotes([]);
     setProjectInvoices([]);
     setMessageText("");
 
-    resetQuoteForm();
-    resetInvoiceForm();
-
     loadMessages(
-      selectedProject.id,
+      current.id,
     );
 
-    loadProjectFiles(
-      selectedProject.id,
+    loadFiles(
+      current.id,
     );
 
     loadProjectQuotes(
-      selectedProject.id,
+      current.id,
     );
 
     loadProjectInvoices(
-      selectedProject.id,
+      current.id,
     );
-  }, [selectedProject?.id]);
+  }, [current?.id]);
 
   /*
    * =======================================================
-   * CONSULTATIONS
+   * DATA UPLOAD
    * =======================================================
    */
 
-  const loadConsultations =
-    async () => {
-      setConsultationsLoading(
-        true,
-      );
-
-      const { data, error } =
-        await supabase
-          .from("consultations")
-          .select("*")
-          .order("created_at", {
-            ascending: false,
-          });
-
-      if (error) {
-        console.error(error);
-
+  const uploadProjectFile =
+    async (file: File) => {
+      if (!current || !user) {
         toast.error(
-          "دریافت درخواست‌های مشاوره انجام نشد.",
+          "ابتدا وارد حساب کاربری شوید.",
         );
-
-        setConsultationsLoading(
-          false,
-        );
-
         return;
       }
 
-      setConsultations(
-        (data ??
-          []) as ConsultationRow[],
+      if (
+        file.size >
+        MAX_STANDARD_UPLOAD_BYTES
+      ) {
+        toast.error(
+          "در این نسخه، آپلود مستقیم تا ۶ مگابایت پشتیبانی می‌شود.",
+        );
+        return;
+      }
+
+      if (file.size <= 0) {
+        toast.error(
+          "فایل انتخاب‌شده خالی است.",
+        );
+        return;
+      }
+
+      setUploadingFile(true);
+
+      const extension =
+        safeExtension(
+          file.name,
+        );
+
+      const storagePath =
+        `${current.id}/` +
+        `${crypto.randomUUID()}` +
+        `${extension}`;
+
+      const {
+        error: storageError,
+      } = await supabase.storage
+        .from(
+          PROJECT_FILES_BUCKET,
+        )
+        .upload(
+          storagePath,
+          file,
+          {
+            cacheControl: "3600",
+            upsert: false,
+            contentType:
+              file.type ||
+              undefined,
+          },
+        );
+
+      if (storageError) {
+        console.error(
+          storageError,
+        );
+
+        toast.error(
+          "آپلود فایل انجام نشد.",
+        );
+
+        setUploadingFile(false);
+        return;
+      }
+
+      const {
+        data: metadata,
+        error: metadataError,
+      } = await supabase
+        .from("project_files")
+        .insert({
+          project_id:
+            current.id,
+
+          uploader_id:
+            user.id,
+
+          bucket_id:
+            PROJECT_FILES_BUCKET,
+
+          storage_path:
+            storagePath,
+
+          original_name:
+            file.name,
+
+          mime_type:
+            file.type || null,
+
+          size_bytes:
+            file.size,
+
+          category: "data",
+        })
+        .select("*")
+        .single();
+
+      if (metadataError) {
+        console.error(
+          metadataError,
+        );
+
+        toast.error(
+          "فایل آپلود شد اما ثبت اطلاعات آن با خطا مواجه شد.",
+        );
+
+        setUploadingFile(false);
+        return;
+      }
+
+      setProjectFiles(
+        (previous) => [
+          metadata as ProjectFileRow,
+          ...previous,
+        ],
       );
 
-      setConsultationsLoading(
-        false,
+      setTotalFileCount(
+        (previous) =>
+          previous + 1,
+      );
+
+      toast.success(
+        "فایل با موفقیت بارگذاری شد.",
+      );
+
+      setUploadingFile(false);
+    };
+
+  const handleFileInputChange =
+    async (
+      event: ChangeEvent<HTMLInputElement>,
+    ) => {
+      const file =
+        event.target.files?.[0];
+
+      event.target.value = "";
+
+      if (!file) return;
+
+      await uploadProjectFile(
+        file,
       );
     };
 
-  const openConsultation = (
-    consultation: ConsultationRow,
-  ) => {
-    setSelectedConsultation(
-      consultation,
-    );
+  /*
+   * =======================================================
+   * PRIVATE DOWNLOAD
+   * =======================================================
+   */
 
-    setConsultationStatus(
-      consultation.status,
-    );
-
-    setConsultationScheduledAt(
-      toDateTimeLocalValue(
-        consultation.scheduled_at,
-      ),
-    );
-
-    setConsultationDuration(
-      consultation.duration_minutes
-        ? String(
-            consultation.duration_minutes,
-          )
-        : "",
-    );
-
-    setConsultationMeetingUrl(
-      consultation.meeting_url ??
-        "",
-    );
-
-    setConsultationAdminNote(
-      consultation.admin_note ??
-        "",
-    );
-  };
-
-  const saveConsultation =
-    async () => {
-      if (!selectedConsultation)
-        return;
-
-      if (
-        consultationStatus ===
-          "scheduled" &&
-        !consultationScheduledAt
-      ) {
-        toast.error(
-          "برای وضعیت «زمان‌بندی شده» تاریخ و ساعت جلسه را تعیین کنید.",
-        );
-
-        return;
-      }
-
-      let duration:
-        | number
-        | null = null;
-
-      if (
-        consultationDuration.trim()
-      ) {
-        duration =
-          parseIntegerInput(
-            consultationDuration,
-          );
-
-        if (
-          duration === null ||
-          duration < 15 ||
-          duration > 240
-        ) {
-          toast.error(
-            "مدت جلسه باید بین ۱۵ تا ۲۴۰ دقیقه باشد.",
-          );
-
-          return;
-        }
-      }
-
-      const cleanMeetingUrl =
-        consultationMeetingUrl.trim();
-
-      if (
-        cleanMeetingUrl &&
-        !/^https?:\/\//i.test(
-          cleanMeetingUrl,
-        )
-      ) {
-        toast.error(
-          "لینک جلسه باید با http:// یا https:// شروع شود.",
-        );
-
-        return;
-      }
-
-      let scheduledAt:
-        | string
-        | null = null;
-
-      if (
-        consultationScheduledAt
-      ) {
-        const date =
-          new Date(
-            consultationScheduledAt,
-          );
-
-        if (
-          Number.isNaN(
-            date.getTime(),
-          )
-        ) {
-          toast.error(
-            "تاریخ یا ساعت جلسه معتبر نیست.",
-          );
-
-          return;
-        }
-
-        scheduledAt =
-          date.toISOString();
-      }
-
-      setSavingConsultation(
-        true,
+  const downloadProjectFile =
+    async (
+      file: ProjectFileRow,
+    ) => {
+      setDownloadingFileId(
+        file.id,
       );
 
       const {
         data,
         error,
-      } = await supabase
-        .from("consultations")
-        .update({
-          status:
-            consultationStatus,
-
-          scheduled_at:
-            scheduledAt,
-
-          duration_minutes:
-            duration,
-
-          meeting_url:
-            cleanMeetingUrl ||
-            null,
-
-          admin_note:
-            consultationAdminNote.trim() ||
-            null,
-        })
-        .eq(
-          "id",
-          selectedConsultation.id,
+      } = await supabase.storage
+        .from(
+          file.bucket_id,
         )
-        .select("*")
-        .single();
+        .download(
+          file.storage_path,
+        );
 
-      if (error) {
+      if (error || !data) {
         console.error(error);
 
         toast.error(
-          "ذخیره اطلاعات مشاوره انجام نشد.",
+          "دانلود فایل انجام نشد.",
         );
 
-        setSavingConsultation(
-          false,
+        setDownloadingFileId(
+          null,
         );
 
         return;
       }
 
-      const updated =
-        data as ConsultationRow;
+      const objectUrl =
+        URL.createObjectURL(
+          data,
+        );
 
-      setConsultations(
-        (current) =>
-          current.map(
-            (consultation) =>
-              consultation.id ===
-              updated.id
-                ? updated
-                : consultation,
-          ),
+      const anchor =
+        document.createElement(
+          "a",
+        );
+
+      anchor.href = objectUrl;
+      anchor.download =
+        file.original_name;
+
+      document.body.appendChild(
+        anchor,
       );
 
-      setSelectedConsultation(
-        updated,
+      anchor.click();
+      anchor.remove();
+
+      URL.revokeObjectURL(
+        objectUrl,
       );
 
-      setSavingConsultation(
-        false,
-      );
-
-      toast.success(
-        "اطلاعات مشاوره با موفقیت ذخیره شد.",
+      setDownloadingFileId(
+        null,
       );
     };
-
-  /*
-   * =======================================================
-   * LOADING
-   * =======================================================
-   */
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center gap-2">
-        <Loader2 className="size-5 animate-spin text-primary" />
-
-        <span className="text-sm text-muted-foreground">
-          در حال بارگذاری پنل مدیریت…
-        </span>
-      </div>
-    );
-  }
 
   /*
    * =======================================================
@@ -2380,1609 +1275,982 @@ function Admin() {
     <div className="mx-auto max-w-7xl px-4 py-14">
       {/* HEADER */}
 
-      <div>
-        <p className="text-sm font-semibold text-primary">
-          HubGene Admin
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl text-navy">
+            داشبورد پژوهشگر
+          </h1>
 
-        <h1 className="mt-2 text-3xl text-navy">
-          پنل مدیریت هاب‌ژن
-        </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            خوش آمدید،{" "}
+            {displayName}
+          </p>
+        </div>
 
-        <p className="mt-2 text-sm text-muted-foreground">
-          مدیریت پروژه‌ها، مشاوره‌ها، پیشنهادهای قیمت،
-          پرداخت‌ها و خروجی‌های پژوهشی
-        </p>
+        <Button
+          asChild
+          variant="hero"
+        >
+          <Link to="/wizard">
+            ثبت پروژه جدید
+          </Link>
+        </Button>
       </div>
 
       {/* STATS */}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard
+      <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <DashboardStat
           icon={FolderKanban}
-          label="کل پروژه‌ها"
-          value={projects.length}
-        />
-
-        <StatCard
-          icon={Activity}
           label="پروژه‌های فعال"
-          value={activeProjects}
+          value={activeCount}
         />
 
-        <StatCard
+        <DashboardStat
+          icon={CloudUpload}
+          label="فایل‌های پروژه"
+          value={totalFileCount}
+        />
+
+        <DashboardStat
           icon={Users2}
-          label="پژوهشگران"
-          value={profiles.length}
+          label="درخواست‌های مشاوره"
+          value={
+            consultations.length
+          }
         />
 
-        <StatCard
-          icon={CalendarClock}
-          label="مشاوره‌های فعال"
-          value={activeConsultations}
-        />
-
-        <StatCard
-          icon={CheckCircle2}
-          label="پروژه‌های تکمیل‌شده"
-          value={completedProjects}
+        <DashboardStat
+          icon={FileBarChart}
+          label="گزارش‌های تحویل‌شده"
+          value={
+            totalReportCount
+          }
         />
       </div>
 
-      {/* ===================================================
-          CONSULTATIONS
-      =================================================== */}
-
-      <section className="card-elevated mt-8 overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-5">
-          <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-navy">
-              <CalendarClock className="size-5 text-primary" />
-              درخواست‌های مشاوره
-            </h2>
-
-            <p className="mt-1 text-xs text-muted-foreground">
-              بررسی، زمان‌بندی و مدیریت جلسات پژوهشگران
-            </p>
-          </div>
-
-          <RefreshButton
-            loading={consultationsLoading}
-            onClick={loadConsultations}
-          />
-        </div>
-
-        {consultationsLoading ? (
-          <LoadingBox text="در حال دریافت درخواست‌های مشاوره…" />
-        ) : consultations.length === 0 ? (
-          <div className="p-12 text-center">
-            <CalendarClock className="mx-auto size-8 text-primary/50" />
-
-            <p className="mt-4 text-sm font-bold text-navy">
-              هنوز درخواست مشاوره‌ای ثبت نشده است.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-sm">
-              <thead className="bg-secondary/60 text-xs text-muted-foreground">
-                <tr>
-                  <th className="p-4 text-start">پژوهشگر</th>
-                  <th className="p-4 text-start">موضوع</th>
-                  <th className="p-4 text-start">نوع مشاوره</th>
-                  <th className="p-4 text-start">پروژه</th>
-                  <th className="p-4 text-start">تاریخ درخواست</th>
-                  <th className="p-4 text-start">وضعیت</th>
-                  <th className="p-4 text-start">مدیریت</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-border">
-                {consultations.map((consultation) => {
-                  const researcher =
-                    profileMap.get(
-                      consultation.user_id,
-                    );
-
-                  const project =
-                    consultation.project_id
-                      ? projectMap.get(
-                          consultation.project_id,
-                        )
-                      : undefined;
-
-                  return (
-                    <tr
-                      key={consultation.id}
-                      className="hover:bg-secondary/30"
-                    >
-                      <td className="p-4">
-                        <p className="font-semibold text-navy">
-                          {researcher?.full_name ||
-                            "پژوهشگر"}
-                        </p>
-
-                        {researcher?.organization && (
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            {researcher.organization}
-                          </p>
-                        )}
-                      </td>
-
-                      <td className="p-4">
-                        <p className="max-w-xs font-semibold text-navy">
-                          {consultation.subject}
-                        </p>
-                      </td>
-
-                      <td className="p-4 text-xs text-muted-foreground">
-                        {consultationTypeLabels[
-                          consultation.consultation_type
-                        ] ??
-                          consultation.consultation_type}
-                      </td>
-
-                      <td className="p-4">
-                        {project ? (
-                          <>
-                            <p className="text-xs font-semibold text-navy">
-                              {project.title}
-                            </p>
-
-                            <p
-                              className="mt-1 text-[10px] text-muted-foreground"
-                              dir="ltr"
-                            >
-                              {shortId(project.id)}
-                            </p>
-                          </>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            مشاوره عمومی
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="p-4 text-xs text-muted-foreground">
-                        {formatDateTime(
-                          consultation.created_at,
-                        )}
-                      </td>
-
-                      <td className="p-4">
-                        <ConsultationStatusBadge
-                          status={consultation.status}
-                        />
-                      </td>
-
-                      <td className="p-4">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            openConsultation(
-                              consultation,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
-                        >
-                          <Eye className="size-4 text-primary" />
-                          مدیریت درخواست
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* CONSULTATION EDITOR */}
-
-      {selectedConsultation && (
-        <section className="card-elevated mt-6 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold text-primary">
-                مدیریت مشاوره
-              </p>
-
-              <h2 className="mt-2 text-xl font-bold text-navy">
-                {selectedConsultation.subject}
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedConsultation(null)
-              }
-              className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:bg-secondary"
-            >
-              بستن
-            </button>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <DetailCard
-              label="نوع مشاوره"
-              value={
-                consultationTypeLabels[
-                  selectedConsultation.consultation_type
-                ] ??
-                selectedConsultation.consultation_type
-              }
-            />
-
-            <DetailCard
-              label="تاریخ درخواست"
-              value={formatDateTime(
-                selectedConsultation.created_at,
-              )}
-            />
-
-            <DetailCard
-              label="پروژه"
-              value={
-                selectedConsultation.project_id
-                  ? projectMap.get(
-                      selectedConsultation.project_id,
-                    )?.title || "پروژه"
-                  : "مشاوره عمومی"
-              }
-            />
-          </div>
-
-          {selectedConsultation.description && (
-            <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-5">
-              <p className="text-xs font-bold text-navy">
-                توضیحات پژوهشگر
-              </p>
-
-              <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-                {selectedConsultation.description}
-              </p>
-            </div>
-          )}
-
-          <div className="mt-7 border-t border-border pt-6">
-            <h3 className="text-base font-bold text-navy">
-              تنظیمات جلسه
-            </h3>
-
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <div>
-                <label className="text-sm font-bold text-navy">
-                  وضعیت درخواست
-                </label>
-
-                <select
-                  value={consultationStatus}
-                  onChange={(event) =>
-                    setConsultationStatus(
-                      event.target.value,
-                    )
-                  }
-                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                >
-                  {consultationStatusOptions.map(
-                    (option) => (
-                      <option
-                        key={option.value}
-                        value={option.value}
-                      >
-                        {option.label}
-                      </option>
-                    ),
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-navy">
-                  تاریخ و ساعت جلسه
-                </label>
-
-                <input
-                  type="datetime-local"
-                  value={consultationScheduledAt}
-                  onChange={(event) =>
-                    setConsultationScheduledAt(
-                      event.target.value,
-                    )
-                  }
-                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-navy">
-                  مدت جلسه
-                </label>
-
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    type="number"
-                    min={15}
-                    max={240}
-                    step={15}
-                    value={consultationDuration}
-                    onChange={(event) =>
-                      setConsultationDuration(
-                        event.target.value,
-                      )
-                    }
-                    placeholder="45"
-                    className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                  />
-
-                  <span className="shrink-0 text-xs text-muted-foreground">
-                    دقیقه
-                  </span>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-navy">
-                  لینک جلسه
-                </label>
-
-                <input
-                  type="url"
-                  dir="ltr"
-                  value={consultationMeetingUrl}
-                  onChange={(event) =>
-                    setConsultationMeetingUrl(
-                      event.target.value,
-                    )
-                  }
-                  placeholder="https://meet.google.com/..."
-                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                />
-
-                {consultationMeetingUrl.trim() &&
-                  /^https?:\/\//i.test(
-                    consultationMeetingUrl.trim(),
-                  ) && (
-                    <a
-                      href={consultationMeetingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
-                    >
-                      <ExternalLink className="size-3.5" />
-                      تست لینک جلسه
-                    </a>
-                  )}
-              </div>
-            </div>
-
-            <div className="mt-5">
-              <label className="text-sm font-bold text-navy">
-                یادداشت برای پژوهشگر
-              </label>
-
-              <textarea
-                rows={5}
-                maxLength={5000}
-                value={consultationAdminNote}
-                onChange={(event) =>
-                  setConsultationAdminNote(
-                    event.target.value,
-                  )
-                }
-                className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
-              />
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                disabled={savingConsultation}
-                onClick={saveConsultation}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
-              >
-                {savingConsultation ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <Save className="size-4" />
-                )}
-
-                ذخیره اطلاعات مشاوره
-              </button>
-            </div>
-          </div>
-        </section>
+      {loadError && (
+        <p className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+          {loadError}
+        </p>
       )}
 
-      {/* ===================================================
-          PROJECTS
-      =================================================== */}
-
-      <section className="card-elevated mt-8 overflow-hidden">
-        <div className="border-b border-border p-5">
-          <h2 className="text-lg font-bold text-navy">
-            پروژه‌های پژوهشی
-          </h2>
-
-          <p className="mt-1 text-xs text-muted-foreground">
-            مشاهده و مدیریت پروژه‌های ثبت‌شده
-          </p>
+      {loading ? (
+        <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          در حال بارگذاری پروژه‌ها…
         </div>
+      ) : projects.length ===
+        0 ? (
+        <div className="card-elevated mt-8 p-12 text-center">
+          <FolderKanban className="mx-auto size-8 text-primary" />
 
-        {projects.length === 0 ? (
-          <div className="p-10 text-center text-sm text-muted-foreground">
-            هنوز پروژه‌ای ثبت نشده است.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[1050px] text-sm">
-              <thead className="bg-secondary/60 text-xs text-muted-foreground">
-                <tr>
-                  <th className="p-4 text-start">شناسه</th>
-                  <th className="p-4 text-start">پروژه</th>
-                  <th className="p-4 text-start">پژوهشگر</th>
-                  <th className="p-4 text-start">نوع تحلیل</th>
-                  <th className="p-4 text-start">تاریخ ثبت</th>
-                  <th className="p-4 text-start">وضعیت</th>
-                  <th className="p-4 text-start">جزئیات</th>
-                </tr>
-              </thead>
+          <p className="mt-4 text-base font-bold text-navy">
+            هنوز پروژه‌ای ثبت نکرده‌اید.
+          </p>
 
-              <tbody className="divide-y divide-border">
-                {projects.map((project) => {
-                  const researcher =
-                    profileMap.get(
-                      project.user_id,
-                    );
+          <Button
+            asChild
+            variant="hero"
+            className="mt-6"
+          >
+            <Link to="/wizard">
+              ثبت پروژه جدید
+            </Link>
+          </Button>
+        </div>
+      ) : (
+        <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
+          {/* PROJECT LIST */}
 
-                  return (
-                    <tr
-                      key={project.id}
-                      className="hover:bg-secondary/30"
+          <aside className="card-elevated h-fit p-5">
+            <h2 className="text-sm font-bold text-navy">
+              پروژه‌های من
+            </h2>
+
+            <ul className="mt-4 space-y-2">
+              {projects.map(
+                (project) => (
+                  <li
+                    key={
+                      project.id
+                    }
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setActive(
+                          project.id,
+                        )
+                      }
+                      className={`w-full rounded-xl border p-3 text-start transition-colors ${
+                        current?.id ===
+                        project.id
+                          ? "border-primary bg-accent/60"
+                          : "border-border hover:bg-secondary"
+                      }`}
                     >
-                      <td
-                        className="p-4 text-xs"
+                      <span
+                        className="block text-[11px] text-muted-foreground"
                         dir="ltr"
                       >
-                        {shortId(project.id)}
-                      </td>
-
-                      <td className="p-4">
-                        <p className="font-semibold text-navy">
-                          {project.title}
-                        </p>
-                      </td>
-
-                      <td className="p-4">
-                        <p className="font-medium text-navy">
-                          {researcher?.full_name ||
-                            "پژوهشگر"}
-                        </p>
-
-                        {researcher?.organization && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            {researcher.organization}
-                          </p>
+                        {shortId(
+                          project.id,
                         )}
-                      </td>
+                      </span>
 
-                      <td className="p-4 text-muted-foreground">
-                        {project.analysis_type ?? "—"}
-                      </td>
+                      <span className="mt-1 block text-sm font-semibold leading-6 text-navy">
+                        {
+                          project.title
+                        }
+                      </span>
 
-                      <td className="p-4 text-muted-foreground">
-                        {formatDate(
-                          project.created_at,
-                        )}
-                      </td>
-
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <select
-                            value={project.status}
-                            disabled={
-                              updatingId ===
-                              project.id
-                            }
-                            onChange={(event) =>
-                              updateStatus(
-                                project.id,
-                                event.target.value,
-                              )
-                            }
-                            className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-navy outline-none focus:border-primary"
-                          >
-                            {projectStatusOptions.map(
-                              (option) => (
-                                <option
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </option>
-                              ),
-                            )}
-                          </select>
-
-                          {updatingId ===
-                            project.id && (
-                            <Loader2 className="size-4 animate-spin text-primary" />
-                          )}
-                        </div>
-
-                        <p className="mt-1 text-[11px] text-muted-foreground">
-                          {statusLabel(
-                            project.status,
-                          )}
-                        </p>
-                      </td>
-
-                      <td className="p-4">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setSelectedProject(
-                              project,
-                            )
-                          }
-                          className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
-                        >
-                          <Eye className="size-4 text-primary" />
-                          مشاهده پروژه
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* ===================================================
-          SELECTED PROJECT
-      =================================================== */}
-
-      {selectedProject && (
-        <section className="card-elevated mt-8 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold text-primary">
-                جزئیات پروژه
-              </p>
-
-              <h2 className="mt-2 text-xl font-bold text-navy">
-                {selectedProject.title}
-              </h2>
-
-              <p
-                className="mt-1 text-xs text-muted-foreground"
-                dir="ltr"
-              >
-                {shortId(selectedProject.id)}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSelectedProject(null)
-              }
-              className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:bg-secondary"
-            >
-              بستن
-            </button>
-          </div>
-
-          {/* INFO */}
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <DetailCard
-              label="پژوهشگر"
-              value={
-                selectedResearcher?.full_name ||
-                "پژوهشگر"
-              }
-            />
-
-            <DetailCard
-              label="سازمان / دانشگاه"
-              value={
-                selectedResearcher?.organization ||
-                "—"
-              }
-            />
-
-            <DetailCard
-              label="حوزه پژوهشی"
-              value={
-                selectedResearcher?.research_field ||
-                "—"
-              }
-            />
-
-            <DetailCard
-              label="نوع تحلیل"
-              value={
-                selectedProject.analysis_type ||
-                "—"
-              }
-            />
-
-            <DetailCard
-              label="وضعیت پروژه"
-              value={statusLabel(
-                selectedProject.status,
+                      <span className="mt-1 block text-[11px] text-primary">
+                        {project.analysis_type ??
+                          "—"}
+                      </span>
+                    </button>
+                  </li>
+                ),
               )}
-            />
+            </ul>
+          </aside>
 
-            <DetailCard
-              label="تاریخ ثبت"
-              value={formatDate(
-                selectedProject.created_at,
-              )}
-            />
+          {/* PROJECT */}
 
-            <DetailCard
-              label="آخرین بروزرسانی"
-              value={formatDate(
-                selectedProject.updated_at,
-              )}
-            />
-
-            <DetailCard
-              label="مرحله پژوهش"
-              value={labelFor(
-                "stage",
-                selectedWizard.stage,
-              )}
-            />
-          </div>
-
-          {/* WIZARD */}
-
-          <div className="mt-8 border-t border-border pt-6">
-            <h3 className="text-base font-bold text-navy">
-              اطلاعات ثبت‌شده در طراح پروژه
-            </h3>
-
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <DetailCard
-                label="مرحله پژوهش"
-                value={labelFor(
-                  "stage",
-                  selectedWizard.stage,
-                )}
-              />
-
-              <DetailCard
-                label="حوزه پژوهشی"
-                value={labelFor(
-                  "field",
-                  selectedWizard.field,
-                )}
-              />
-
-              <DetailCard
-                label="ارگانیسم / مدل"
-                value={labelFor(
-                  "organism",
-                  selectedWizard.organism,
-                )}
-              />
-
-              <DetailCard
-                label="نوع داده"
-                value={labelFor(
-                  "dataType",
-                  selectedWizard.dataType,
-                )}
-              />
-
-              <DetailCard
-                label="هدف پژوهشی"
-                value={labelFor(
-                  "goal",
-                  selectedWizard.goal,
-                )}
-              />
-
-              <DetailCard
-                label="نوع تحلیل پیشنهادی"
-                value={
-                  selectedProject.analysis_type ||
-                  "—"
-                }
-              />
-            </div>
-          </div>
-
-          {/* =================================================
-              QUOTES
-          ================================================= */}
-
-          <div
-            id="quote-editor"
-            className="mt-8 scroll-mt-8 border-t border-border pt-6"
-          >
+          <section className="card-elevated p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-xs font-semibold text-primary">
-                  Project Quote
-                </p>
+                <h2 className="text-lg text-navy">
+                  {current!.title}
+                </h2>
 
-                <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
-                  <BadgeDollarSign className="size-5 text-primary" />
-                  پیشنهاد قیمت پروژه
-                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  <span dir="ltr">
+                    {shortId(
+                      current!.id,
+                    )}
+                  </span>
 
-                <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                  Scope، خروجی‌ها، مبلغ و زمان تقریبی پروژه را
-                  مشخص کنید.
-                </p>
-              </div>
+                  {" · "}
 
-              {editingQuoteId && (
-                <button
-                  type="button"
-                  onClick={resetQuoteForm}
-                  className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
-                >
-                  لغو ویرایش
-                </button>
-              )}
-            </div>
+                  {current!
+                    .analysis_type ??
+                    "—"}
 
-            <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/20 p-5">
-              <div>
-                <label className="text-sm font-bold text-navy">
-                  عنوان پیشنهاد
-                </label>
+                  {" · ثبت "}
 
-                <input
-                  type="text"
-                  value={quoteTitle}
-                  onChange={(event) =>
-                    setQuoteTitle(
-                      event.target.value,
-                    )
-                  }
-                  placeholder="مثلاً: تحلیل کامل Bulk RNA-seq"
-                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="mt-5">
-                <label className="text-sm font-bold text-navy">
-                  شرح Scope پروژه
-                </label>
-
-                <textarea
-                  rows={5}
-                  value={quoteScope}
-                  onChange={(event) =>
-                    setQuoteScope(
-                      event.target.value,
-                    )
-                  }
-                  className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="mt-5">
-                <label className="text-sm font-bold text-navy">
-                  خروجی‌های قابل تحویل
-                </label>
-
-                <textarea
-                  rows={5}
-                  value={quoteDeliverables}
-                  onChange={(event) =>
-                    setQuoteDeliverables(
-                      event.target.value,
-                    )
-                  }
-                  className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="mt-5 grid gap-5 md:grid-cols-3">
-                <div>
-                  <label className="text-sm font-bold text-navy">
-                    مبلغ
-                  </label>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      dir="ltr"
-                      value={quoteAmount}
-                      onChange={(event) =>
-                        setQuoteAmount(
-                          event.target.value,
-                        )
-                      }
-                      placeholder="15000000"
-                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                    />
-
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      تومان
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-bold text-navy">
-                    زمان تقریبی
-                  </label>
-
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      max={365}
-                      value={quoteEstimatedDays}
-                      onChange={(event) =>
-                        setQuoteEstimatedDays(
-                          event.target.value,
-                        )
-                      }
-                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                    />
-
-                    <span className="shrink-0 text-xs text-muted-foreground">
-                      روز
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-bold text-navy">
-                    اعتبار پیشنهاد تا
-                  </label>
-
-                  <input
-                    type="datetime-local"
-                    value={quoteValidUntil}
-                    onChange={(event) =>
-                      setQuoteValidUntil(
-                        event.target.value,
-                      )
-                    }
-                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-5">
-                <label className="text-sm font-bold text-navy">
-                  یادداشت برای پژوهشگر
-                </label>
-
-                <textarea
-                  rows={4}
-                  value={quoteAdminNote}
-                  onChange={(event) =>
-                    setQuoteAdminNote(
-                      event.target.value,
-                    )
-                  }
-                  className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
-                />
-              </div>
-
-              <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border pt-5">
-                <button
-                  type="button"
-                  disabled={savingQuote}
-                  onClick={() =>
-                    saveQuote("draft")
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold text-navy hover:bg-secondary disabled:opacity-50"
-                >
-                  <Save className="size-4" />
-                  ذخیره پیش‌نویس
-                </button>
-
-                <button
-                  type="button"
-                  disabled={savingQuote}
-                  onClick={() =>
-                    saveQuote("sent")
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                >
-                  {savingQuote ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Send className="size-4" />
+                  {formatDate(
+                    current!
+                      .created_at,
                   )}
 
-                  ارسال برای پژوهشگر
-                </button>
-              </div>
-            </div>
+                  {" · آخرین بروزرسانی "}
 
-            {/* QUOTE HISTORY */}
-
-            <div className="mt-6">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h4 className="text-sm font-bold text-navy">
-                    پیشنهادهای ثبت‌شده
-                  </h4>
-
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Quote تأییدشده امکان ایجاد Invoice خواهد داشت.
-                  </p>
-                </div>
-
-                <RefreshButton
-                  loading={
-                    quotesLoading ||
-                    invoicesLoading
-                  }
-                  onClick={() => {
-                    loadProjectQuotes(
-                      selectedProject.id,
-                    );
-
-                    loadProjectInvoices(
-                      selectedProject.id,
-                    );
-                  }}
-                />
+                  {formatDate(
+                    current!
+                      .updated_at,
+                  )}
+                </p>
               </div>
 
-              {quotesLoading ||
-              invoicesLoading ? (
-                <LoadingBox text="در حال دریافت اطلاعات مالی…" />
-              ) : projectQuotes.length ===
-                0 ? (
-                <div className="mt-4 rounded-2xl border border-border p-8 text-center">
-                  <BadgeDollarSign className="mx-auto size-7 text-primary/50" />
-
-                  <p className="mt-3 text-sm font-bold text-navy">
-                    هنوز پیشنهاد قیمتی ثبت نشده است.
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 space-y-4">
-                  {projectQuotes.map((quote) => (
-                    <QuoteCard
-                      key={quote.id}
-                      quote={quote}
-                      invoice={
-                        invoiceByQuoteId.get(
-                          quote.id,
-                        ) ?? null
-                      }
-                      sending={
-                        sendingQuoteId ===
-                        quote.id
-                      }
-                      onEditQuote={() =>
-                        editDraftQuote(
-                          quote,
-                        )
-                      }
-                      onSendQuote={() =>
-                        sendExistingDraftQuote(
-                          quote,
-                        )
-                      }
-                      onCreateInvoice={() =>
-                        openNewInvoice(
-                          quote,
-                        )
-                      }
-                      onEditInvoice={(
-                        invoice,
-                      ) =>
-                        editInvoice(
-                          invoice,
-                        )
-                      }
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* =================================================
-              INVOICE EDITOR
-          ================================================= */}
-
-          {invoiceQuoteId && (
-            <div
-              id="invoice-editor"
-              className="mt-8 scroll-mt-8 border-t border-border pt-6"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold text-primary">
-                    Invoice
-                  </p>
-
-                  <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
-                    <ReceiptText className="size-5 text-primary" />
-
-                    {editingInvoiceId
-                      ? "مدیریت درخواست پرداخت"
-                      : "ایجاد درخواست پرداخت"}
-                  </h3>
-
-                  <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                    این درخواست فقط به Quote تأییدشده همین پروژه
-                    متصل است.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={resetInvoiceForm}
-                  className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
-                >
-                  بستن
-                </button>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/20 p-5">
-                <div className="rounded-xl border border-border bg-background p-4">
-                  <p className="text-[11px] text-muted-foreground">
-                    Quote مرتبط
-                  </p>
-
-                  <p className="mt-1 text-sm font-bold text-navy">
-                    {projectQuotes.find(
-                      (quote) =>
-                        quote.id ===
-                        invoiceQuoteId,
-                    )?.title || "—"}
-                  </p>
-                </div>
-
-                <div className="mt-5">
-                  <label className="text-sm font-bold text-navy">
-                    عنوان درخواست پرداخت
-                  </label>
-
-                  <input
-                    type="text"
-                    value={invoiceTitle}
-                    onChange={(event) =>
-                      setInvoiceTitle(
-                        event.target.value,
-                      )
-                    }
-                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                  />
-                </div>
-
-                <div className="mt-5 grid gap-5 md:grid-cols-2">
-                  <div>
-                    <label className="text-sm font-bold text-navy">
-                      مبلغ
-                    </label>
-
-                    <div className="mt-2 flex items-center gap-2">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        dir="ltr"
-                        value={invoiceAmount}
-                        onChange={(event) =>
-                          setInvoiceAmount(
-                            event.target.value,
-                          )
-                        }
-                        placeholder="15000000"
-                        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                      />
-
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        تومان
-                      </span>
-                    </div>
-
-                    {parseIntegerInput(
-                      invoiceAmount,
-                    ) !== null &&
-                      parseIntegerInput(
-                        invoiceAmount,
-                      )! > 0 && (
-                        <p className="mt-2 text-xs font-semibold text-primary">
-                          {formatToman(
-                            parseIntegerInput(
-                              invoiceAmount,
-                            )!,
-                          )}
-                        </p>
-                      )}
-                  </div>
-
-                  <div>
-                    <label className="text-sm font-bold text-navy">
-                      مهلت پرداخت
-                    </label>
-
-                    <input
-                      type="datetime-local"
-                      value={invoiceDueAt}
-                      onChange={(event) =>
-                        setInvoiceDueAt(
-                          event.target.value,
-                        )
-                      }
-                      className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                    />
-                  </div>
-                </div>
-
-                {editingInvoiceId && (
-                  <div className="mt-5">
-                    <label className="text-sm font-bold text-navy">
-                      وضعیت درخواست پرداخت
-                    </label>
-
-                    <select
-                      value={invoiceStatus}
-                      onChange={(event) =>
-                        setInvoiceStatus(
-                          event.target.value,
-                        )
-                      }
-                      className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                    >
-                      {invoiceStatusOptions.map(
-                        (option) => (
-                          <option
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                  </div>
+              <span className="rounded-full bg-accent px-3 py-1 text-[11px] font-semibold text-accent-foreground">
+                {statusLabel(
+                  current!.status,
                 )}
+              </span>
+            </div>
 
-                <div className="mt-5">
-                  <label className="text-sm font-bold text-navy">
-                    دستور پرداخت
-                  </label>
+            <StageTracker
+              stage={statusToStage(
+                current!.status,
+              )}
+            />
 
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    فعلاً می‌توانید توضیحات پرداخت دستی، شماره حساب
-                    یا روند پرداخت را اینجا وارد کنید.
+            <Tabs
+              defaultValue="files"
+              className="mt-8"
+            >
+              <TabsList className="flex-wrap">
+                <TabsTrigger value="files">
+                  داده‌ها
+                </TabsTrigger>
+
+                <TabsTrigger value="messages">
+                  پیام‌ها
+                </TabsTrigger>
+
+                <TabsTrigger value="consults">
+                  مشاوره‌ها
+                </TabsTrigger>
+
+                <TabsTrigger value="reports">
+                  گزارش‌ها
+                </TabsTrigger>
+
+                <TabsTrigger value="results">
+                  نتایج
+                </TabsTrigger>
+
+                <TabsTrigger value="payments">
+                  پرداخت‌ها
+                </TabsTrigger>
+              </TabsList>
+
+              {/* =================================================
+                  DATA
+              ================================================= */}
+
+              <TabsContent
+                value="files"
+                className="mt-5"
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={
+                    handleFileInputChange
+                  }
+                />
+
+                <div className="rounded-2xl border border-dashed border-primary/40 bg-accent/30 p-8 text-center">
+                  <CloudUpload className="mx-auto size-7 text-primary" />
+
+                  <p className="mt-3 text-sm font-semibold text-navy">
+                    بارگذاری داده پروژه
                   </p>
 
-                  <textarea
-                    rows={5}
-                    value={invoiceInstructions}
-                    onChange={(event) =>
-                      setInvoiceInstructions(
-                        event.target.value,
-                      )
+                  <p className="mx-auto mt-1 max-w-xl text-xs leading-6 text-muted-foreground">
+                    برای متادیتا، CSV، Excel، ماتریس داده و
+                    فایل‌های کوچک پژوهشی
+                  </p>
+
+                  <Button
+                    variant="soft"
+                    className="mt-4"
+                    disabled={
+                      uploadingFile
                     }
-                    placeholder="مثلاً: پس از تأیید، اطلاعات پرداخت از طریق هاب‌ژن اعلام می‌شود."
-                    className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
-                  />
+                    onClick={() =>
+                      fileInputRef.current?.click()
+                    }
+                  >
+                    {uploadingFile ? (
+                      <>
+                        <Loader2 className="size-4 animate-spin" />
+                        در حال بارگذاری…
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="size-4" />
+                        انتخاب فایل
+                      </>
+                    )}
+                  </Button>
+
+                  <p className="mt-3 text-[11px] text-muted-foreground">
+                    حداکثر حجم فعلی: ۶ مگابایت
+                  </p>
                 </div>
 
                 <div className="mt-5">
-                  <label className="text-sm font-bold text-navy">
-                    یادداشت برای پژوهشگر
-                  </label>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h3 className="text-sm font-bold text-navy">
+                      داده‌های این پروژه
+                    </h3>
 
-                  <textarea
-                    rows={4}
-                    value={invoiceAdminNote}
-                    onChange={(event) =>
-                      setInvoiceAdminNote(
-                        event.target.value,
-                      )
+                    <RefreshButton
+                      loading={
+                        filesLoading
+                      }
+                      onClick={() =>
+                        current &&
+                        loadFiles(
+                          current.id,
+                        )
+                      }
+                    />
+                  </div>
+
+                  <ProjectFileList
+                    files={
+                      dataFiles
                     }
-                    className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                    loading={
+                      filesLoading
+                    }
+                    emptyTitle="هنوز داده‌ای بارگذاری نشده است."
+                    emptyDescription="اولین فایل داده پروژه را بارگذاری کنید."
+                    downloadingFileId={
+                      downloadingFileId
+                    }
+                    onDownload={
+                      downloadProjectFile
+                    }
                   />
                 </div>
+              </TabsContent>
 
-                {editingInvoiceId &&
-                  invoiceStatus ===
-                    "paid" && (
-                    <div className="mt-5 rounded-2xl border border-primary/20 bg-background p-5">
-                      <p className="text-sm font-bold text-navy">
-                        اطلاعات پرداخت انجام‌شده
-                      </p>
+              {/* =================================================
+                  MESSAGES
+              ================================================= */}
 
-                      <div className="mt-4 grid gap-5 md:grid-cols-2">
-                        <div>
-                          <label className="text-sm font-bold text-navy">
-                            زمان پرداخت
-                          </label>
+              <TabsContent
+                value="messages"
+                className="mt-5"
+              >
+                <div className="rounded-2xl border border-border">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border p-4">
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <MessageSquare className="size-4 text-primary" />
+                      گفت‌وگوی پروژه
+                    </h3>
 
-                          <input
-                            type="datetime-local"
-                            value={
-                              invoicePaidAt
-                            }
-                            onChange={(
-                              event,
-                            ) =>
-                              setInvoicePaidAt(
-                                event
-                                  .target
-                                  .value,
-                              )
-                            }
-                            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                          />
+                    <RefreshButton
+                      loading={
+                        messagesLoading
+                      }
+                      onClick={() =>
+                        current &&
+                        loadMessages(
+                          current.id,
+                        )
+                      }
+                    />
+                  </div>
 
-                          <p className="mt-2 text-[11px] text-muted-foreground">
-                            اگر خالی بماند، زمان فعلی ثبت می‌شود.
-                          </p>
-                        </div>
-
-                        <div>
-                          <label className="text-sm font-bold text-navy">
-                            کد / مرجع پرداخت
-                          </label>
-
-                          <input
-                            type="text"
-                            dir="ltr"
-                            value={
-                              invoicePaymentReference
-                            }
-                            onChange={(
-                              event,
-                            ) =>
-                              setInvoicePaymentReference(
-                                event
-                                  .target
-                                  .value,
-                              )
-                            }
-                            placeholder="PAY-12345"
-                            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
-                          />
-                        </div>
+                  <div className="min-h-[220px] bg-secondary/10 p-4">
+                    {messagesLoading ? (
+                      <LoadingBox text="در حال دریافت پیام‌ها…" />
+                    ) : projectMessages.length ===
+                      0 ? (
+                      <div className="py-14 text-center text-sm text-muted-foreground">
+                        هنوز پیامی ثبت نشده است.
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="space-y-3">
+                        {projectMessages.map(
+                          (
+                            message,
+                          ) => {
+                            const isMine =
+                              message.sender_id ===
+                              user?.id;
 
-                <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border pt-5">
-                  {!editingInvoiceId ? (
-                    <>
+                            return (
+                              <div
+                                key={
+                                  message.id
+                                }
+                                className={`max-w-3xl rounded-2xl border p-4 ${
+                                  isMine
+                                    ? "mr-auto border-primary/20 bg-accent/40"
+                                    : "ml-auto border-border bg-background"
+                                }`}
+                              >
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                  <span className="text-xs font-bold text-navy">
+                                    {isMine
+                                      ? "شما"
+                                      : "مدیریت هاب‌ژن"}
+                                  </span>
+
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {formatDateTime(
+                                      message.created_at,
+                                    )}
+                                  </span>
+                                </div>
+
+                                <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
+                                  {
+                                    message.message
+                                  }
+                                </p>
+                              </div>
+                            );
+                          },
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="border-t border-border p-4">
+                    <textarea
+                      value={
+                        messageText
+                      }
+                      onChange={(
+                        event,
+                      ) =>
+                        setMessageText(
+                          event
+                            .target
+                            .value,
+                        )
+                      }
+                      rows={4}
+                      maxLength={5000}
+                      placeholder="پیام خود را درباره این پروژه بنویسید..."
+                      className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                    />
+
+                    <div className="mt-3 flex justify-end">
                       <button
                         type="button"
-                        disabled={savingInvoice}
-                        onClick={() =>
-                          saveInvoice(
-                            "draft",
-                          )
+                        disabled={
+                          sendingMessage ||
+                          !messageText.trim()
                         }
-                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold text-navy hover:bg-secondary disabled:opacity-50"
-                      >
-                        <Save className="size-4" />
-                        ذخیره پیش‌نویس
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={savingInvoice}
-                        onClick={() =>
-                          saveInvoice(
-                            "issued",
-                          )
+                        onClick={
+                          sendMessage
                         }
                         className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
                       >
-                        {savingInvoice ? (
+                        {sendingMessage ? (
                           <Loader2 className="size-4 animate-spin" />
                         ) : (
                           <Send className="size-4" />
                         )}
 
-                        صدور درخواست پرداخت
+                        ارسال پیام
                       </button>
-                    </>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={savingInvoice}
-                      onClick={() =>
-                        saveInvoice()
-                      }
-                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                    >
-                      {savingInvoice ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Save className="size-4" />
-                      )}
-
-                      ذخیره تغییرات
-                    </button>
-                  )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </TabsContent>
+
+              {/* =================================================
+                  CONSULTATIONS
+              ================================================= */}
+
+              <TabsContent
+                value="consults"
+                className="mt-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                    <CalendarClock className="size-4 text-primary" />
+                    مشاوره‌های پژوهشی
+                  </h3>
+
+                  <div className="flex flex-wrap gap-2">
+                    <RefreshButton
+                      loading={
+                        consultationsLoading
+                      }
+                      onClick={
+                        loadConsultations
+                      }
+                    />
+
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                    >
+                      <Link to="/consultation">
+                        درخواست جدید
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+
+                {consultationsLoading ? (
+                  <div className="mt-4">
+                    <LoadingBox text="در حال دریافت مشاوره‌ها…" />
+                  </div>
+                ) : currentConsultations.length ===
+                  0 ? (
+                  <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+                    <CalendarClock className="mx-auto size-8 text-primary/50" />
+
+                    <p className="mt-4 text-sm font-bold text-navy">
+                      هنوز درخواست مشاوره‌ای ندارید.
+                    </p>
+
+                    <Button
+                      asChild
+                      variant="hero"
+                      className="mt-5"
+                    >
+                      <Link to="/consultation">
+                        ثبت درخواست مشاوره
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-4 space-y-4">
+                    {currentConsultations.map(
+                      (
+                        consultation,
+                      ) => (
+                        <ConsultationCard
+                          key={
+                            consultation.id
+                          }
+                          consultation={
+                            consultation
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* =================================================
+                  REPORTS
+              ================================================= */}
+
+              <TabsContent
+                value="reports"
+                className="mt-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                    <FileBarChart className="size-4 text-primary" />
+                    گزارش‌های پروژه
+                  </h3>
+
+                  <RefreshButton
+                    loading={
+                      filesLoading
+                    }
+                    onClick={() =>
+                      current &&
+                      loadFiles(
+                        current.id,
+                      )
+                    }
+                  />
+                </div>
+
+                <ProjectFileList
+                  files={
+                    reportFiles
+                  }
+                  loading={
+                    filesLoading
+                  }
+                  emptyTitle="هنوز گزارشی تحویل نشده است."
+                  emptyDescription="گزارش‌های هاب‌ژن پس از آماده‌شدن اینجا نمایش داده می‌شوند."
+                  downloadingFileId={
+                    downloadingFileId
+                  }
+                  onDownload={
+                    downloadProjectFile
+                  }
+                  icon="report"
+                />
+              </TabsContent>
+
+              {/* =================================================
+                  RESULTS
+              ================================================= */}
+
+              <TabsContent
+                value="results"
+                className="mt-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                    <Image className="size-4 text-primary" />
+                    نتایج و خروجی‌های تحلیل
+                  </h3>
+
+                  <RefreshButton
+                    loading={
+                      filesLoading
+                    }
+                    onClick={() =>
+                      current &&
+                      loadFiles(
+                        current.id,
+                      )
+                    }
+                  />
+                </div>
+
+                <ProjectFileList
+                  files={
+                    resultFiles
+                  }
+                  loading={
+                    filesLoading
+                  }
+                  emptyTitle="هنوز نتیجه‌ای تحویل نشده است."
+                  emptyDescription="خروجی‌های تحلیل پس از آماده‌شدن اینجا قرار می‌گیرند."
+                  downloadingFileId={
+                    downloadingFileId
+                  }
+                  onDownload={
+                    downloadProjectFile
+                  }
+                  icon="result"
+                />
+              </TabsContent>
+
+              {/* =================================================
+                  FINANCE
+              ================================================= */}
+
+              <TabsContent
+                value="payments"
+                className="mt-5"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <BadgeDollarSign className="size-4 text-primary" />
+                      امور مالی پروژه
+                    </h3>
+
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      پیشنهادهای قیمت و درخواست‌های پرداخت این پروژه
+                    </p>
+                  </div>
+
+                  <RefreshButton
+                    loading={
+                      quotesLoading ||
+                      invoicesLoading
+                    }
+                    onClick={
+                      refreshFinance
+                    }
+                  />
+                </div>
+
+                {/* ===============================================
+                    INVOICES
+                =============================================== */}
+
+                <section className="mt-5">
+                  <div>
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <ReceiptText className="size-4 text-primary" />
+                      درخواست‌های پرداخت
+                    </h4>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Invoiceهای صادرشده توسط هاب‌ژن
+                    </p>
+                  </div>
+
+                  {invoicesLoading ? (
+                    <div className="mt-4">
+                      <LoadingBox text="در حال دریافت درخواست‌های پرداخت…" />
+                    </div>
+                  ) : projectInvoices.length ===
+                    0 ? (
+                    <div className="mt-4 rounded-2xl border border-border p-8 text-center">
+                      <ReceiptText className="mx-auto size-7 text-primary/50" />
+
+                      <p className="mt-3 text-sm font-bold text-navy">
+                        هنوز درخواست پرداختی صادر نشده است.
+                      </p>
+
+                      <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-muted-foreground">
+                        بعد از تأیید پیشنهاد قیمت و صدور Invoice توسط
+                        مدیریت هاب‌ژن، اطلاعات پرداخت در این بخش نمایش
+                        داده می‌شود.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      {projectInvoices.map(
+                        (invoice) => (
+                          <ResearcherInvoiceCard
+                            key={
+                              invoice.id
+                            }
+                            invoice={
+                              invoice
+                            }
+                            quote={
+                              quoteMap.get(
+                                invoice.quote_id,
+                              ) ??
+                              null
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* ===============================================
+                    QUOTES
+                =============================================== */}
+
+                <section className="mt-8 border-t border-border pt-6">
+                  <div>
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <BadgeDollarSign className="size-4 text-primary" />
+                      پیشنهادهای قیمت
+                    </h4>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Scope، مبلغ و شرایط پیشنهادی هاب‌ژن
+                    </p>
+                  </div>
+
+                  {quotesLoading ? (
+                    <div className="mt-4">
+                      <LoadingBox text="در حال دریافت پیشنهاد قیمت…" />
+                    </div>
+                  ) : projectQuotes.length ===
+                    0 ? (
+                    <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+                      <BadgeDollarSign className="mx-auto size-8 text-primary/50" />
+
+                      <p className="mt-4 text-sm font-bold text-navy">
+                        هنوز پیشنهاد قیمتی برای این پروژه ارسال نشده است.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-5">
+                      {projectQuotes.map(
+                        (quote) => (
+                          <ResearcherQuoteCard
+                            key={
+                              quote.id
+                            }
+                            quote={
+                              quote
+                            }
+                            responding={
+                              respondingQuoteId ===
+                              quote.id
+                            }
+                            onAccept={() =>
+                              respondToQuote(
+                                quote,
+                                "accepted",
+                              )
+                            }
+                            onReject={() =>
+                              respondToQuote(
+                                quote,
+                                "rejected",
+                              )
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* ONLINE PAYMENT NOTE */}
+
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-accent/20 p-4">
+                  <p className="text-xs font-bold text-navy">
+                    پرداخت آنلاین
+                  </p>
+
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                    در نسخه فعلی، اطلاعات پرداخت از طریق درخواست پرداخت
+                    رسمی هاب‌ژن نمایش داده می‌شود. درگاه پرداخت آنلاین
+                    در مرحله بعد به همین Invoiceها متصل خواهد شد.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </section>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/*
+ * =========================================================
+ * INVOICE CARD
+ * =========================================================
+ */
+
+function ResearcherInvoiceCard({
+  invoice,
+  quote,
+}: {
+  invoice: ProjectInvoiceRow;
+  quote: ProjectQuoteRow | null;
+}) {
+  const overdue =
+    isInvoiceOverdue(
+      invoice,
+    );
+
+  const effectiveStatus =
+    overdue &&
+    invoice.status === "issued"
+      ? "overdue"
+      : invoice.status;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-primary/20">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-accent/25 p-5">
+        <div>
+          <p className="text-xs font-semibold text-primary">
+            درخواست پرداخت هاب‌ژن
+          </p>
+
+          <h5 className="mt-2 text-lg font-bold text-navy">
+            {invoice.title}
+          </h5>
+
+          <p className="mt-3 text-2xl font-extrabold text-primary">
+            {formatToman(
+              Number(
+                invoice.amount,
+              ),
+            )}
+          </p>
+        </div>
+
+        <InvoiceStatusBadge
+          status={
+            effectiveStatus
+          }
+        />
+      </div>
+
+      <div className="p-5">
+        {quote && (
+          <div className="rounded-xl border border-border bg-secondary/20 p-4">
+            <p className="text-[11px] text-muted-foreground">
+              پیشنهاد قیمت مرتبط
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-navy">
+              {quote.title}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <FinanceInfo
+            label="تاریخ صدور"
+            value={formatDateTime(
+              invoice.created_at,
+            )}
+          />
+
+          <FinanceInfo
+            label="مهلت پرداخت"
+            value={
+              invoice.due_at
+                ? formatDateTime(
+                    invoice.due_at,
+                  )
+                : "تعیین نشده"
+            }
+          />
+
+          <FinanceInfo
+            label="وضعیت"
+            value={
+              invoiceStatusLabels[
+                effectiveStatus
+              ] ??
+              effectiveStatus
+            }
+          />
+        </div>
+
+        {invoice.payment_instructions && (
+          <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-4">
+            <p className="text-xs font-bold text-navy">
+              دستور پرداخت
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {
+                invoice.payment_instructions
+              }
+            </p>
+          </div>
+        )}
+
+        {invoice.admin_note && (
+          <div className="mt-4 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <p className="text-xs font-bold text-navy">
+              یادداشت تیم هاب‌ژن
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {
+                invoice.admin_note
+              }
+            </p>
+          </div>
+        )}
+
+        {invoice.status ===
+          "paid" && (
+          <div className="mt-5 flex gap-3 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
+
+            <div>
+              <p className="text-sm font-bold text-navy">
+                پرداخت ثبت شده است
+              </p>
+
+              {invoice.paid_at && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  زمان پرداخت:{" "}
+                  {formatDateTime(
+                    invoice.paid_at,
+                  )}
+                </p>
+              )}
+
+              {invoice.payment_reference && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  کد مرجع:{" "}
+                  <span
+                    dir="ltr"
+                    className="font-semibold text-navy"
+                  >
+                    {
+                      invoice.payment_reference
+                    }
+                  </span>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {overdue &&
+          invoice.status ===
+            "issued" && (
+            <div className="mt-5 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+              <p className="text-sm font-bold text-navy">
+                مهلت پرداخت این درخواست گذشته است.
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                برای هماهنگی یا تمدید مهلت پرداخت از بخش پیام‌های پروژه
+                با تیم هاب‌ژن در ارتباط باشید.
+              </p>
             </div>
           )}
 
-          {/* =================================================
-              OUTPUTS
-          ================================================= */}
-
-          <div className="mt-8 border-t border-border pt-6">
-            <p className="text-xs font-semibold text-primary">
-              تحویل خروجی پروژه
+        {invoice.status ===
+          "cancelled" && (
+          <div className="mt-5 rounded-2xl border border-border bg-secondary/30 p-4">
+            <p className="text-sm font-bold text-navy">
+              این درخواست پرداخت لغو شده است.
             </p>
-
-            <h3 className="mt-1 text-lg font-bold text-navy">
-              گزارش‌ها و نتایج هاب‌ژن
-            </h3>
-
-            <input
-              ref={reportInputRef}
-              type="file"
-              accept=".pdf,application/pdf"
-              className="hidden"
-              onChange={(event) =>
-                handleOutputInputChange(
-                  event,
-                  "report",
-                )
-              }
-            />
-
-            <input
-              ref={resultInputRef}
-              type="file"
-              className="hidden"
-              onChange={(event) =>
-                handleOutputInputChange(
-                  event,
-                  "result",
-                )
-              }
-            />
-
-            <div className="mt-5 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-primary/20 bg-accent/30 p-5">
-                <FileBarChart className="size-5 text-primary" />
-
-                <h4 className="mt-3 text-sm font-bold text-navy">
-                  گزارش پروژه
-                </h4>
-
-                <button
-                  type="button"
-                  disabled={
-                    uploadingCategory !==
-                    null
-                  }
-                  onClick={() =>
-                    reportInputRef.current?.click()
-                  }
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                >
-                  {uploadingCategory ===
-                  "report" ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <CloudUpload className="size-4" />
-                  )}
-
-                  آپلود گزارش PDF
-                </button>
-              </div>
-
-              <div className="rounded-2xl border border-primary/20 bg-accent/30 p-5">
-                <Image className="size-5 text-primary" />
-
-                <h4 className="mt-3 text-sm font-bold text-navy">
-                  نتیجه / خروجی تحلیل
-                </h4>
-
-                <button
-                  type="button"
-                  disabled={
-                    uploadingCategory !==
-                    null
-                  }
-                  onClick={() =>
-                    resultInputRef.current?.click()
-                  }
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                >
-                  {uploadingCategory ===
-                  "result" ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <CloudUpload className="size-4" />
-                  )}
-
-                  آپلود نتیجه
-                </button>
-              </div>
-            </div>
           </div>
-
-          {/* FILES */}
-
-          <div className="mt-8 border-t border-border pt-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="flex items-center gap-2 text-base font-bold text-navy">
-                <FileText className="size-5 text-primary" />
-                فایل‌های پروژه
-              </h3>
-
-              <RefreshButton
-                loading={filesLoading}
-                onClick={() =>
-                  loadProjectFiles(
-                    selectedProject.id,
-                  )
-                }
-              />
-            </div>
-
-            {filesLoading ? (
-              <LoadingBox text="در حال دریافت فایل‌ها…" />
-            ) : (
-              <div className="mt-5 space-y-6">
-                <FileListSection
-                  title="داده‌های پژوهشگر"
-                  files={incomingFiles}
-                  emptyText="هنوز داده‌ای دریافت نشده است."
-                  downloadingFileId={
-                    downloadingFileId
-                  }
-                  onDownload={
-                    downloadProjectFile
-                  }
-                />
-
-                <FileListSection
-                  title="گزارش‌های تحویلی"
-                  files={reportFiles}
-                  emptyText="هنوز گزارشی تحویل نشده است."
-                  downloadingFileId={
-                    downloadingFileId
-                  }
-                  onDownload={
-                    downloadProjectFile
-                  }
-                />
-
-                <FileListSection
-                  title="نتایج تحلیل"
-                  files={resultFiles}
-                  emptyText="هنوز نتیجه‌ای تحویل نشده است."
-                  downloadingFileId={
-                    downloadingFileId
-                  }
-                  onDownload={
-                    downloadProjectFile
-                  }
-                />
-              </div>
-            )}
-          </div>
-
-          {/* MESSAGES */}
-
-          <div className="mt-8 border-t border-border pt-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="flex items-center gap-2 text-base font-bold text-navy">
-                <MessageSquare className="size-5 text-primary" />
-                پیام‌های پروژه
-              </h3>
-
-              <RefreshButton
-                loading={messagesLoading}
-                onClick={() =>
-                  loadMessages(
-                    selectedProject.id,
-                  )
-                }
-              />
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-4">
-              {messagesLoading ? (
-                <LoadingBox text="در حال دریافت پیام‌ها…" />
-              ) : messages.length === 0 ? (
-                <div className="py-8 text-center text-sm text-muted-foreground">
-                  هنوز پیامی ثبت نشده است.
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {messages.map((message) => {
-                    const fromResearcher =
-                      message.sender_id ===
-                      selectedProject.user_id;
-
-                    return (
-                      <div
-                        key={message.id}
-                        className={`max-w-3xl rounded-2xl border p-4 ${
-                          fromResearcher
-                            ? "mr-auto border-border bg-background"
-                            : "ml-auto border-primary/20 bg-accent/40"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs font-bold text-navy">
-                            {fromResearcher
-                              ? selectedResearcher?.full_name ||
-                                "پژوهشگر"
-                              : "مدیریت هاب‌ژن"}
-                          </span>
-
-                          <span className="text-[11px] text-muted-foreground">
-                            {formatDateTime(
-                              message.created_at,
-                            )}
-                          </span>
-                        </div>
-
-                        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
-                          {message.message}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5">
-              <textarea
-                value={messageText}
-                onChange={(event) =>
-                  setMessageText(
-                    event.target.value,
-                  )
-                }
-                rows={4}
-                maxLength={5000}
-                placeholder="پیام خود را برای پژوهشگر بنویسید..."
-                className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
-              />
-
-              <div className="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  disabled={
-                    sendingMessage ||
-                    !messageText.trim()
-                  }
-                  onClick={sendMessage}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
-                >
-                  {sendingMessage ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Send className="size-4" />
-                  )}
-
-                  ارسال پیام
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-    </div>
+        )}
+      </div>
+    </article>
   );
 }
 
@@ -3992,49 +2260,51 @@ function Admin() {
  * =========================================================
  */
 
-function QuoteCard({
+function ResearcherQuoteCard({
   quote,
-  invoice,
-  sending,
-  onEditQuote,
-  onSendQuote,
-  onCreateInvoice,
-  onEditInvoice,
+  responding,
+  onAccept,
+  onReject,
 }: {
   quote: ProjectQuoteRow;
-  invoice: ProjectInvoiceRow | null;
-  sending: boolean;
-  onEditQuote: () => void;
-  onSendQuote: () => void;
-  onCreateInvoice: () => void;
-  onEditInvoice: (
-    invoice: ProjectInvoiceRow,
-  ) => void;
+  responding: boolean;
+  onAccept: () => void;
+  onReject: () => void;
 }) {
+  const expired =
+    isQuoteExpired(quote);
+
+  const effectiveStatus =
+    expired &&
+    quote.status === "sent"
+      ? "expired"
+      : quote.status;
+
   return (
     <article className="overflow-hidden rounded-2xl border border-border">
       <div className="flex flex-wrap items-start justify-between gap-4 bg-secondary/30 p-5">
         <div>
-          <h5 className="text-sm font-bold text-navy">
-            {quote.title}
-          </h5>
-
-          <p className="mt-2 text-xl font-extrabold text-primary">
-            {formatToman(
-              Number(quote.amount),
-            )}
+          <p className="text-xs font-semibold text-primary">
+            پیشنهاد رسمی هاب‌ژن
           </p>
 
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            ایجاد:{" "}
-            {formatDateTime(
-              quote.created_at,
+          <h4 className="mt-2 text-lg font-bold text-navy">
+            {quote.title}
+          </h4>
+
+          <p className="mt-3 text-2xl font-extrabold text-primary">
+            {formatToman(
+              Number(
+                quote.amount,
+              ),
             )}
           </p>
         </div>
 
         <QuoteStatusBadge
-          status={quote.status}
+          status={
+            effectiveStatus
+          }
         />
       </div>
 
@@ -4042,21 +2312,25 @@ function QuoteCard({
         {quote.scope_summary && (
           <QuoteTextBlock
             label="Scope پروژه"
-            value={quote.scope_summary}
+            value={
+              quote.scope_summary
+            }
           />
         )}
 
         {quote.deliverables && (
-          <div className="mt-4">
+          <div className="mt-5">
             <QuoteTextBlock
               label="خروجی‌های قابل تحویل"
-              value={quote.deliverables}
+              value={
+                quote.deliverables
+              }
             />
           </div>
         )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <DetailCard
+          <FinanceInfo
             label="زمان تقریبی انجام"
             value={
               quote.estimated_days
@@ -4069,7 +2343,7 @@ function QuoteCard({
             }
           />
 
-          <DetailCard
+          <FinanceInfo
             label="اعتبار پیشنهاد"
             value={
               quote.valid_until
@@ -4080,22 +2354,18 @@ function QuoteCard({
             }
           />
 
-          <DetailCard
-            label="پاسخ پژوهشگر"
-            value={
-              quote.responded_at
-                ? formatDateTime(
-                    quote.responded_at,
-                  )
-                : "هنوز پاسخ نداده است"
-            }
+          <FinanceInfo
+            label="تاریخ پیشنهاد"
+            value={formatDateTime(
+              quote.created_at,
+            )}
           />
         </div>
 
         {quote.admin_note && (
-          <div className="mt-4 rounded-xl border border-primary/20 bg-accent/30 p-4">
+          <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/30 p-4">
             <p className="text-xs font-bold text-navy">
-              یادداشت
+              توضیح تیم هاب‌ژن
             </p>
 
             <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
@@ -4104,107 +2374,110 @@ function QuoteCard({
           </div>
         )}
 
-        {quote.status === "draft" && (
-          <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
-            <button
-              type="button"
-              onClick={onEditQuote}
-              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
-            >
-              <Pencil className="size-4 text-primary" />
-              ویرایش پیش‌نویس
-            </button>
+        {quote.status ===
+          "accepted" && (
+          <div className="mt-5 flex gap-3 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
 
-            <button
-              type="button"
-              disabled={sending}
-              onClick={onSendQuote}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
-            >
-              {sending ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Send className="size-4" />
+            <div>
+              <p className="text-sm font-bold text-navy">
+                پیشنهاد قیمت تأیید شده است
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                پس از صدور درخواست پرداخت توسط هاب‌ژن، Invoice مربوط
+                به این پیشنهاد در بالای همین صفحه نمایش داده می‌شود.
+              </p>
+
+              {quote.responded_at && (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  زمان تأیید:{" "}
+                  {formatDateTime(
+                    quote.responded_at,
+                  )}
+                </p>
               )}
-
-              ارسال برای پژوهشگر
-            </button>
+            </div>
           </div>
         )}
 
         {quote.status ===
-          "accepted" && (
-          <div className="mt-5 border-t border-border pt-5">
-            <p className="flex items-center gap-2 text-sm font-bold text-navy">
-              <ReceiptText className="size-4 text-primary" />
-              درخواست پرداخت
-            </p>
+          "rejected" && (
+          <div className="mt-5 flex gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+            <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
 
-            {!invoice ? (
-              <div className="mt-3 rounded-2xl border border-dashed border-primary/30 bg-accent/20 p-4">
-                <p className="text-xs leading-6 text-muted-foreground">
-                  پژوهشگر Quote را تأیید کرده است. اکنون می‌توانید
-                  درخواست پرداخت مربوط به این Scope را صادر کنید.
-                </p>
+            <div>
+              <p className="text-sm font-bold text-navy">
+                این پیشنهاد رد شده است
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                برای دریافت پیشنهاد جدید از بخش پیام‌های پروژه با تیم
+                هاب‌ژن در ارتباط باشید.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {expired &&
+          quote.status ===
+            "sent" && (
+            <div className="mt-5 rounded-2xl border border-border bg-secondary/40 p-4">
+              <p className="text-sm font-bold text-navy">
+                اعتبار این پیشنهاد به پایان رسیده است.
+              </p>
+            </div>
+          )}
+
+        {quote.status ===
+          "sent" &&
+          !expired && (
+            <div className="mt-6 border-t border-border pt-5">
+              <p className="text-sm font-bold text-navy">
+                پاسخ شما به این پیشنهاد
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                پس از تأیید یا رد، پاسخ برای مدیریت هاب‌ژن ثبت
+                خواهد شد.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  disabled={
+                    responding
+                  }
+                  onClick={
+                    onAccept
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {responding ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="size-4" />
+                  )}
+
+                  تأیید پیشنهاد
+                </button>
 
                 <button
                   type="button"
-                  onClick={onCreateInvoice}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground"
+                  disabled={
+                    responding
+                  }
+                  onClick={
+                    onReject
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl border border-destructive/30 px-5 py-2.5 text-sm font-bold text-destructive hover:bg-destructive/5 disabled:opacity-50"
                 >
-                  <ReceiptText className="size-4" />
-                  ایجاد درخواست پرداخت
+                  <XCircle className="size-4" />
+                  رد پیشنهاد
                 </button>
               </div>
-            ) : (
-              <div className="mt-3 rounded-2xl border border-border bg-secondary/20 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-bold text-navy">
-                      {invoice.title}
-                    </p>
-
-                    <p className="mt-2 text-lg font-extrabold text-primary">
-                      {formatToman(
-                        Number(
-                          invoice.amount,
-                        ),
-                      )}
-                    </p>
-
-                    {invoice.due_at && (
-                      <p className="mt-1 text-[11px] text-muted-foreground">
-                        مهلت پرداخت:{" "}
-                        {formatDateTime(
-                          invoice.due_at,
-                        )}
-                      </p>
-                    )}
-                  </div>
-
-                  <InvoiceStatusBadge
-                    status={invoice.status}
-                  />
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onEditInvoice(
-                        invoice,
-                      )
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
-                  >
-                    <Pencil className="size-4 text-primary" />
-                    مدیریت درخواست پرداخت
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
       </div>
     </article>
   );
@@ -4212,9 +2485,29 @@ function QuoteCard({
 
 /*
  * =========================================================
- * SMALL COMPONENTS
+ * FINANCE COMPONENTS
  * =========================================================
  */
+
+function FinanceInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xs font-semibold leading-6 text-navy">
+        {value}
+      </p>
+    </div>
+  );
+}
 
 function QuoteTextBlock({
   label,
@@ -4253,7 +2546,9 @@ function QuoteStatusBadge({
         ? "border-destructive/20 bg-destructive/5 text-destructive"
         : status === "sent"
           ? "border-primary/30 bg-primary/10 text-primary"
-          : "border-border bg-background text-muted-foreground";
+          : status === "expired"
+            ? "border-border bg-secondary text-muted-foreground"
+            : "border-border bg-background text-muted-foreground";
 
   return (
     <span
@@ -4294,16 +2589,139 @@ function InvoiceStatusBadge({
   );
 }
 
+/*
+ * =========================================================
+ * CONSULTATION
+ * =========================================================
+ */
+
+function ConsultationCard({
+  consultation,
+}: {
+  consultation: ConsultationRow;
+}) {
+  const typeLabel =
+    consultationTypeLabels[
+      consultation.consultation_type
+    ] ??
+    consultation.consultation_type;
+
+  const statusText =
+    consultationStatusLabels[
+      consultation.status
+    ] ??
+    consultation.status;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-secondary/30 p-5">
+        <div>
+          <p className="text-sm font-bold text-navy">
+            {
+              consultation.subject
+            }
+          </p>
+
+          <p className="mt-2 text-xs text-primary">
+            {typeLabel}
+          </p>
+        </div>
+
+        <ConsultationStatusBadge
+          status={
+            consultation.status
+          }
+          label={
+            statusText
+          }
+        />
+      </div>
+
+      <div className="p-5">
+        {consultation.description && (
+          <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+            {
+              consultation.description
+            }
+          </p>
+        )}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ConsultationInfo
+            label="زمان جلسه"
+            value={
+              consultation.scheduled_at
+                ? formatDateTime(
+                    consultation.scheduled_at,
+                  )
+                : "هنوز تعیین نشده"
+            }
+          />
+
+          <ConsultationInfo
+            label="مدت جلسه"
+            value={
+              consultation.duration_minutes
+                ? `${new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    consultation.duration_minutes,
+                  )} دقیقه`
+                : "هنوز تعیین نشده"
+            }
+          />
+
+          <ConsultationInfo
+            label="آخرین بروزرسانی"
+            value={formatDateTime(
+              consultation.updated_at,
+            )}
+          />
+        </div>
+
+        {consultation.admin_note && (
+          <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <p className="text-xs font-bold text-navy">
+              یادداشت تیم هاب‌ژن
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {
+                consultation.admin_note
+              }
+            </p>
+          </div>
+        )}
+
+        {consultation.meeting_url &&
+          consultation.status !==
+            "cancelled" && (
+            <div className="mt-5">
+              <a
+                href={
+                  consultation.meeting_url
+                }
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground"
+              >
+                <ExternalLink className="size-4" />
+                ورود به جلسه
+              </a>
+            </div>
+          )}
+      </div>
+    </article>
+  );
+}
+
 function ConsultationStatusBadge({
   status,
+  label,
 }: {
   status: string;
+  label: string;
 }) {
-  const label =
-    consultationStatusLabels[
-      status
-    ] ?? status;
-
   const className =
     status === "completed"
       ? "border-primary/20 bg-accent text-primary"
@@ -4311,46 +2729,18 @@ function ConsultationStatusBadge({
         ? "border-destructive/20 bg-destructive/5 text-destructive"
         : status === "scheduled"
           ? "border-primary/30 bg-primary/10 text-primary"
-          : status === "reviewing"
-            ? "border-primary/20 bg-accent/50 text-navy"
-            : "border-border bg-background text-muted-foreground";
+          : "border-border bg-background text-muted-foreground";
 
   return (
     <span
-      className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
     >
       {label}
     </span>
   );
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof FolderKanban;
-  label: string;
-  value: number;
-}) {
-  return (
-    <div className="card-elevated p-5">
-      <Icon className="size-5 text-primary" />
-
-      <p className="mt-3 text-2xl font-extrabold text-navy">
-        {new Intl.NumberFormat(
-          "fa-IR",
-        ).format(value)}
-      </p>
-
-      <p className="mt-1 text-xs text-muted-foreground">
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function DetailCard({
+function ConsultationInfo({
   label,
   value,
 }: {
@@ -4358,59 +2748,89 @@ function DetailCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-secondary/30 p-4">
-      <p className="text-xs text-muted-foreground">
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
         {label}
       </p>
 
-      <p className="mt-2 text-sm font-semibold leading-6 text-navy">
-        {value || "—"}
+      <p className="mt-1 text-xs font-semibold leading-6 text-navy">
+        {value}
       </p>
     </div>
   );
 }
 
-function FileListSection({
-  title,
+/*
+ * =========================================================
+ * FILE LIST
+ * =========================================================
+ */
+
+function ProjectFileList({
   files,
-  emptyText,
+  loading,
+  emptyTitle,
+  emptyDescription,
   downloadingFileId,
   onDownload,
+  icon = "file",
 }: {
-  title: string;
   files: ProjectFileRow[];
-  emptyText: string;
+  loading: boolean;
+  emptyTitle: string;
+  emptyDescription: string;
   downloadingFileId:
     | string
     | null;
   onDownload: (
     file: ProjectFileRow,
   ) => Promise<void>;
+  icon?:
+    | "file"
+    | "report"
+    | "result";
 }) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-border">
-      <div className="flex items-center justify-between gap-3 border-b border-border bg-secondary/30 p-4">
-        <h4 className="text-sm font-bold text-navy">
-          {title}
-        </h4>
-
-        <span className="text-xs text-muted-foreground">
-          {new Intl.NumberFormat(
-            "fa-IR",
-          ).format(files.length)}
-          {" فایل"}
-        </span>
+  if (loading) {
+    return (
+      <div className="mt-4">
+        <LoadingBox text="در حال دریافت فایل‌ها…" />
       </div>
+    );
+  }
 
-      {files.length === 0 ? (
-        <div className="p-8 text-center text-xs text-muted-foreground">
-          {emptyText}
-        </div>
-      ) : (
-        <ul className="divide-y divide-border">
-          {files.map((file) => (
+  if (files.length === 0) {
+    return (
+      <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+        {icon === "report" ? (
+          <FileBarChart className="mx-auto size-7 text-primary/50" />
+        ) : icon === "result" ? (
+          <Image className="mx-auto size-7 text-primary/50" />
+        ) : (
+          <FileText className="mx-auto size-7 text-primary/50" />
+        )}
+
+        <p className="mt-3 text-sm font-bold text-navy">
+          {emptyTitle}
+        </p>
+
+        <p className="mt-2 text-xs leading-6 text-muted-foreground">
+          {
+            emptyDescription
+          }
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-border">
+      <ul className="divide-y divide-border">
+        {files.map(
+          (file) => (
             <li
-              key={file.id}
+              key={
+                file.id
+              }
               className="flex flex-wrap items-center justify-between gap-4 p-4"
             >
               <div className="min-w-0">
@@ -4418,7 +2838,9 @@ function FileListSection({
                   className="truncate text-sm font-semibold text-navy"
                   dir="auto"
                 >
-                  {file.original_name}
+                  {
+                    file.original_name
+                  }
                 </p>
 
                 <p className="mt-1 text-[11px] text-muted-foreground">
@@ -4441,9 +2863,11 @@ function FileListSection({
                   file.id
                 }
                 onClick={() =>
-                  onDownload(file)
+                  onDownload(
+                    file,
+                  )
                 }
-                className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy hover:bg-accent disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-accent disabled:opacity-50"
               >
                 {downloadingFileId ===
                 file.id ? (
@@ -4455,9 +2879,41 @@ function FileListSection({
                 دانلود
               </button>
             </li>
-          ))}
-        </ul>
-      )}
+          ),
+        )}
+      </ul>
+    </div>
+  );
+}
+
+/*
+ * =========================================================
+ * GENERAL
+ * =========================================================
+ */
+
+function DashboardStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof FolderKanban;
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="card-elevated p-5">
+      <Icon className="size-5 text-primary" />
+
+      <p className="mt-3 text-2xl font-extrabold text-navy">
+        {new Intl.NumberFormat(
+          "fa-IR",
+        ).format(value)}
+      </p>
+
+      <p className="mt-1 text-xs text-muted-foreground">
+        {label}
+      </p>
     </div>
   );
 }
@@ -4495,7 +2951,7 @@ function LoadingBox({
   text: string;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2 p-10 text-sm text-muted-foreground">
+    <div className="flex items-center justify-center gap-2 rounded-2xl border border-border p-10 text-sm text-muted-foreground">
       <Loader2 className="size-4 animate-spin" />
       {text}
     </div>
@@ -4507,6 +2963,72 @@ function LoadingBox({
  * HELPERS
  * =========================================================
  */
+
+function isQuoteExpired(
+  quote: ProjectQuoteRow,
+) {
+  if (
+    !quote.valid_until
+  ) {
+    return false;
+  }
+
+  const expiration =
+    new Date(
+      quote.valid_until,
+    ).getTime();
+
+  if (
+    Number.isNaN(
+      expiration,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    expiration <
+    Date.now()
+  );
+}
+
+function isInvoiceOverdue(
+  invoice: ProjectInvoiceRow,
+) {
+  if (
+    invoice.status !==
+      "issued" ||
+    !invoice.due_at
+  ) {
+    return false;
+  }
+
+  const dueTime =
+    new Date(
+      invoice.due_at,
+    ).getTime();
+
+  if (
+    Number.isNaN(
+      dueTime,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    dueTime <
+    Date.now()
+  );
+}
+
+function formatToman(
+  amount: number,
+) {
+  return `${new Intl.NumberFormat(
+    "fa-IR",
+  ).format(amount)} تومان`;
+}
 
 function formatDateTime(
   iso: string,
@@ -4524,43 +3046,6 @@ function formatDateTime(
   } catch {
     return iso;
   }
-}
-
-function toDateTimeLocalValue(
-  iso: string | null,
-) {
-  if (!iso) return "";
-
-  const date = new Date(iso);
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return "";
-  }
-
-  const year =
-    date.getFullYear();
-
-  const month = String(
-    date.getMonth() + 1,
-  ).padStart(2, "0");
-
-  const day = String(
-    date.getDate(),
-  ).padStart(2, "0");
-
-  const hour = String(
-    date.getHours(),
-  ).padStart(2, "0");
-
-  const minute = String(
-    date.getMinutes(),
-  ).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
 function formatFileSize(
@@ -4633,76 +3118,4 @@ function safeExtension(
   return rawExtension
     ? `.${rawExtension}`
     : "";
-}
-
-function normalizeDigits(
-  value: string,
-) {
-  const persianDigits =
-    "۰۱۲۳۴۵۶۷۸۹";
-
-  const arabicDigits =
-    "٠١٢٣٤٥٦٧٨٩";
-
-  return value
-    .replace(
-      /[۰-۹]/g,
-      (digit) =>
-        String(
-          persianDigits.indexOf(
-            digit,
-          ),
-        ),
-    )
-    .replace(
-      /[٠-٩]/g,
-      (digit) =>
-        String(
-          arabicDigits.indexOf(
-            digit,
-          ),
-        ),
-    );
-}
-
-function parseIntegerInput(
-  value: string,
-): number | null {
-  const normalized =
-    normalizeDigits(value)
-      .replace(
-        /[,٬،\s]/g,
-        "",
-      )
-      .trim();
-
-  if (
-    !normalized ||
-    !/^\d+$/.test(
-      normalized,
-    )
-  ) {
-    return null;
-  }
-
-  const number =
-    Number(normalized);
-
-  if (
-    !Number.isSafeInteger(
-      number,
-    )
-  ) {
-    return null;
-  }
-
-  return number;
-}
-
-function formatToman(
-  amount: number,
-) {
-  return `${new Intl.NumberFormat(
-    "fa-IR",
-  ).format(amount)} تومان`;
 }
