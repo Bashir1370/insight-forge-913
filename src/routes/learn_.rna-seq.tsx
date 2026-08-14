@@ -255,8 +255,8 @@ const entryModes: {
     label: "حالت یادگیری",
     description:
       "می‌خواهم بفهمم RNA-seq چیست و هر مرحله از تحلیل چرا وجود دارد.",
-    destination: "#workflow",
-    action: "شروع از نقشه تحلیل",
+    destination: "/learn/rna-seq/navigator",
+    action: "شروع مسیر تعاملی RNA-seq",
   },
   {
     id: "workflow",
@@ -304,7 +304,6 @@ function RnaSeqHubPage() {
       dir="rtl"
       className="min-h-screen overflow-hidden bg-slate-50 text-right text-slate-900"
     >
-      {/* TOP BAR */}
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -317,9 +316,7 @@ function RnaSeqHubPage() {
 
             <span className="text-slate-300">/</span>
 
-            <span className="text-slate-500">
-              ترنسکریپتومیکس
-            </span>
+            <span className="text-slate-500">ترنسکریپتومیکس</span>
 
             <span className="text-slate-300">/</span>
 
@@ -337,7 +334,6 @@ function RnaSeqHubPage() {
         </div>
       </div>
 
-      {/* HERO */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-28 -top-28 h-96 w-96 rounded-full bg-teal-100/70 blur-3xl" />
@@ -376,10 +372,10 @@ function RnaSeqHubPage() {
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <a
-                  href="#choose-path"
+                  href="/learn/rna-seq/navigator"
                   className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-6 py-3 font-semibold text-white transition hover:bg-slate-800"
                 >
-                  مسیر مناسبم را انتخاب کنم
+                  شروع مسیر یادگیری RNA-seq
                 </a>
 
                 <a
@@ -402,7 +398,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* START HERE */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
@@ -433,12 +428,10 @@ function RnaSeqHubPage() {
                 title="سؤال زیستی"
                 description="چه چیزی را می‌خواهیم بفهمیم؟"
               />
-
               <MiniConcept
                 title="داده"
                 description="چه داده‌ای برای پاسخ لازم داریم؟"
               />
-
               <MiniConcept
                 title="تفسیر"
                 description="نتیجه واقعاً چه چیزی اجازه می‌دهد بگوییم؟"
@@ -448,7 +441,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* ENTRY MODE */}
       <section
         id="choose-path"
         className="scroll-mt-8 border-y border-slate-200 bg-white"
@@ -538,7 +530,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* WORKFLOW */}
       <section
         id="workflow"
         className="mx-auto max-w-7xl scroll-mt-8 px-4 py-20 sm:px-6 lg:px-8"
@@ -563,10 +554,7 @@ function RnaSeqHubPage() {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
             <div className="mb-5 flex items-center justify-between gap-4">
               <div>
-                <p className="font-bold text-slate-950">
-                  نقشه مسیر
-                </p>
-
+                <p className="font-bold text-slate-950">نقشه مسیر</p>
                 <p className="mt-1 text-sm text-slate-500">
                   برای مشاهده جزئیات یک مرحله را انتخاب کنید.
                 </p>
@@ -649,7 +637,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* DATA FLOW */}
       <section className="border-y border-slate-200 bg-slate-950 text-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
@@ -676,25 +663,21 @@ function RnaSeqHubPage() {
                 description="داده خام Sequencing"
                 position="شروع پردازش محاسباتی"
               />
-
               <DataFlowRow
                 label="QC Report"
                 description="تصویری از کیفیت داده خام"
                 position="قبل از Quantification"
               />
-
               <DataFlowRow
                 label="Count Matrix"
                 description="مقادیر بیان ژن‌ها در Sampleها"
                 position="ورودی مهم تحلیل Downstream"
               />
-
               <DataFlowRow
                 label="DE Results"
                 description="اندازه تغییر و شواهد آماری"
                 position="خروجی مقایسه گروه‌ها"
               />
-
               <DataFlowRow
                 label="Pathways"
                 description="حرکت از Gene List به فرآیندهای زیستی"
@@ -705,7 +688,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* CORE IDEAS */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <span className="text-sm font-semibold text-teal-700">
@@ -723,31 +705,26 @@ function RnaSeqHubPage() {
             title="تحلیل از سؤال شروع می‌شود."
             description="DESeq2، STAR یا هر ابزار دیگری فقط بخشی از مسیر است؛ ابتدا باید بدانیم سؤال علمی چیست."
           />
-
           <PrincipleCard
             number="02"
             title="طراحی ضعیف را همیشه نمی‌توان نجات داد."
             description="Biological Replication، Metadata و Confounderها قبل از اجرای تحلیل اهمیت دارند."
           />
-
           <PrincipleCard
             number="03"
             title="Tool با Analysis یکی نیست."
             description="مثلاً DESeq2 یک ابزار برای بخشی از تحلیل Differential Expression است، نه کل پروژه RNA-seq."
           />
-
           <PrincipleCard
             number="04"
             title="نمودار زیبا کافی نیست."
             description="PCA، Heatmap و Volcano Plot باید در کنار طراحی مطالعه و تحلیل آماری درست تفسیر شوند."
           />
-
           <PrincipleCard
             number="05"
             title="DEG پایان داستان نیست."
             description="فهرست ژن‌ها باید در زمینه Pathwayها، عملکرد زیستی، سؤال اصلی و محدودیت‌های مطالعه دیده شود."
           />
-
           <PrincipleCard
             number="06"
             title="Association را با Causation اشتباه نکنید."
@@ -756,7 +733,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* PROJECT MODE */}
       <section
         id="project-mode"
         className="scroll-mt-8 border-y border-slate-200 bg-white"
@@ -827,7 +803,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* PROBLEM SOLVER */}
       <section
         id="problem-solver"
         className="mx-auto max-w-7xl scroll-mt-8 px-4 py-20 sm:px-6 lg:px-8"
@@ -855,27 +830,22 @@ function RnaSeqHubPage() {
               title="PCA عجیب است"
               text="Sampleها طبق انتظار گروه‌بندی نشده‌اند."
             />
-
             <ProblemCard
               title="DEG پیدا نمی‌کنم"
               text="نتایج Differential Expression تقریباً خالی است."
             />
-
             <ProblemCard
               title="DEG خیلی زیاد است"
               text="تعداد بسیار بزرگی از ژن‌ها Significant شده‌اند."
             />
-
             <ProblemCard
               title="Batch Effect دارم"
               text="ساختار فنی ممکن است بر گروه‌بندی Sampleها غالب شده باشد."
             />
-
             <ProblemCard
               title="نوع داده را نمی‌شناسم"
               text="نمی‌دانم فایل من Raw Count، TPM یا چیز دیگری است."
             />
-
             <ProblemCard
               title="نتیجه قابل تفسیر نیست"
               text="نمودار و Gene List دارم ولی تفسیر زیستی شکل نگرفته است."
@@ -884,7 +854,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* CONNECTIONS */}
       <section className="border-y border-slate-200 bg-slate-100">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
@@ -927,7 +896,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* FINAL */}
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-[2rem] bg-slate-950 text-white">
@@ -943,17 +911,17 @@ function RnaSeqHubPage() {
                 </h2>
 
                 <p className="mt-5 max-w-2xl leading-8 text-slate-300">
-                  مرحله بعدی توسعه همین صفحه، ساخت Navigator تعاملی
-                  کامل است: Nodeها، Checkpointها، سطح توضیح، Progress
-                  و Learning Summary.
+                  Learning Navigator اکنون مسیر آموزشی تعاملی را فراهم
+                  می‌کند و در مراحل بعدی Progress آن نیز در حساب کاربری
+                  ذخیره خواهد شد.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <a
-                    href="#workflow"
+                    href="/learn/rna-seq/navigator"
                     className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-teal-400"
                   >
-                    Workflow را مرور کنم
+                    شروع Learning Navigator
                   </a>
 
                   <a
@@ -1020,33 +988,25 @@ function RnaSeqHeroVisual() {
             subtitle="دقیقاً چه چیزی را می‌خواهیم بفهمیم؟"
             active
           />
-
           <VisualConnector />
-
           <VisualFlowStep
             number="02"
             title="طراحی مطالعه"
             subtitle="Sampleها، گروه‌ها و Metadata"
           />
-
           <VisualConnector />
-
           <VisualFlowStep
             number="03"
             title="داده‌های RNA-seq"
             subtitle="FASTQ → QC → Expression"
           />
-
           <VisualConnector />
-
           <VisualFlowStep
             number="04"
             title="تحلیل آماری"
             subtitle="PCA → DEG → Visualization"
           />
-
           <VisualConnector />
-
           <VisualFlowStep
             number="05"
             title="تفسیر زیستی"
@@ -1121,10 +1081,7 @@ function VisualMetric({
 }) {
   return (
     <div className="rounded-xl bg-white/[0.04] p-3 text-center">
-      <p className="text-xs font-black text-teal-300">
-        {value}
-      </p>
-
+      <p className="text-xs font-black text-teal-300">{value}</p>
       <p className="mt-1 text-xs text-slate-500">{label}</p>
     </div>
   );
@@ -1148,9 +1105,7 @@ function MiniConcept({
 }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-sm font-bold text-slate-900">
-        {title}
-      </p>
+      <p className="text-sm font-bold text-slate-900">{title}</p>
 
       <p className="mt-2 text-sm leading-6 text-slate-500">
         {description}
@@ -1203,17 +1158,8 @@ function LearningNodeCard({ node }: { node: WorkflowNode }) {
         </LearningSection>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <IOCard
-            label="ورودی"
-            value={node.input}
-            type="IN"
-          />
-
-          <IOCard
-            label="خروجی"
-            value={node.output}
-            type="OUT"
-          />
+          <IOCard label="ورودی" value={node.input} type="IN" />
+          <IOCard label="خروجی" value={node.output} type="OUT" />
         </div>
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -1241,15 +1187,16 @@ function LearningNodeCard({ node }: { node: WorkflowNode }) {
         </LearningSection>
 
         <div className="border-t border-slate-100 pt-6">
-          <button
-            type="button"
-            className="w-full rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800 transition hover:bg-teal-100"
+          <a
+            href="/learn/rna-seq/navigator"
+            className="inline-flex w-full items-center justify-center rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800 transition hover:bg-teal-100"
           >
-            این مرحله برای پروژه من چگونه است؟
-          </button>
+            این مفهوم را در Learning Navigator یاد بگیرم
+          </a>
 
           <p className="mt-3 text-center text-xs leading-6 text-slate-400">
-            اتصال این بخش به حالت پروژه در مرحله بعد انجام می‌شود.
+            در Navigator می‌توانید مفهوم را عمیق‌تر بخوانید، Checkpoint
+            انجام دهید و Learning Summary بگیرید.
           </p>
         </div>
       </div>
@@ -1266,9 +1213,7 @@ function LearningSection({
 }) {
   return (
     <section>
-      <h4 className="text-sm font-bold text-slate-950">
-        {title}
-      </h4>
+      <h4 className="text-sm font-bold text-slate-950">{title}</h4>
 
       <div className="mt-2 text-sm leading-8 text-slate-600">
         {children}
@@ -1289,9 +1234,7 @@ function IOCard({
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-bold text-slate-900">
-          {label}
-        </p>
+        <p className="text-sm font-bold text-slate-900">{label}</p>
 
         <span
           className={[
@@ -1305,9 +1248,7 @@ function IOCard({
         </span>
       </div>
 
-      <p className="mt-3 text-sm text-slate-600">
-        {value}
-      </p>
+      <p className="mt-3 text-sm text-slate-600">{value}</p>
     </div>
   );
 }
@@ -1327,13 +1268,8 @@ function DataFlowRow({
         {label}
       </p>
 
-      <p className="text-sm text-slate-200">
-        {description}
-      </p>
-
-      <p className="text-sm text-slate-400">
-        {position}
-      </p>
+      <p className="text-sm text-slate-200">{description}</p>
+      <p className="text-sm text-slate-400">{position}</p>
     </div>
   );
 }
@@ -1374,9 +1310,7 @@ function CheckRow({ text }: { text: string }) {
         ✓
       </span>
 
-      <p className="text-sm leading-7 text-slate-700">
-        {text}
-      </p>
+      <p className="text-sm leading-7 text-slate-700">{text}</p>
     </div>
   );
 }
@@ -1394,13 +1328,8 @@ function ProblemCard({
         ?
       </div>
 
-      <h3 className="mt-5 font-bold text-slate-950">
-        {title}
-      </h3>
-
-      <p className="mt-2 text-sm leading-7 text-slate-600">
-        {text}
-      </p>
+      <h3 className="mt-5 font-bold text-slate-950">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-slate-600">{text}</p>
 
       <div className="mt-4 border-t border-slate-100 pt-4">
         <span className="text-xs font-semibold text-teal-700">
@@ -1465,9 +1394,7 @@ function FinalStep({
         {number}
       </span>
 
-      <p className="font-semibold text-slate-200">
-        {text}
-      </p>
+      <p className="font-semibold text-slate-200">{text}</p>
     </div>
   );
 }
