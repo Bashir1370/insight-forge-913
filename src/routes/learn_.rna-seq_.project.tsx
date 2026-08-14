@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -9,6 +14,8 @@ import {
   Dna,
   RotateCcw,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/learn_/rna-seq_/project")({
   component: RnaSeqProjectMode,
@@ -87,12 +94,44 @@ type DestinationInfo = {
   description: string;
 };
 
+type SaveState =
+  | "guest"
+  | "loading"
+  | "saving"
+  | "saved"
+  | "error";
+
+type ResearchAssessmentRow = {
+  id: string;
+  user_id: string;
+  research_line: string;
+  question_type: QuestionType | null;
+  data_stage: DataStage | null;
+  replicate_level: ReplicateLevel | null;
+  metadata_level: MetadataLevel | null;
+  analysis_goal: AnalysisGoal | null;
+  recommendation_level: RecommendationLevel | null;
+  recommendation_destination: RecommendationDestination | null;
+  answers: ProjectAnswers | null;
+  status: "active" | "completed" | "archived";
+  created_at: string;
+  updated_at: string;
+};
+
 const totalSteps = 5;
 
 function RnaSeqProjectMode() {
+  const { session } = useAuth();
+  const userId = session?.user?.id ?? null;
+
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState<ProjectAnswers>({});
   const [showResult, setShowResult] = useState(false);
+
+  const [saveState, setSaveState] =
+    useState<SaveState>("guest");
+
+  const [saveError, setSaveError] = useState("");
 
   const recommendation = useMemo(
     () => buildRecommendation(answers),
@@ -117,13 +156,240 @@ function RnaSeqProjectMode() {
             ? Boolean(answers.metadata)
             : Boolean(answers.goal);
 
-  function goNext() {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAssessment() {
+      if (!userId) {
+        setSaveState("guest");
+        setSaveError("");
+        return;
+      }
+
+      setSaveState("loading");
+      setSaveError("");
+
+      const { data, error } = await (supabase as any)
+        .from("research_assessments")
+        .select(
+          `
+            id,
+            user_id,
+            research_line,
+            question_type,
+            data_stage,
+            replicate_level,
+            metadata_level,
+            analysis_goal,
+            recommendation_level,
+            recommendation_destination,
+            answers,
+            status,
+            created_at,
+            updated_at
+          `,
+        )
+        .eq("user_id", userId)
+        .eq("research_line", "rna-seq")
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error(
+          "Failed to load research assessment:",
+          error,
+        );
+
+        setSaveState("error");
+        setSaveError(
+          "بازیابی بررسی قبلی پروژه انجام نشد. می‌توانید بررسی را ادامه دهید.",
+        );
+
+        return;
+      }
+
+      if (!data) {
+        setSaveState("saved");
+        return;
+      }
+
+      const row = data as ResearchAssessmentRow;
+
+      const loadedAnswers: ProjectAnswers = {
+        ...(row.answers ?? {}),
+      };
+
+      if (
+        !loadedAnswers.questionType &&
+        row.question_type
+      ) {
+        loadedAnswers.questionType =
+          row.question_type;
+      }
+
+      if (
+        !loadedAnswers.dataStage &&
+        row.data_stage
+      ) {
+        loadedAnswers.dataStage =
+          row.data_stage;
+      }
+
+      if (
+        !loadedAnswers.replicates &&
+        row.replicate_level
+      ) {
+        loadedAnswers.replicates =
+          row.replicate_level;
+      }
+
+      if (
+        !loadedAnswers.metadata &&
+        row.metadata_level
+      ) {
+        loadedAnswers.metadata =
+          row.metadata_level;
+      }
+
+      if (
+        !loadedAnswers.goal &&
+        row.analysis_goal
+      ) {
+        loadedAnswers.goal =
+          row.analysis_goal;
+      }
+
+      setAnswers(loadedAnswers);
+
+      const firstIncompleteStep =
+        getFirstIncompleteStep(loadedAnswers);
+
+      if (firstIncompleteStep) {
+        setStep(firstIncompleteStep);
+        setShowResult(false);
+      } else if (
+        row.status === "completed" &&
+        row.recommendation_level &&
+        row.recommendation_destination
+      ) {
+        setStep(totalSteps);
+        setShowResult(true);
+      } else {
+        setStep(totalSteps);
+      }
+
+      setSaveState("saved");
+    }
+
+    void loadAssessment();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  async function persistAssessment(
+    nextAnswers: ProjectAnswers,
+    completed = false,
+  ) {
+    if (!userId) return true;
+
+    setSaveState("saving");
+    setSaveError("");
+
+    const nextRecommendation =
+      buildRecommendation(nextAnswers);
+
+    const payload = {
+      user_id: userId,
+      research_line: "rna-seq",
+
+      question_type:
+        nextAnswers.questionType ?? null,
+
+      data_stage:
+        nextAnswers.dataStage ?? null,
+
+      replicate_level:
+        nextAnswers.replicates ?? null,
+
+      metadata_level:
+        nextAnswers.metadata ?? null,
+
+      analysis_goal:
+        nextAnswers.goal ?? null,
+
+      recommendation_level: completed
+        ? nextRecommendation.level
+        : null,
+
+      recommendation_destination: completed
+        ? nextRecommendation.destination
+        : null,
+
+      answers: nextAnswers,
+
+      status: completed
+        ? "completed"
+        : "active",
+
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await (supabase as any)
+      .from("research_assessments")
+      .upsert(payload, {
+        onConflict: "user_id,research_line",
+      });
+
+    if (error) {
+      console.error(
+        "Failed to save research assessment:",
+        error,
+      );
+
+      setSaveState("error");
+      setSaveError(
+        "ذخیره بررسی پروژه انجام نشد. پاسخ‌های شما فعلاً در همین صفحه باقی می‌مانند.",
+      );
+
+      return false;
+    }
+
+    setSaveState("saved");
+    return true;
+  }
+
+  function updateAnswers(
+    patch: Partial<ProjectAnswers>,
+  ) {
+    const nextAnswers = {
+      ...answers,
+      ...patch,
+    };
+
+    setAnswers(nextAnswers);
+
+    if (userId) {
+      void persistAssessment(nextAnswers);
+    }
+  }
+
+  async function goNext() {
     if (!currentStepAnswered) return;
 
     if (step < totalSteps) {
       setStep((previous) => previous + 1);
       scrollToAssessment();
       return;
+    }
+
+    if (userId) {
+      await persistAssessment(
+        answers,
+        true,
+      );
     }
 
     setShowResult(true);
@@ -146,7 +412,34 @@ function RnaSeqProjectMode() {
     scrollToAssessment();
   }
 
-  function restart() {
+  async function restart() {
+    if (userId) {
+      setSaveState("saving");
+      setSaveError("");
+
+      const { error } = await (supabase as any)
+        .from("research_assessments")
+        .delete()
+        .eq("user_id", userId)
+        .eq("research_line", "rna-seq");
+
+      if (error) {
+        console.error(
+          "Failed to reset research assessment:",
+          error,
+        );
+
+        setSaveState("error");
+        setSaveError(
+          "پاک‌کردن بررسی قبلی انجام نشد. دوباره تلاش کنید.",
+        );
+
+        return;
+      }
+
+      setSaveState("saved");
+    }
+
     setAnswers({});
     setStep(1);
     setShowResult(false);
@@ -180,7 +473,9 @@ function RnaSeqProjectMode() {
               آموزش هاب‌ژن
             </a>
 
-            <span className="text-slate-300">/</span>
+            <span className="text-slate-300">
+              /
+            </span>
 
             <a
               href="/learn/rna-seq"
@@ -189,7 +484,9 @@ function RnaSeqProjectMode() {
               RNA-seq
             </a>
 
-            <span className="text-slate-300">/</span>
+            <span className="text-slate-300">
+              /
+            </span>
 
             <span className="font-semibold text-slate-800">
               حالت پروژه
@@ -300,13 +597,21 @@ function RnaSeqProjectMode() {
                 />
               </div>
 
+              <AssessmentSaveStatus
+                userId={userId}
+                state={saveState}
+                error={saveError}
+              />
+
               <div className="mt-7 space-y-3">
                 <SideStep
                   number="۱"
                   title="سؤال پژوهشی"
                   englishTitle="Research Question"
                   active={step === 1}
-                  done={Boolean(answers.questionType)}
+                  done={Boolean(
+                    answers.questionType,
+                  )}
                 />
 
                 <SideStep
@@ -314,7 +619,9 @@ function RnaSeqProjectMode() {
                   title="وضعیت داده"
                   englishTitle="Data Stage"
                   active={step === 2}
-                  done={Boolean(answers.dataStage)}
+                  done={Boolean(
+                    answers.dataStage,
+                  )}
                 />
 
                 <SideStep
@@ -322,7 +629,9 @@ function RnaSeqProjectMode() {
                   title="تکرارهای زیستی"
                   englishTitle="Biological Replicates"
                   active={step === 3}
-                  done={Boolean(answers.replicates)}
+                  done={Boolean(
+                    answers.replicates,
+                  )}
                 />
 
                 <SideStep
@@ -330,7 +639,9 @@ function RnaSeqProjectMode() {
                   title="فراداده"
                   englishTitle="Metadata"
                   active={step === 4}
-                  done={Boolean(answers.metadata)}
+                  done={Boolean(
+                    answers.metadata,
+                  )}
                 />
 
                 <SideStep
@@ -364,7 +675,8 @@ function RnaSeqProjectMode() {
                   <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <span className="rounded-xl bg-slate-950 px-3 py-1.5 text-xs font-bold text-white">
-                        مرحله {toPersianNumber(step)}
+                        مرحله{" "}
+                        {toPersianNumber(step)}
                       </span>
 
                       <h2 className="mt-5 text-2xl font-bold text-slate-950 sm:text-3xl">
@@ -392,12 +704,13 @@ function RnaSeqProjectMode() {
                 <div className="p-6 sm:p-8">
                   {step === 1 && (
                     <QuestionTypeStep
-                      value={answers.questionType}
+                      value={
+                        answers.questionType
+                      }
                       onChange={(value) =>
-                        setAnswers((previous) => ({
-                          ...previous,
+                        updateAnswers({
                           questionType: value,
-                        }))
+                        })
                       }
                     />
                   )}
@@ -406,10 +719,9 @@ function RnaSeqProjectMode() {
                     <DataStageStep
                       value={answers.dataStage}
                       onChange={(value) =>
-                        setAnswers((previous) => ({
-                          ...previous,
+                        updateAnswers({
                           dataStage: value,
-                        }))
+                        })
                       }
                     />
                   )}
@@ -418,10 +730,9 @@ function RnaSeqProjectMode() {
                     <ReplicateStep
                       value={answers.replicates}
                       onChange={(value) =>
-                        setAnswers((previous) => ({
-                          ...previous,
+                        updateAnswers({
                           replicates: value,
-                        }))
+                        })
                       }
                     />
                   )}
@@ -430,10 +741,9 @@ function RnaSeqProjectMode() {
                     <MetadataStep
                       value={answers.metadata}
                       onChange={(value) =>
-                        setAnswers((previous) => ({
-                          ...previous,
+                        updateAnswers({
                           metadata: value,
-                        }))
+                        })
                       }
                     />
                   )}
@@ -442,19 +752,37 @@ function RnaSeqProjectMode() {
                     <GoalStep
                       value={answers.goal}
                       onChange={(value) =>
-                        setAnswers((previous) => ({
-                          ...previous,
+                        updateAnswers({
                           goal: value,
-                        }))
+                        })
                       }
                     />
                   )}
 
+                  {userId &&
+                    saveState ===
+                      "saving" && (
+                      <div className="mt-6 rounded-xl border border-cyan-200 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                        در حال ذخیره پاسخ
+                        شما...
+                      </div>
+                    )}
+
+                  {userId &&
+                    saveState === "error" &&
+                    saveError && (
+                      <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-7 text-rose-800">
+                        {saveError}
+                      </div>
+                    )}
+
                   <div className="mt-8 border-t border-slate-100 pt-6">
                     {!currentStepAnswered && (
                       <p className="mb-4 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-500">
-                        برای ادامه، گزینه‌ای را انتخاب کنید که به وضعیت
-                        فعلی پروژه شما نزدیک‌تر است.
+                        برای ادامه، گزینه‌ای را
+                        انتخاب کنید که به وضعیت
+                        فعلی پروژه شما نزدیک‌تر
+                        است.
                       </p>
                     )}
 
@@ -471,8 +799,12 @@ function RnaSeqProjectMode() {
 
                       <button
                         type="button"
-                        onClick={goNext}
-                        disabled={!currentStepAnswered}
+                        onClick={() =>
+                          void goNext()
+                        }
+                        disabled={
+                          !currentStepAnswered
+                        }
                         className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
                         {step === totalSteps
@@ -487,9 +819,13 @@ function RnaSeqProjectMode() {
               </article>
             ) : (
               <ProjectResult
-                recommendation={recommendation}
+                recommendation={
+                  recommendation
+                }
                 answers={answers}
-                onRestart={restart}
+                onRestart={() =>
+                  void restart()
+                }
               />
             )}
           </div>
@@ -499,18 +835,140 @@ function RnaSeqProjectMode() {
   );
 }
 
+function AssessmentSaveStatus({
+  userId,
+  state,
+  error,
+}: {
+  userId: string | null;
+  state: SaveState;
+  error: string;
+}) {
+  if (!userId) {
+    return (
+      <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" />
+
+          <div>
+            <p className="text-xs font-bold text-amber-950">
+              حالت مهمان
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-amber-900/70">
+              بررسی پروژه بدون ثبت‌نام
+              قابل استفاده است، اما برای
+              بازیابی در مراجعات بعدی ذخیره
+              نمی‌شود.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "loading") {
+    return (
+      <div className="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-cyan-500" />
+
+          <div>
+            <p className="text-xs font-bold text-cyan-950">
+              در حال بازیابی پروژه...
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-cyan-900/70">
+              بررسی قبلی شما از حساب
+              هاب‌ژن دریافت می‌شود.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "saving") {
+    return (
+      <div className="mt-5 rounded-2xl border border-cyan-200 bg-cyan-50 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-cyan-500" />
+
+          <div>
+            <p className="text-xs font-bold text-cyan-950">
+              در حال ذخیره...
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-cyan-900/70">
+              وضعیت بررسی پروژه با حساب
+              شما همگام می‌شود.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500" />
+
+          <div>
+            <p className="text-xs font-bold text-rose-950">
+              مشکل در همگام‌سازی
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-rose-900/70">
+              {error ||
+                "اطلاعات فعلاً با حساب شما همگام نشده است."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+      <div className="flex items-start gap-3">
+        <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" />
+
+        <div>
+          <p className="text-xs font-bold text-emerald-950">
+            بررسی پروژه ذخیره می‌شود
+          </p>
+
+          <p className="mt-1 text-xs leading-6 text-emerald-900/70">
+            پاسخ‌ها و مسیر پیشنهادی شما
+            در حساب پژوهشگر نگهداری
+            می‌شوند.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function QuestionTypeStep({
   value,
   onChange,
 }: {
   value?: QuestionType;
-  onChange: (value: QuestionType) => void;
+  onChange: (
+    value: QuestionType,
+  ) => void;
 }) {
   return (
     <OptionGrid>
       <ChoiceCard
-        active={value === "group-comparison"}
-        onClick={() => onChange("group-comparison")}
+        active={
+          value === "group-comparison"
+        }
+        onClick={() =>
+          onChange("group-comparison")
+        }
         title="مقایسه دو یا چند گروه"
         englishTitle="Group Comparison"
         description="مثلاً کنترل در برابر تیمار یا سالم در برابر بیمار."
@@ -518,7 +976,9 @@ function QuestionTypeStep({
 
       <ChoiceCard
         active={value === "paired"}
-        onClick={() => onChange("paired")}
+        onClick={() =>
+          onChange("paired")
+        }
         title="نمونه‌های جفت‌شده"
         englishTitle="Paired Design"
         description="مثلاً قبل و بعد از درمان از همان فرد یا نمونه."
@@ -526,15 +986,21 @@ function QuestionTypeStep({
 
       <ChoiceCard
         active={value === "time-series"}
-        onClick={() => onChange("time-series")}
+        onClick={() =>
+          onChange("time-series")
+        }
         title="بررسی تغییرات در زمان"
         englishTitle="Time Series"
         description="چند زمان مختلف یا روند زمانی برایم مهم است."
       />
 
       <ChoiceCard
-        active={value === "exploratory"}
-        onClick={() => onChange("exploratory")}
+        active={
+          value === "exploratory"
+        }
+        onClick={() =>
+          onChange("exploratory")
+        }
         title="بررسی اکتشافی"
         englishTitle="Exploratory Analysis"
         description="هنوز یک مقایسه مشخص ندارم و می‌خواهم ساختار داده را بفهمم."
@@ -542,7 +1008,9 @@ function QuestionTypeStep({
 
       <ChoiceCard
         active={value === "unsure"}
-        onClick={() => onChange("unsure")}
+        onClick={() =>
+          onChange("unsure")
+        }
         title="هنوز دقیق نمی‌دانم"
         englishTitle="Not Sure Yet"
         description="سؤال کلی دارم، اما هنوز به یک مقایسه قابل تحلیل تبدیل نشده است."
@@ -562,7 +1030,9 @@ function DataStageStep({
     <OptionGrid>
       <ChoiceCard
         active={value === "planning"}
-        onClick={() => onChange("planning")}
+        onClick={() =>
+          onChange("planning")
+        }
         title="هنوز داده تولید نکرده‌ام"
         englishTitle="Planning Stage"
         description="در مرحله طراحی پژوهش یا برنامه‌ریزی توالی‌یابی هستم."
@@ -570,31 +1040,46 @@ function DataStageStep({
 
       <ChoiceCard
         active={value === "fastq"}
-        onClick={() => onChange("fastq")}
+        onClick={() =>
+          onChange("fastq")
+        }
         title="فایل FASTQ دارم"
         englishTitle="Raw Sequencing Data"
         description="داده خام توالی‌یابی در اختیار من است."
       />
 
       <ChoiceCard
-        active={value === "count-matrix"}
-        onClick={() => onChange("count-matrix")}
+        active={
+          value === "count-matrix"
+        }
+        onClick={() =>
+          onChange("count-matrix")
+        }
         title="ماتریس شمارش دارم"
         englishTitle="Count Matrix"
         description="جدول ژن × نمونه با شمارش‌های خام یا مشابه آن دارم."
       />
 
       <ChoiceCard
-        active={value === "processed-matrix"}
-        onClick={() => onChange("processed-matrix")}
+        active={
+          value ===
+          "processed-matrix"
+        }
+        onClick={() =>
+          onChange("processed-matrix")
+        }
         title="ماتریس پردازش‌شده دارم"
         englishTitle="Processed Expression Matrix"
         description="مثلاً TPM، FPKM یا داده تبدیل‌شده در اختیار من است."
       />
 
       <ChoiceCard
-        active={value === "public-data"}
-        onClick={() => onChange("public-data")}
+        active={
+          value === "public-data"
+        }
+        onClick={() =>
+          onChange("public-data")
+        }
         title="از داده‌های عمومی استفاده می‌کنم"
         englishTitle="Public Dataset"
         description="داده پروژه را از GEO، SRA یا منبع عمومی دیگری می‌گیرم."
@@ -602,7 +1087,9 @@ function DataStageStep({
 
       <ChoiceCard
         active={value === "unsure"}
-        onClick={() => onChange("unsure")}
+        onClick={() =>
+          onChange("unsure")
+        }
         title="نوع داده‌ام را نمی‌شناسم"
         englishTitle="Unknown Data Type"
         description="فایل یا جدول دارم ولی نمی‌دانم دقیقاً در چه مرحله‌ای از مسیر قرار دارد."
@@ -616,13 +1103,19 @@ function ReplicateStep({
   onChange,
 }: {
   value?: ReplicateLevel;
-  onChange: (value: ReplicateLevel) => void;
+  onChange: (
+    value: ReplicateLevel,
+  ) => void;
 }) {
   return (
     <OptionGrid>
       <ChoiceCard
-        active={value === "three-plus"}
-        onClick={() => onChange("three-plus")}
+        active={
+          value === "three-plus"
+        }
+        onClick={() =>
+          onChange("three-plus")
+        }
         title="حداقل سه نمونه زیستی مستقل در هر گروه"
         englishTitle="3+ Biological Replicates"
         description="در گروه‌های اصلی چند نمونه زیستی مستقل دارم."
@@ -630,7 +1123,9 @@ function ReplicateStep({
 
       <ChoiceCard
         active={value === "two"}
-        onClick={() => onChange("two")}
+        onClick={() =>
+          onChange("two")
+        }
         title="حدود دو نمونه زیستی در هر گروه"
         englishTitle="2 Biological Replicates"
         description="تعداد نمونه‌های مستقل من محدود است."
@@ -638,7 +1133,9 @@ function ReplicateStep({
 
       <ChoiceCard
         active={value === "one"}
-        onClick={() => onChange("one")}
+        onClick={() =>
+          onChange("one")
+        }
         title="یک نمونه زیستی در هر گروه"
         englishTitle="Single Biological Replicate"
         description="برای هر شرایط اصلی فقط یک نمونه مستقل دارم."
@@ -646,7 +1143,9 @@ function ReplicateStep({
 
       <ChoiceCard
         active={value === "none"}
-        onClick={() => onChange("none")}
+        onClick={() =>
+          onChange("none")
+        }
         title="هنوز نمونه‌گیری انجام نشده"
         englishTitle="Not Collected Yet"
         description="پروژه هنوز در مرحله طراحی است."
@@ -654,7 +1153,9 @@ function ReplicateStep({
 
       <ChoiceCard
         active={value === "unsure"}
-        onClick={() => onChange("unsure")}
+        onClick={() =>
+          onChange("unsure")
+        }
         title="نمی‌دانم تکرار زیستی چیست"
         englishTitle="Biological Replicate"
         description="مطمئن نیستم فایل‌ها یا نمونه‌هایم تکرار زیستی محسوب می‌شوند یا نه."
@@ -668,13 +1169,17 @@ function MetadataStep({
   onChange,
 }: {
   value?: MetadataLevel;
-  onChange: (value: MetadataLevel) => void;
+  onChange: (
+    value: MetadataLevel,
+  ) => void;
 }) {
   return (
     <OptionGrid>
       <ChoiceCard
         active={value === "clear"}
-        onClick={() => onChange("clear")}
+        onClick={() =>
+          onChange("clear")
+        }
         title="فراداده من مشخص و منظم است"
         englishTitle="Clear Metadata"
         description="می‌دانم هر نمونه متعلق به کدام گروه است و اطلاعات طراحی مطالعه ثبت شده‌اند."
@@ -682,7 +1187,9 @@ function MetadataStep({
 
       <ChoiceCard
         active={value === "partial"}
-        onClick={() => onChange("partial")}
+        onClick={() =>
+          onChange("partial")
+        }
         title="بخشی از اطلاعات را دارم"
         englishTitle="Partial Metadata"
         description="گروه‌ها مشخص‌اند اما برخی اطلاعات مانند دسته آزمایشی یا عوامل دیگر کامل نیستند."
@@ -690,7 +1197,9 @@ function MetadataStep({
 
       <ChoiceCard
         active={value === "missing"}
-        onClick={() => onChange("missing")}
+        onClick={() =>
+          onChange("missing")
+        }
         title="فراداده تقریباً ندارم"
         englishTitle="Missing Metadata"
         description="فایل‌ها یا نمونه‌ها را دارم اما اطلاعات توصیفی آن‌ها بسیار محدود است."
@@ -698,7 +1207,9 @@ function MetadataStep({
 
       <ChoiceCard
         active={value === "unsure"}
-        onClick={() => onChange("unsure")}
+        onClick={() =>
+          onChange("unsure")
+        }
         title="مطمئن نیستم چه اطلاعاتی لازم است"
         englishTitle="Metadata Requirements"
         description="نمی‌دانم چه متغیرهایی باید برای تحلیل ثبت شده باشند."
@@ -712,21 +1223,34 @@ function GoalStep({
   onChange,
 }: {
   value?: AnalysisGoal;
-  onChange: (value: AnalysisGoal) => void;
+  onChange: (
+    value: AnalysisGoal,
+  ) => void;
 }) {
   return (
     <OptionGrid>
       <ChoiceCard
-        active={value === "differential-expression"}
-        onClick={() => onChange("differential-expression")}
+        active={
+          value ===
+          "differential-expression"
+        }
+        onClick={() =>
+          onChange(
+            "differential-expression",
+          )
+        }
         title="تحلیل بیان افتراقی"
         englishTitle="Differential Expression"
         description="می‌خواهم ژن‌هایی را پیدا کنم که میان شرایط مورد مطالعه تغییر کرده‌اند."
       />
 
       <ChoiceCard
-        active={value === "functional"}
-        onClick={() => onChange("functional")}
+        active={
+          value === "functional"
+        }
+        onClick={() =>
+          onChange("functional")
+        }
         title="تحلیل عملکردی و مسیرهای زیستی"
         englishTitle="Functional Analysis"
         description="می‌خواهم از نتایج ژنی به فرآیندها و مسیرهای زیستی برسم."
@@ -734,15 +1258,21 @@ function GoalStep({
 
       <ChoiceCard
         active={value === "network"}
-        onClick={() => onChange("network")}
+        onClick={() =>
+          onChange("network")
+        }
         title="تحلیل شبکه و WGCNA"
         englishTitle="Network Analysis / WGCNA"
         description="می‌خواهم روابط هم‌بیانی، ماژول‌ها یا ژن‌های هاب را بررسی کنم."
       />
 
       <ChoiceCard
-        active={value === "biomarker"}
-        onClick={() => onChange("biomarker")}
+        active={
+          value === "biomarker"
+        }
+        onClick={() =>
+          onChange("biomarker")
+        }
         title="کشف نشانگر زیستی"
         englishTitle="Biomarker Discovery"
         description="هدف من انتخاب ژن‌ها یا امضاهای کاندیدا برای تشخیص، پیش‌آگهی یا کاربرد مشابه است."
@@ -750,7 +1280,9 @@ function GoalStep({
 
       <ChoiceCard
         active={value === "explore"}
-        onClick={() => onChange("explore")}
+        onClick={() =>
+          onChange("explore")
+        }
         title="فعلاً فقط می‌خواهم داده را بفهمم"
         englishTitle="Data Exploration"
         description="هنوز برای انتخاب تحلیل نهایی آماده نیستم."
@@ -758,7 +1290,9 @@ function GoalStep({
 
       <ChoiceCard
         active={value === "unsure"}
-        onClick={() => onChange("unsure")}
+        onClick={() =>
+          onChange("unsure")
+        }
         title="نمی‌دانم چه تحلیلی مناسب است"
         englishTitle="Analysis Strategy"
         description="می‌خواهم سؤال و داده من تعیین کنند قدم بعدی چه باشد."
@@ -800,9 +1334,10 @@ function ProjectResult({
 
   const StatusIcon = theme.icon;
 
-  const destination = getDestinationInfo(
-    recommendation.destination,
-  );
+  const destination =
+    getDestinationInfo(
+      recommendation.destination,
+    );
 
   return (
     <article
@@ -819,23 +1354,27 @@ function ProjectResult({
         </h2>
 
         <p className="mt-4 max-w-3xl leading-8 text-slate-300">
-          این نتیجه بر اساس پاسخ‌های شما ساخته شده است و جای بررسی
-          تخصصی کامل طراحی پژوهش را نمی‌گیرد.
+          این نتیجه بر اساس پاسخ‌های شما
+          ساخته شده است و جای بررسی تخصصی
+          کامل طراحی پژوهش را نمی‌گیرد.
         </p>
       </div>
 
       <div className="space-y-8 p-6 sm:p-8">
-        {/* STATUS */}
         <section
           className={`rounded-3xl border p-6 ${theme.border} ${theme.background}`}
         >
           <div className="flex items-start gap-4">
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white">
-              <StatusIcon className={`size-6 ${theme.text}`} />
+              <StatusIcon
+                className={`size-6 ${theme.text}`}
+              />
             </span>
 
             <div>
-              <p className={`text-sm font-bold ${theme.text}`}>
+              <p
+                className={`text-sm font-bold ${theme.text}`}
+              >
                 وضعیت پیشنهادی
               </p>
 
@@ -844,13 +1383,14 @@ function ProjectResult({
               </h3>
 
               <p className="mt-3 leading-8 text-slate-700">
-                {recommendation.description}
+                {
+                  recommendation.description
+                }
               </p>
             </div>
           </div>
         </section>
 
-        {/* DESTINATION */}
         <section className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6 sm:p-7">
           <p className="text-sm font-bold text-teal-700">
             مسیر پیشنهادی بعدی
@@ -872,29 +1412,41 @@ function ProjectResult({
           </p>
         </section>
 
-        <ProjectSnapshot answers={answers} />
+        <ProjectSnapshot
+          answers={answers}
+        />
 
-        {recommendation.strengths.length > 0 && (
+        {recommendation.strengths.length >
+          0 && (
           <ResultSection
             title="نقاط مثبت فعلی پروژه"
             icon="✓"
             iconClass="bg-emerald-100 text-emerald-700"
           >
-            {recommendation.strengths.map((item) => (
-              <ResultRow key={item}>{item}</ResultRow>
-            ))}
+            {recommendation.strengths.map(
+              (item) => (
+                <ResultRow key={item}>
+                  {item}
+                </ResultRow>
+              ),
+            )}
           </ResultSection>
         )}
 
-        {recommendation.concerns.length > 0 && (
+        {recommendation.concerns.length >
+          0 && (
           <ResultSection
             title="مواردی که قبل از ادامه باید بررسی شوند"
             icon="!"
             iconClass="bg-amber-100 text-amber-800"
           >
-            {recommendation.concerns.map((item) => (
-              <ResultRow key={item}>{item}</ResultRow>
-            ))}
+            {recommendation.concerns.map(
+              (item) => (
+                <ResultRow key={item}>
+                  {item}
+                </ResultRow>
+              ),
+            )}
           </ResultSection>
         )}
 
@@ -903,42 +1455,57 @@ function ProjectResult({
           icon="→"
           iconClass="bg-teal-100 text-teal-800"
         >
-          {recommendation.nextSteps.map((item) => (
-            <ResultRow key={item}>{item}</ResultRow>
-          ))}
+          {recommendation.nextSteps.map(
+            (item) => (
+              <ResultRow key={item}>
+                {item}
+              </ResultRow>
+            ),
+          )}
         </ResultSection>
 
         {answers.goal === "network" && (
           <div className="rounded-3xl border border-violet-200 bg-violet-50 p-6">
             <p className="font-bold text-violet-950">
-              چرا هاب‌ژن هنوز برای WGCNA چراغ سبز قطعی نمی‌دهد؟
+              چرا هاب‌ژن هنوز برای WGCNA
+              چراغ سبز قطعی نمی‌دهد؟
             </p>
 
             <p className="mt-3 text-sm leading-8 text-violet-900/80">
-              تعداد تکرارهای زیستی در هر گروه فقط بخشی از اطلاعات
-              موردنیاز است. برای تصمیم‌گیری درباره WGCNA باید تعداد کل
-              نمونه‌های مستقل، ساختار ماتریس بیان، کیفیت داده، میزان
-              تغییرپذیری ژن‌ها و ویژگی‌های مورد بررسی نیز ارزیابی شوند.
+              تعداد تکرارهای زیستی در هر
+              گروه فقط بخشی از اطلاعات
+              موردنیاز است. برای تصمیم‌گیری
+              درباره WGCNA باید تعداد کل
+              نمونه‌های مستقل، ساختار ماتریس
+              بیان، کیفیت داده، میزان
+              تغییرپذیری ژن‌ها و ویژگی‌های
+              مورد بررسی نیز ارزیابی شوند.
             </p>
 
             <p className="mt-3 text-sm font-semibold leading-8 text-violet-950">
-              بنابراین انتخاب WGCNA باید وارد «بررسی آمادگی تحلیل
-              شبکه» شود، نه اینکه صرفاً به دلیل قابل اجرا بودن روش،
+              بنابراین انتخاب WGCNA باید
+              وارد «بررسی آمادگی تحلیل
+              شبکه» شود، نه اینکه صرفاً به
+              دلیل قابل اجرا بودن روش،
               مستقیماً اجرا شود.
             </p>
           </div>
         )}
 
-        {answers.goal === "biomarker" && (
+        {answers.goal ===
+          "biomarker" && (
           <div className="rounded-3xl border border-violet-200 bg-violet-50 p-6">
             <p className="font-bold text-violet-950">
               درباره مسیر کشف نشانگر زیستی
             </p>
 
             <p className="mt-3 text-sm leading-8 text-violet-900/80">
-              پیدا کردن یک DEG، ژن هاب یا ویژگی آماری مهم به‌تنهایی
-              نشانگر زیستی معتبر ایجاد نمی‌کند. انتخاب کاندیدا و
-              اعتبارسنجی باید از ابتدا بخشی از طراحی پژوهش باشند.
+              پیدا کردن یک DEG، ژن هاب یا
+              ویژگی آماری مهم به‌تنهایی
+              نشانگر زیستی معتبر ایجاد
+              نمی‌کند. انتخاب کاندیدا و
+              اعتبارسنجی باید از ابتدا بخشی
+              از طراحی پژوهش باشند.
             </p>
           </div>
         )}
@@ -954,10 +1521,12 @@ function ProjectResult({
           </p>
 
           <p className="mt-2 text-sm leading-7 text-slate-300">
-            هدف هاب‌ژن فقط این نیست که بگوید چه تحلیلی از نظر فنی
-            قابل اجراست؛ هدف این است که کمک کند بفهمید چه تحلیلی برای
-            سؤال پژوهشی، داده و طراحی واقعی پروژه شما قابل دفاع‌تر
-            است.
+            هدف هاب‌ژن فقط این نیست که
+            بگوید چه تحلیلی از نظر فنی قابل
+            اجراست؛ هدف این است که کمک کند
+            بفهمید چه تحلیلی برای سؤال
+            پژوهشی، داده و طراحی واقعی پروژه
+            شما قابل دفاع‌تر است.
           </p>
         </div>
       </div>
@@ -972,7 +1541,10 @@ function ProjectActions({
   recommendation: ProjectRecommendation;
   onRestart: () => void;
 }) {
-  if (recommendation.destination === "network-biology") {
+  if (
+    recommendation.destination ===
+    "network-biology"
+  ) {
     return (
       <ActionBox
         title="برای هدف شما، قدم بعدی باید شبکه‌محور باشد."
@@ -997,7 +1569,10 @@ function ProjectActions({
     );
   }
 
-  if (recommendation.destination === "biomarker-discovery") {
+  if (
+    recommendation.destination ===
+    "biomarker-discovery"
+  ) {
     return (
       <ActionBox
         title="مسیر بعدی شما باید بر طراحی کشف و اعتبارسنجی کاندیداها تمرکز کند."
@@ -1007,7 +1582,8 @@ function ProjectActions({
           href="/consultation"
           className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
         >
-          بازبینی راهبرد کشف نشانگر زیستی
+          بازبینی راهبرد کشف نشانگر
+          زیستی
         </a>
 
         <button
@@ -1022,13 +1598,17 @@ function ProjectActions({
     );
   }
 
-  if (recommendation.destination === "functional-analysis") {
+  if (
+    recommendation.destination ===
+    "functional-analysis"
+  ) {
     return (
       <ActionBox
         title="قدم بعدی شما طراحی تحلیل عملکردی متناسب با نوع نتیجه است."
         description="باید مشخص شود تحلیل از یک فهرست ژنی شروع می‌شود یا از رتبه‌بندی گسترده ژن‌ها و چه سؤال زیستی قرار است پاسخ داده شود."
       >
-        {recommendation.level === "review" ? (
+        {recommendation.level ===
+        "review" ? (
           <a
             href="/consultation"
             className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
@@ -1040,7 +1620,7 @@ function ProjectActions({
             href="/learn/rna-seq/navigator"
             className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-700 px-5 py-3 font-bold text-white transition hover:bg-teal-800"
           >
-            مرور بخش تحلیل عملکردی RNA-seq
+            مرور بخش تحلیل عملکردی
           </a>
         )}
 
@@ -1057,19 +1637,22 @@ function ProjectActions({
   }
 
   if (
-    recommendation.destination === "differential-expression"
+    recommendation.destination ===
+    "differential-expression"
   ) {
     return (
       <ActionBox
         title="مسیر بعدی شما تحلیل بیان افتراقی است."
         description="طراحی مطالعه، نوع داده و مقایسه آماری باید به یک طرح تحلیل مشخص تبدیل شوند."
       >
-        {recommendation.level === "review" ? (
+        {recommendation.level ===
+        "review" ? (
           <a
             href="/consultation"
             className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-5 py-3 font-bold text-white transition hover:bg-slate-800"
           >
-            بازبینی طراحی تحلیل بیان افتراقی
+            بازبینی طراحی تحلیل بیان
+            افتراقی
           </a>
         ) : (
           <a
@@ -1092,7 +1675,10 @@ function ProjectActions({
     );
   }
 
-  if (recommendation.destination === "data-exploration") {
+  if (
+    recommendation.destination ===
+    "data-exploration"
+  ) {
     return (
       <ActionBox
         title="فعلاً بهترین قدم، شناخت ساختار داده است."
@@ -1181,24 +1767,34 @@ function buildRecommendation(
   let severity = 0;
 
   function requireReview() {
-    severity = Math.max(severity, 1);
+    severity = Math.max(
+      severity,
+      1,
+    );
   }
 
   function requireLearning() {
-    severity = Math.max(severity, 2);
+    severity = Math.max(
+      severity,
+      2,
+    );
   }
 
   if (
-    answers.questionType === "group-comparison" ||
+    answers.questionType ===
+      "group-comparison" ||
     answers.questionType === "paired" ||
-    answers.questionType === "time-series"
+    answers.questionType ===
+      "time-series"
   ) {
     strengths.push(
       "ساختار کلی سؤال پژوهشی شما به یک طراحی قابل تحلیل نزدیک است.",
     );
   }
 
-  if (answers.questionType === "unsure") {
+  if (
+    answers.questionType === "unsure"
+  ) {
     concerns.push(
       "سؤال پژوهشی هنوز به یک مقایسه یا هدف تحلیلی مشخص تبدیل نشده است.",
     );
@@ -1210,7 +1806,10 @@ function buildRecommendation(
     );
   }
 
-  if (answers.questionType === "exploratory") {
+  if (
+    answers.questionType ===
+    "exploratory"
+  ) {
     concerns.push(
       "پروژه در حال حاضر بیشتر ماهیت اکتشافی دارد و هنوز سؤال اصلی برای آزمون مشخص نشده است.",
     );
@@ -1218,7 +1817,9 @@ function buildRecommendation(
     requireReview();
   }
 
-  if (answers.dataStage === "planning") {
+  if (
+    answers.dataStage === "planning"
+  ) {
     strengths.push(
       "هنوز فرصت دارید طراحی مطالعه را پیش از تولید داده اصلاح کنید.",
     );
@@ -1230,14 +1831,18 @@ function buildRecommendation(
 
   if (
     answers.dataStage === "fastq" ||
-    answers.dataStage === "count-matrix"
+    answers.dataStage ===
+      "count-matrix"
   ) {
     strengths.push(
       "داده شما در یکی از مراحل استاندارد مسیر RNA-seq قرار دارد.",
     );
   }
 
-  if (answers.dataStage === "processed-matrix") {
+  if (
+    answers.dataStage ===
+    "processed-matrix"
+  ) {
     concerns.push(
       "قبل از انتخاب تحلیل باید مشخص شود ماتریس پردازش‌شده دقیقاً چه نوع مقادیری دارد و چگونه تولید شده است.",
     );
@@ -1249,7 +1854,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.dataStage === "public-data") {
+  if (
+    answers.dataStage === "public-data"
+  ) {
     concerns.push(
       "تناسب مجموعه‌داده عمومی با سؤال پژوهشی باید پیش از اجرای تحلیل بررسی شود.",
     );
@@ -1261,7 +1868,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.dataStage === "unsure") {
+  if (
+    answers.dataStage === "unsure"
+  ) {
     concerns.push(
       "نوع داده فعلی پروژه مشخص نیست؛ بنابراین انتخاب روش تحلیل هنوز زود است.",
     );
@@ -1273,13 +1882,18 @@ function buildRecommendation(
     );
   }
 
-  if (answers.replicates === "three-plus") {
+  if (
+    answers.replicates ===
+    "three-plus"
+  ) {
     strengths.push(
       "برای گروه‌های اصلی چند تکرار زیستی مستقل گزارش کرده‌اید.",
     );
   }
 
-  if (answers.replicates === "two") {
+  if (
+    answers.replicates === "two"
+  ) {
     concerns.push(
       "تعداد تکرارهای زیستی محدود است و توان تحلیل آماری باید با احتیاط بررسی شود.",
     );
@@ -1291,7 +1905,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.replicates === "one") {
+  if (
+    answers.replicates === "one"
+  ) {
     concerns.push(
       "وجود تنها یک نمونه زیستی در هر گروه محدودیت جدی برای استنباط آماری ایجاد می‌کند.",
     );
@@ -1303,7 +1919,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.replicates === "none") {
+  if (
+    answers.replicates === "none"
+  ) {
     concerns.push(
       "تعداد تکرارهای زیستی هنوز در طراحی پروژه نهایی نشده است.",
     );
@@ -1315,7 +1933,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.replicates === "unsure") {
+  if (
+    answers.replicates === "unsure"
+  ) {
     concerns.push(
       "هنوز مشخص نیست کدام نمونه‌ها تکرار زیستی مستقل محسوب می‌شوند.",
     );
@@ -1327,13 +1947,17 @@ function buildRecommendation(
     );
   }
 
-  if (answers.metadata === "clear") {
+  if (
+    answers.metadata === "clear"
+  ) {
     strengths.push(
       "اطلاعات گروه‌بندی و فراداده نمونه‌ها مشخص هستند.",
     );
   }
 
-  if (answers.metadata === "partial") {
+  if (
+    answers.metadata === "partial"
+  ) {
     concerns.push(
       "فراداده ناقص است و ممکن است برخی عوامل فنی یا زیستی در مدل تحلیل وارد نشوند.",
     );
@@ -1345,7 +1969,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.metadata === "missing") {
+  if (
+    answers.metadata === "missing"
+  ) {
     concerns.push(
       "نبود فراداده می‌تواند تفسیر نمونه‌ها و تعریف مقایسه آماری را دشوار یا غیرممکن کند.",
     );
@@ -1357,7 +1983,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.metadata === "unsure") {
+  if (
+    answers.metadata === "unsure"
+  ) {
     concerns.push(
       "هنوز مشخص نیست چه فراداده‌ای برای تحلیل پروژه لازم است.",
     );
@@ -1369,21 +1997,23 @@ function buildRecommendation(
     );
   }
 
-  const destination = destinationFromGoal(
-    answers.goal,
-  );
+  const destination =
+    destinationFromGoal(
+      answers.goal,
+    );
 
-  /*
-   * Goal-specific reasoning
-   */
-
-  if (answers.goal === "differential-expression") {
+  if (
+    answers.goal ===
+    "differential-expression"
+  ) {
     nextSteps.push(
       "مقایسه آماری اصلی را دقیق تعریف کنید؛ مثلاً کنترل در برابر تیمار یا قبل در برابر بعد.",
     );
   }
 
-  if (answers.goal === "functional") {
+  if (
+    answers.goal === "functional"
+  ) {
     nextSteps.push(
       "مشخص کنید تحلیل عملکردی قرار است از فهرست ژنی انتخاب‌شده شروع شود یا از رتبه‌بندی گسترده ژن‌ها.",
     );
@@ -1393,7 +2023,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.goal === "network") {
+  if (
+    answers.goal === "network"
+  ) {
     concerns.push(
       "پرسش «تعداد تکرار در هر گروه» به‌تنهایی برای تعیین آمادگی WGCNA کافی نیست؛ تعداد کل نمونه‌های مستقل و ساختار داده باید جداگانه بررسی شوند.",
     );
@@ -1417,7 +2049,9 @@ function buildRecommendation(
     );
   }
 
-  if (answers.goal === "biomarker") {
+  if (
+    answers.goal === "biomarker"
+  ) {
     concerns.push(
       "کشف نشانگر زیستی فقط با پیدا کردن DEG یا ژن هاب کامل نمی‌شود و به راهبرد اعتبارسنجی نیاز دارد.",
     );
@@ -1433,13 +2067,17 @@ function buildRecommendation(
     );
   }
 
-  if (answers.goal === "explore") {
+  if (
+    answers.goal === "explore"
+  ) {
     nextSteps.push(
       "با کنترل کیفیت، بررسی ساختار نمونه‌ها، PCA، همبستگی و بررسی نمونه‌های پرت شروع کنید.",
     );
   }
 
-  if (answers.goal === "unsure") {
+  if (
+    answers.goal === "unsure"
+  ) {
     concerns.push(
       "هدف تحلیل هنوز مشخص نشده است؛ بهتر است ابزار را پیش از روشن‌شدن سؤال انتخاب نکنید.",
     );
@@ -1508,7 +2146,10 @@ function buildRecommendation(
 function destinationFromGoal(
   goal?: AnalysisGoal,
 ): RecommendationDestination {
-  if (goal === "differential-expression") {
+  if (
+    goal ===
+    "differential-expression"
+  ) {
     return "differential-expression";
   }
 
@@ -1539,43 +2180,55 @@ function getDestinationInfo(
     DestinationInfo
   > = {
     "rna-seq-foundations": {
-      title: "روشن‌کردن پیش‌نیازهای RNA-seq",
-      englishTitle: "RNA-seq Foundations",
+      title:
+        "روشن‌کردن پیش‌نیازهای RNA-seq",
+      englishTitle:
+        "RNA-seq Foundations",
       description:
         "قبل از انتخاب روش، سؤال پژوهشی، نوع داده، تکرارهای زیستی و فراداده باید روشن‌تر شوند.",
     },
 
     "differential-expression": {
-      title: "طراحی تحلیل بیان افتراقی",
-      englishTitle: "Differential Expression Analysis",
+      title:
+        "طراحی تحلیل بیان افتراقی",
+      englishTitle:
+        "Differential Expression Analysis",
       description:
         "قدم بعدی تعریف دقیق مقایسه آماری، ساختار مدل و داده مناسب برای تحلیل بیان افتراقی است.",
     },
 
     "functional-analysis": {
-      title: "تحلیل عملکردی و مسیرهای زیستی",
-      englishTitle: "Functional Analysis",
+      title:
+        "تحلیل عملکردی و مسیرهای زیستی",
+      englishTitle:
+        "Functional Analysis",
       description:
         "قدم بعدی مشخص‌کردن نوع ورودی، روش مناسب تحلیل عملکردی و سؤال زیستی مربوط به مسیرها و فرآیندهاست.",
     },
 
     "network-biology": {
-      title: "بررسی آمادگی برای تحلیل شبکه و WGCNA",
-      englishTitle: "Network Biology / WGCNA Readiness",
+      title:
+        "بررسی آمادگی برای تحلیل شبکه و WGCNA",
+      englishTitle:
+        "Network Biology / WGCNA Readiness",
       description:
         "قدم بعدی بررسی تعداد کل نمونه‌های مستقل، ساختار ماتریس بیان، ویژگی‌های مورد بررسی و مناسب بودن داده برای تحلیل هم‌بیانی است.",
     },
 
     "biomarker-discovery": {
-      title: "طراحی مسیر کشف و اعتبارسنجی نشانگر زیستی",
-      englishTitle: "Biomarker Discovery & Validation",
+      title:
+        "طراحی مسیر کشف و اعتبارسنجی نشانگر زیستی",
+      englishTitle:
+        "Biomarker Discovery & Validation",
       description:
         "قدم بعدی تعریف دقیق هدف نشانگر زیستی، انتخاب راهبرد کشف کاندیدا و طراحی اعتبارسنجی مستقل است.",
     },
 
     "data-exploration": {
-      title: "بررسی ساختار و کیفیت داده",
-      englishTitle: "RNA-seq Data Exploration",
+      title:
+        "بررسی ساختار و کیفیت داده",
+      englishTitle:
+        "RNA-seq Data Exploration",
       description:
         "قدم بعدی شناخت رفتار کلی نمونه‌ها، کنترل کیفیت، PCA، همبستگی و شناسایی عوامل غیرعادی است.",
     },
@@ -1598,27 +2251,37 @@ function ProjectSnapshot({
       <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <SnapshotItem
           label="نوع سؤال"
-          value={questionLabel(answers.questionType)}
+          value={questionLabel(
+            answers.questionType,
+          )}
         />
 
         <SnapshotItem
           label="وضعیت داده"
-          value={dataStageLabel(answers.dataStage)}
+          value={dataStageLabel(
+            answers.dataStage,
+          )}
         />
 
         <SnapshotItem
           label="تکرارهای زیستی"
-          value={replicateLabel(answers.replicates)}
+          value={replicateLabel(
+            answers.replicates,
+          )}
         />
 
         <SnapshotItem
           label="فراداده"
-          value={metadataLabel(answers.metadata)}
+          value={metadataLabel(
+            answers.metadata,
+          )}
         />
 
         <SnapshotItem
           label="هدف تحلیل"
-          value={goalLabel(answers.goal)}
+          value={goalLabel(
+            answers.goal,
+          )}
         />
       </div>
     </section>
@@ -1859,23 +2522,25 @@ function ResultSection({
 
       <div className="mt-4 space-y-3">
         {Array.isArray(children)
-          ? children.map((child, index) => (
-              <div
-                key={index}
-                className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
-              >
-                <span
-                  className={[
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
-                    iconClass,
-                  ].join(" ")}
+          ? children.map(
+              (child, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  {icon}
-                </span>
+                  <span
+                    className={[
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold",
+                      iconClass,
+                    ].join(" ")}
+                  >
+                    {icon}
+                  </span>
 
-                {child}
-              </div>
-            ))
+                  {child}
+                </div>
+              ),
+            )
           : children}
       </div>
     </section>
@@ -1914,6 +2579,18 @@ function SnapshotItem({
   );
 }
 
+function getFirstIncompleteStep(
+  answers: ProjectAnswers,
+) {
+  if (!answers.questionType) return 1;
+  if (!answers.dataStage) return 2;
+  if (!answers.replicates) return 3;
+  if (!answers.metadata) return 4;
+  if (!answers.goal) return 5;
+
+  return null;
+}
+
 function stepTitle(step: number) {
   const titles = [
     "",
@@ -1927,7 +2604,9 @@ function stepTitle(step: number) {
   return titles[step];
 }
 
-function stepEnglishTitle(step: number) {
+function stepEnglishTitle(
+  step: number,
+) {
   const titles = [
     "",
     "Research Question",
@@ -1940,7 +2619,9 @@ function stepEnglishTitle(step: number) {
   return titles[step];
 }
 
-function stepDescription(step: number) {
+function stepDescription(
+  step: number,
+) {
   const descriptions = [
     "",
     "نیازی نیست سؤال را با اصطلاحات آماری بیان کنید. گزینه‌ای را انتخاب کنید که به ساختار پژوهش شما نزدیک‌تر است.",
@@ -1953,67 +2634,121 @@ function stepDescription(step: number) {
   return descriptions[step];
 }
 
-function questionLabel(value?: QuestionType) {
-  const labels: Record<QuestionType, string> = {
-    "group-comparison": "مقایسه دو یا چند گروه",
+function questionLabel(
+  value?: QuestionType,
+) {
+  const labels: Record<
+    QuestionType,
+    string
+  > = {
+    "group-comparison":
+      "مقایسه دو یا چند گروه",
     paired: "طراحی جفت‌شده",
-    "time-series": "بررسی تغییرات در زمان",
+    "time-series":
+      "بررسی تغییرات در زمان",
     exploratory: "بررسی اکتشافی",
     unsure: "هنوز نامشخص",
   };
 
-  return value ? labels[value] : "—";
+  return value
+    ? labels[value]
+    : "—";
 }
 
-function dataStageLabel(value?: DataStage) {
-  const labels: Record<DataStage, string> = {
-    planning: "مرحله طراحی؛ هنوز داده تولید نشده",
+function dataStageLabel(
+  value?: DataStage,
+) {
+  const labels: Record<
+    DataStage,
+    string
+  > = {
+    planning:
+      "مرحله طراحی؛ هنوز داده تولید نشده",
     fastq: "FASTQ",
-    "count-matrix": "ماتریس شمارش",
-    "processed-matrix": "ماتریس بیان پردازش‌شده",
-    "public-data": "مجموعه‌داده عمومی",
+    "count-matrix":
+      "ماتریس شمارش",
+    "processed-matrix":
+      "ماتریس بیان پردازش‌شده",
+    "public-data":
+      "مجموعه‌داده عمومی",
     unsure: "نوع داده نامشخص",
   };
 
-  return value ? labels[value] : "—";
+  return value
+    ? labels[value]
+    : "—";
 }
 
-function replicateLabel(value?: ReplicateLevel) {
-  const labels: Record<ReplicateLevel, string> = {
-    none: "هنوز نمونه‌گیری نشده",
-    one: "یک نمونه زیستی در هر گروه",
-    two: "حدود دو نمونه زیستی در هر گروه",
-    "three-plus": "حداقل سه نمونه زیستی مستقل",
+function replicateLabel(
+  value?: ReplicateLevel,
+) {
+  const labels: Record<
+    ReplicateLevel,
+    string
+  > = {
+    none:
+      "هنوز نمونه‌گیری نشده",
+    one:
+      "یک نمونه زیستی در هر گروه",
+    two:
+      "حدود دو نمونه زیستی در هر گروه",
+    "three-plus":
+      "حداقل سه نمونه زیستی مستقل",
     unsure: "نامشخص",
   };
 
-  return value ? labels[value] : "—";
+  return value
+    ? labels[value]
+    : "—";
 }
 
-function metadataLabel(value?: MetadataLevel) {
-  const labels: Record<MetadataLevel, string> = {
+function metadataLabel(
+  value?: MetadataLevel,
+) {
+  const labels: Record<
+    MetadataLevel,
+    string
+  > = {
     clear: "مشخص و منظم",
     partial: "ناقص",
-    missing: "تقریباً موجود نیست",
+    missing:
+      "تقریباً موجود نیست",
     unsure: "نیاز به بررسی",
   };
 
-  return value ? labels[value] : "—";
+  return value
+    ? labels[value]
+    : "—";
 }
 
-function goalLabel(value?: AnalysisGoal) {
-  const labels: Record<AnalysisGoal, string> = {
-    "differential-expression": "تحلیل بیان افتراقی",
+function goalLabel(
+  value?: AnalysisGoal,
+) {
+  const labels: Record<
+    AnalysisGoal,
+    string
+  > = {
+    "differential-expression":
+      "تحلیل بیان افتراقی",
     functional: "تحلیل عملکردی",
-    network: "تحلیل شبکه / WGCNA",
-    biomarker: "کشف نشانگر زیستی",
-    explore: "بررسی اکتشافی داده",
+    network:
+      "تحلیل شبکه / WGCNA",
+    biomarker:
+      "کشف نشانگر زیستی",
+    explore:
+      "بررسی اکتشافی داده",
     unsure: "هنوز مشخص نیست",
   };
 
-  return value ? labels[value] : "—";
+  return value
+    ? labels[value]
+    : "—";
 }
 
-function toPersianNumber(value: number) {
-  return new Intl.NumberFormat("fa-IR").format(value);
+function toPersianNumber(
+  value: number,
+) {
+  return new Intl.NumberFormat(
+    "fa-IR",
+  ).format(value);
 }
