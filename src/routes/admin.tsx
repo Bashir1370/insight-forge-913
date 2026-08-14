@@ -8,6 +8,7 @@ import {
 } from "react";
 import {
   Activity,
+  BadgeDollarSign,
   CalendarClock,
   CheckCircle2,
   CloudUpload,
@@ -20,6 +21,7 @@ import {
   Image,
   Loader2,
   MessageSquare,
+  Pencil,
   RefreshCw,
   Save,
   Send,
@@ -86,6 +88,25 @@ type ConsultationRow = {
   updated_at: string;
 };
 
+type ProjectQuoteRow = {
+  id: string;
+  project_id: string;
+  user_id: string;
+  created_by: string;
+  title: string;
+  scope_summary: string | null;
+  deliverables: string | null;
+  amount: number;
+  currency: string;
+  estimated_days: number | null;
+  status: string;
+  valid_until: string | null;
+  admin_note: string | null;
+  responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type OutputCategory = "report" | "result";
 
 /*
@@ -96,7 +117,8 @@ type OutputCategory = "report" | "result";
 
 const PROJECT_FILES_BUCKET = "project-files";
 
-const MAX_STANDARD_UPLOAD_BYTES = 6 * 1024 * 1024;
+const MAX_STANDARD_UPLOAD_BYTES =
+  6 * 1024 * 1024;
 
 const projectStatusOptions = [
   { value: "submitted", label: "ثبت پروژه" },
@@ -149,6 +171,15 @@ const consultationTypeLabels: Record<string, string> = {
   custom: "مشاوره سفارشی",
 };
 
+const quoteStatusLabels: Record<string, string> = {
+  draft: "پیش‌نویس",
+  sent: "ارسال‌شده",
+  accepted: "تأییدشده توسط پژوهشگر",
+  rejected: "ردشده توسط پژوهشگر",
+  expired: "منقضی‌شده",
+  cancelled: "لغوشده",
+};
+
 /*
  * =========================================================
  * ROUTE
@@ -190,7 +221,7 @@ export const Route = createFileRoute("/admin")({
       {
         name: "description",
         content:
-          "مدیریت پروژه‌ها، مشاوره‌ها و خروجی‌های پژوهشی هاب‌ژن",
+          "مدیریت پروژه‌ها، قیمت‌ها، مشاوره‌ها و خروجی‌های پژوهشی هاب‌ژن",
       },
       {
         name: "robots",
@@ -315,6 +346,70 @@ function Admin() {
     savingConsultation,
     setSavingConsultation,
   ] = useState(false);
+
+  /*
+   * Quote management
+   */
+
+  const [
+    projectQuotes,
+    setProjectQuotes,
+  ] = useState<ProjectQuoteRow[]>([]);
+
+  const [
+    quotesLoading,
+    setQuotesLoading,
+  ] = useState(false);
+
+  const [
+    savingQuote,
+    setSavingQuote,
+  ] = useState(false);
+
+  const [
+    sendingQuoteId,
+    setSendingQuoteId,
+  ] = useState<string | null>(null);
+
+  const [
+    editingQuoteId,
+    setEditingQuoteId,
+  ] = useState<string | null>(null);
+
+  const [
+    quoteTitle,
+    setQuoteTitle,
+  ] = useState("");
+
+  const [
+    quoteScope,
+    setQuoteScope,
+  ] = useState("");
+
+  const [
+    quoteDeliverables,
+    setQuoteDeliverables,
+  ] = useState("");
+
+  const [
+    quoteAmount,
+    setQuoteAmount,
+  ] = useState("");
+
+  const [
+    quoteEstimatedDays,
+    setQuoteEstimatedDays,
+  ] = useState("");
+
+  const [
+    quoteValidUntil,
+    setQuoteValidUntil,
+  ] = useState("");
+
+  const [
+    quoteAdminNote,
+    setQuoteAdminNote,
+  ] = useState("");
 
   /*
    * =======================================================
@@ -467,10 +562,6 @@ function Admin() {
     (selectedProject?.wizard_data ??
       {}) as WizardAnswers;
 
-  /*
-   * File categories
-   */
-
   const incomingFiles =
     projectFiles.filter(
       (file) =>
@@ -565,10 +656,7 @@ function Admin() {
       await supabase
         .from("project_messages")
         .select("*")
-        .eq(
-          "project_id",
-          projectId,
-        )
+        .eq("project_id", projectId)
         .order("created_at", {
           ascending: true,
         });
@@ -674,10 +762,7 @@ function Admin() {
       await supabase
         .from("project_files")
         .select("*")
-        .eq(
-          "project_id",
-          projectId,
-        )
+        .eq("project_id", projectId)
         .order("created_at", {
           ascending: false,
         });
@@ -738,12 +823,9 @@ function Admin() {
         URL.createObjectURL(data);
 
       const anchor =
-        document.createElement(
-          "a",
-        );
+        document.createElement("a");
 
       anchor.href = objectUrl;
-
       anchor.download =
         file.original_name;
 
@@ -752,7 +834,6 @@ function Admin() {
       );
 
       anchor.click();
-
       anchor.remove();
 
       URL.revokeObjectURL(
@@ -798,8 +879,7 @@ function Admin() {
 
     if (
       category === "report" &&
-      file.type !==
-        "application/pdf" &&
+      file.type !== "application/pdf" &&
       !file.name
         .toLowerCase()
         .endsWith(".pdf")
@@ -944,26 +1024,468 @@ function Admin() {
     };
 
   /*
-   * Reload project data
+   * =======================================================
+   * QUOTES
+   * =======================================================
+   */
+
+  const resetQuoteForm = () => {
+    setEditingQuoteId(null);
+    setQuoteTitle("");
+    setQuoteScope("");
+    setQuoteDeliverables("");
+    setQuoteAmount("");
+    setQuoteEstimatedDays("");
+    setQuoteValidUntil("");
+    setQuoteAdminNote("");
+  };
+
+  const loadProjectQuotes = async (
+    projectId: string,
+  ) => {
+    setQuotesLoading(true);
+
+    const { data, error } =
+      await supabase
+        .from("project_quotes")
+        .select("*")
+        .eq("project_id", projectId)
+        .order("created_at", {
+          ascending: false,
+        });
+
+    if (error) {
+      console.error(error);
+
+      setProjectQuotes([]);
+      setQuotesLoading(false);
+
+      toast.error(
+        "دریافت پیشنهادهای قیمت انجام نشد.",
+      );
+
+      return;
+    }
+
+    setProjectQuotes(
+      (data ??
+        []) as ProjectQuoteRow[],
+    );
+
+    setQuotesLoading(false);
+  };
+
+  const editDraftQuote = (
+    quote: ProjectQuoteRow,
+  ) => {
+    if (quote.status !== "draft") {
+      toast.error(
+        "فقط پیش‌نویس قابل ویرایش است.",
+      );
+      return;
+    }
+
+    setEditingQuoteId(
+      quote.id,
+    );
+
+    setQuoteTitle(
+      quote.title,
+    );
+
+    setQuoteScope(
+      quote.scope_summary ?? "",
+    );
+
+    setQuoteDeliverables(
+      quote.deliverables ?? "",
+    );
+
+    setQuoteAmount(
+      String(quote.amount),
+    );
+
+    setQuoteEstimatedDays(
+      quote.estimated_days
+        ? String(
+            quote.estimated_days,
+          )
+        : "",
+    );
+
+    setQuoteValidUntil(
+      toDateTimeLocalValue(
+        quote.valid_until,
+      ),
+    );
+
+    setQuoteAdminNote(
+      quote.admin_note ?? "",
+    );
+
+    setTimeout(() => {
+      document
+        .getElementById(
+          "quote-editor",
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 50);
+  };
+
+  const saveQuote = async (
+    targetStatus:
+      | "draft"
+      | "sent",
+  ) => {
+    if (!selectedProject) {
+      toast.error(
+        "ابتدا یک پروژه را باز کنید.",
+      );
+      return;
+    }
+
+    const cleanTitle =
+      quoteTitle.trim();
+
+    if (!cleanTitle) {
+      toast.error(
+        "عنوان پیشنهاد قیمت را وارد کنید.",
+      );
+      return;
+    }
+
+    const amount =
+      parseIntegerInput(
+        quoteAmount,
+      );
+
+    if (
+      amount === null ||
+      amount <= 0
+    ) {
+      toast.error(
+        "مبلغ معتبر را به تومان وارد کنید.",
+      );
+      return;
+    }
+
+    let estimatedDays:
+      | number
+      | null = null;
+
+    if (
+      quoteEstimatedDays.trim()
+    ) {
+      estimatedDays =
+        parseIntegerInput(
+          quoteEstimatedDays,
+        );
+
+      if (
+        estimatedDays === null ||
+        estimatedDays < 1 ||
+        estimatedDays > 365
+      ) {
+        toast.error(
+          "زمان تقریبی انجام باید بین ۱ تا ۳۶۵ روز باشد.",
+        );
+        return;
+      }
+    }
+
+    let validUntil:
+      | string
+      | null = null;
+
+    if (quoteValidUntil) {
+      const date =
+        new Date(
+          quoteValidUntil,
+        );
+
+      if (
+        Number.isNaN(
+          date.getTime(),
+        )
+      ) {
+        toast.error(
+          "تاریخ اعتبار پیشنهاد معتبر نیست.",
+        );
+        return;
+      }
+
+      if (
+        targetStatus === "sent" &&
+        date.getTime() <= Date.now()
+      ) {
+        toast.error(
+          "تاریخ اعتبار پیشنهاد باید در آینده باشد.",
+        );
+        return;
+      }
+
+      validUntil =
+        date.toISOString();
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      toast.error(
+        "نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.",
+      );
+      return;
+    }
+
+    setSavingQuote(true);
+
+    const payload = {
+      project_id:
+        selectedProject.id,
+
+      user_id:
+        selectedProject.user_id,
+
+      title:
+        cleanTitle,
+
+      scope_summary:
+        quoteScope.trim() ||
+        null,
+
+      deliverables:
+        quoteDeliverables.trim() ||
+        null,
+
+      amount,
+
+      currency: "TOMAN",
+
+      estimated_days:
+        estimatedDays,
+
+      status:
+        targetStatus,
+
+      valid_until:
+        validUntil,
+
+      admin_note:
+        quoteAdminNote.trim() ||
+        null,
+    };
+
+    if (editingQuoteId) {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("project_quotes")
+        .update(payload)
+        .eq(
+          "id",
+          editingQuoteId,
+        )
+        .eq(
+          "status",
+          "draft",
+        )
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(error);
+
+        toast.error(
+          "ذخیره پیشنهاد قیمت انجام نشد.",
+        );
+
+        setSavingQuote(false);
+        return;
+      }
+
+      const updated =
+        data as ProjectQuoteRow;
+
+      setProjectQuotes(
+        (current) =>
+          current.map(
+            (quote) =>
+              quote.id ===
+              updated.id
+                ? updated
+                : quote,
+          ),
+      );
+    } else {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("project_quotes")
+        .insert({
+          ...payload,
+          created_by:
+            user.id,
+        })
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(error);
+
+        toast.error(
+          "ثبت پیشنهاد قیمت انجام نشد.",
+        );
+
+        setSavingQuote(false);
+        return;
+      }
+
+      setProjectQuotes(
+        (current) => [
+          data as ProjectQuoteRow,
+          ...current,
+        ],
+      );
+    }
+
+    setSavingQuote(false);
+    resetQuoteForm();
+
+    if (
+      targetStatus ===
+      "sent"
+    ) {
+      toast.success(
+        "پیشنهاد قیمت برای پژوهشگر ارسال شد.",
+      );
+    } else {
+      toast.success(
+        "پیشنهاد قیمت به‌صورت پیش‌نویس ذخیره شد.",
+      );
+    }
+  };
+
+  const sendExistingDraftQuote =
+    async (
+      quote: ProjectQuoteRow,
+    ) => {
+      if (
+        quote.status !==
+        "draft"
+      ) {
+        return;
+      }
+
+      if (
+        quote.valid_until &&
+        new Date(
+          quote.valid_until,
+        ).getTime() <= Date.now()
+      ) {
+        toast.error(
+          "تاریخ اعتبار این پیش‌نویس گذشته است؛ ابتدا آن را ویرایش کنید.",
+        );
+        return;
+      }
+
+      setSendingQuoteId(
+        quote.id,
+      );
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("project_quotes")
+        .update({
+          status: "sent",
+        })
+        .eq("id", quote.id)
+        .eq("status", "draft")
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(error);
+
+        toast.error(
+          "ارسال پیشنهاد قیمت انجام نشد.",
+        );
+
+        setSendingQuoteId(
+          null,
+        );
+
+        return;
+      }
+
+      const updated =
+        data as ProjectQuoteRow;
+
+      setProjectQuotes(
+        (current) =>
+          current.map(
+            (item) =>
+              item.id ===
+              updated.id
+                ? updated
+                : item,
+          ),
+      );
+
+      if (
+        editingQuoteId ===
+        quote.id
+      ) {
+        resetQuoteForm();
+      }
+
+      setSendingQuoteId(null);
+
+      toast.success(
+        "پیشنهاد قیمت برای پژوهشگر ارسال شد.",
+      );
+    };
+
+  /*
+   * =======================================================
+   * PROJECT RESOURCE RELOAD
+   * =======================================================
    */
 
   useEffect(() => {
     if (!selectedProject) {
       setMessages([]);
       setProjectFiles([]);
+      setProjectQuotes([]);
       setMessageText("");
+      resetQuoteForm();
       return;
     }
 
     setMessages([]);
     setProjectFiles([]);
+    setProjectQuotes([]);
     setMessageText("");
+    resetQuoteForm();
 
     loadMessages(
       selectedProject.id,
     );
 
     loadProjectFiles(
+      selectedProject.id,
+    );
+
+    loadProjectQuotes(
       selectedProject.id,
     );
   }, [selectedProject?.id]);
@@ -1072,14 +1594,13 @@ function Admin() {
       if (
         consultationDuration.trim()
       ) {
-        duration = Number(
-          consultationDuration,
-        );
+        duration =
+          parseIntegerInput(
+            consultationDuration,
+          );
 
         if (
-          !Number.isInteger(
-            duration,
-          ) ||
+          duration === null ||
           duration < 15 ||
           duration > 240
         ) {
@@ -1248,8 +1769,8 @@ function Admin() {
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          مدیریت پروژه‌ها، مشاوره‌ها،
-          فایل‌ها و خروجی‌های پژوهشی
+          مدیریت پروژه‌ها، پیشنهادهای قیمت،
+          مشاوره‌ها، فایل‌ها و خروجی‌های پژوهشی
         </p>
       </div>
 
@@ -1296,48 +1817,28 @@ function Admin() {
           <div>
             <h2 className="flex items-center gap-2 text-lg font-bold text-navy">
               <CalendarClock className="size-5 text-primary" />
-
               درخواست‌های مشاوره
             </h2>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              بررسی، زمان‌بندی و مدیریت
-              جلسات پژوهشگران
+              بررسی، زمان‌بندی و مدیریت جلسات پژوهشگران
             </p>
           </div>
 
-          <button
-            type="button"
-            disabled={
-              consultationsLoading
-            }
-            onClick={
-              loadConsultations
-            }
-            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
-          >
-            <RefreshCw
-              className={`size-4 ${
-                consultationsLoading
-                  ? "animate-spin"
-                  : ""
-              }`}
-            />
-
-            بروزرسانی
-          </button>
+          <RefreshButton
+            loading={consultationsLoading}
+            onClick={loadConsultations}
+          />
         </div>
 
         {consultationsLoading ? (
           <LoadingBox text="در حال دریافت درخواست‌های مشاوره…" />
-        ) : consultations.length ===
-          0 ? (
+        ) : consultations.length === 0 ? (
           <div className="p-12 text-center">
             <CalendarClock className="mx-auto size-8 text-primary/50" />
 
             <p className="mt-4 text-sm font-bold text-navy">
-              هنوز درخواست مشاوره‌ای
-              ثبت نشده است.
+              هنوز درخواست مشاوره‌ای ثبت نشده است.
             </p>
           </div>
         ) : (
@@ -1345,158 +1846,118 @@ function Admin() {
             <table className="w-full min-w-[1050px] text-sm">
               <thead className="bg-secondary/60 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-4 text-start">
-                    پژوهشگر
-                  </th>
-
-                  <th className="p-4 text-start">
-                    موضوع
-                  </th>
-
-                  <th className="p-4 text-start">
-                    نوع مشاوره
-                  </th>
-
-                  <th className="p-4 text-start">
-                    پروژه
-                  </th>
-
-                  <th className="p-4 text-start">
-                    تاریخ درخواست
-                  </th>
-
-                  <th className="p-4 text-start">
-                    وضعیت
-                  </th>
-
-                  <th className="p-4 text-start">
-                    مدیریت
-                  </th>
+                  <th className="p-4 text-start">پژوهشگر</th>
+                  <th className="p-4 text-start">موضوع</th>
+                  <th className="p-4 text-start">نوع مشاوره</th>
+                  <th className="p-4 text-start">پروژه</th>
+                  <th className="p-4 text-start">تاریخ درخواست</th>
+                  <th className="p-4 text-start">وضعیت</th>
+                  <th className="p-4 text-start">مدیریت</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border">
-                {consultations.map(
-                  (
-                    consultation,
-                  ) => {
-                    const researcher =
-                      profileMap.get(
-                        consultation.user_id,
-                      );
-
-                    const project =
-                      consultation.project_id
-                        ? projectMap.get(
-                            consultation.project_id,
-                          )
-                        : undefined;
-
-                    return (
-                      <tr
-                        key={
-                          consultation.id
-                        }
-                        className="hover:bg-secondary/30"
-                      >
-                        <td className="p-4">
-                          <p className="font-semibold text-navy">
-                            {researcher?.full_name ||
-                              "پژوهشگر"}
-                          </p>
-
-                          {researcher?.organization && (
-                            <p className="mt-1 text-[11px] text-muted-foreground">
-                              {
-                                researcher.organization
-                              }
-                            </p>
-                          )}
-                        </td>
-
-                        <td className="p-4">
-                          <p className="max-w-xs font-semibold text-navy">
-                            {
-                              consultation.subject
-                            }
-                          </p>
-                        </td>
-
-                        <td className="p-4 text-xs text-muted-foreground">
-                          {consultationTypeLabels[
-                            consultation
-                              .consultation_type
-                          ] ??
-                            consultation.consultation_type}
-                        </td>
-
-                        <td className="p-4">
-                          {project ? (
-                            <>
-                              <p className="text-xs font-semibold text-navy">
-                                {
-                                  project.title
-                                }
-                              </p>
-
-                              <p
-                                className="mt-1 text-[10px] text-muted-foreground"
-                                dir="ltr"
-                              >
-                                {shortId(
-                                  project.id,
-                                )}
-                              </p>
-                            </>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">
-                              مشاوره عمومی
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="p-4 text-xs text-muted-foreground">
-                          {formatDateTime(
-                            consultation.created_at,
-                          )}
-                        </td>
-
-                        <td className="p-4">
-                          <ConsultationStatusBadge
-                            status={
-                              consultation.status
-                            }
-                          />
-                        </td>
-
-                        <td className="p-4">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              openConsultation(
-                                consultation,
-                              )
-                            }
-                            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
-                          >
-                            <Eye className="size-4 text-primary" />
-
-                            مدیریت درخواست
-                          </button>
-                        </td>
-                      </tr>
+                {consultations.map((consultation) => {
+                  const researcher =
+                    profileMap.get(
+                      consultation.user_id,
                     );
-                  },
-                )}
+
+                  const project =
+                    consultation.project_id
+                      ? projectMap.get(
+                          consultation.project_id,
+                        )
+                      : undefined;
+
+                  return (
+                    <tr
+                      key={consultation.id}
+                      className="hover:bg-secondary/30"
+                    >
+                      <td className="p-4">
+                        <p className="font-semibold text-navy">
+                          {researcher?.full_name ||
+                            "پژوهشگر"}
+                        </p>
+
+                        {researcher?.organization && (
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            {researcher.organization}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="p-4">
+                        <p className="max-w-xs font-semibold text-navy">
+                          {consultation.subject}
+                        </p>
+                      </td>
+
+                      <td className="p-4 text-xs text-muted-foreground">
+                        {consultationTypeLabels[
+                          consultation.consultation_type
+                        ] ??
+                          consultation.consultation_type}
+                      </td>
+
+                      <td className="p-4">
+                        {project ? (
+                          <>
+                            <p className="text-xs font-semibold text-navy">
+                              {project.title}
+                            </p>
+
+                            <p
+                              className="mt-1 text-[10px] text-muted-foreground"
+                              dir="ltr"
+                            >
+                              {shortId(project.id)}
+                            </p>
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            مشاوره عمومی
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="p-4 text-xs text-muted-foreground">
+                        {formatDateTime(
+                          consultation.created_at,
+                        )}
+                      </td>
+
+                      <td className="p-4">
+                        <ConsultationStatusBadge
+                          status={consultation.status}
+                        />
+                      </td>
+
+                      <td className="p-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openConsultation(
+                              consultation,
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
+                        >
+                          <Eye className="size-4 text-primary" />
+                          مدیریت درخواست
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </section>
 
-      {/* ===================================================
-          CONSULTATION EDITOR
-      =================================================== */}
+      {/* CONSULTATION EDITOR */}
 
       {selectedConsultation && (
         <section className="card-elevated mt-6 p-6">
@@ -1507,9 +1968,7 @@ function Admin() {
               </p>
 
               <h2 className="mt-2 text-xl font-bold text-navy">
-                {
-                  selectedConsultation.subject
-                }
+                {selectedConsultation.subject}
               </h2>
 
               <p className="mt-2 text-xs text-muted-foreground">
@@ -1526,25 +1985,20 @@ function Admin() {
             <button
               type="button"
               onClick={() =>
-                setSelectedConsultation(
-                  null,
-                )
+                setSelectedConsultation(null)
               }
-              className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary"
+              className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:bg-secondary"
             >
               بستن
             </button>
           </div>
-
-          {/* REQUEST DETAILS */}
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <DetailCard
               label="نوع مشاوره"
               value={
                 consultationTypeLabels[
-                  selectedConsultation
-                    .consultation_type
+                  selectedConsultation.consultation_type
                 ] ??
                 selectedConsultation.consultation_type
               }
@@ -1563,8 +2017,7 @@ function Admin() {
                 selectedConsultation.project_id
                   ? projectMap.get(
                       selectedConsultation.project_id,
-                    )?.title ||
-                    "پروژه"
+                    )?.title || "پروژه"
                   : "مشاوره عمومی"
               }
             />
@@ -1577,42 +2030,24 @@ function Admin() {
               </p>
 
               <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-                {
-                  selectedConsultation.description
-                }
+                {selectedConsultation.description}
               </p>
             </div>
           )}
-
-          {/* ADMIN FIELDS */}
 
           <div className="mt-7 border-t border-border pt-6">
             <h3 className="text-base font-bold text-navy">
               تنظیمات جلسه
             </h3>
 
-            <p className="mt-1 text-xs text-muted-foreground">
-              اطلاعات ذخیره‌شده در این
-              قسمت مستقیماً در داشبورد
-              پژوهشگر نمایش داده می‌شود.
-            </p>
-
             <div className="mt-5 grid gap-5 md:grid-cols-2">
-              {/* STATUS */}
-
               <div>
-                <label
-                  htmlFor="consultation-status"
-                  className="text-sm font-bold text-navy"
-                >
+                <label className="text-sm font-bold text-navy">
                   وضعیت درخواست
                 </label>
 
                 <select
-                  id="consultation-status"
-                  value={
-                    consultationStatus
-                  }
+                  value={consultationStatus}
                   onChange={(event) =>
                     setConsultationStatus(
                       event.target.value,
@@ -1623,38 +2058,24 @@ function Admin() {
                   {consultationStatusOptions.map(
                     (option) => (
                       <option
-                        key={
-                          option.value
-                        }
-                        value={
-                          option.value
-                        }
+                        key={option.value}
+                        value={option.value}
                       >
-                        {
-                          option.label
-                        }
+                        {option.label}
                       </option>
                     ),
                   )}
                 </select>
               </div>
 
-              {/* DATETIME */}
-
               <div>
-                <label
-                  htmlFor="consultation-datetime"
-                  className="text-sm font-bold text-navy"
-                >
+                <label className="text-sm font-bold text-navy">
                   تاریخ و ساعت جلسه
                 </label>
 
                 <input
-                  id="consultation-datetime"
                   type="datetime-local"
-                  value={
-                    consultationScheduledAt
-                  }
+                  value={consultationScheduledAt}
                   onChange={(event) =>
                     setConsultationScheduledAt(
                       event.target.value,
@@ -1664,26 +2085,18 @@ function Admin() {
                 />
               </div>
 
-              {/* DURATION */}
-
               <div>
-                <label
-                  htmlFor="consultation-duration"
-                  className="text-sm font-bold text-navy"
-                >
+                <label className="text-sm font-bold text-navy">
                   مدت جلسه
                 </label>
 
                 <div className="mt-2 flex items-center gap-2">
                   <input
-                    id="consultation-duration"
                     type="number"
                     min={15}
                     max={240}
                     step={15}
-                    value={
-                      consultationDuration
-                    }
+                    value={consultationDuration}
                     onChange={(event) =>
                       setConsultationDuration(
                         event.target.value,
@@ -1699,23 +2112,15 @@ function Admin() {
                 </div>
               </div>
 
-              {/* MEETING URL */}
-
               <div>
-                <label
-                  htmlFor="consultation-url"
-                  className="text-sm font-bold text-navy"
-                >
+                <label className="text-sm font-bold text-navy">
                   لینک جلسه
                 </label>
 
                 <input
-                  id="consultation-url"
                   type="url"
                   dir="ltr"
-                  value={
-                    consultationMeetingUrl
-                  }
+                  value={consultationMeetingUrl}
                   onChange={(event) =>
                     setConsultationMeetingUrl(
                       event.target.value,
@@ -1730,9 +2135,7 @@ function Admin() {
                     consultationMeetingUrl.trim(),
                   ) && (
                     <a
-                      href={
-                        consultationMeetingUrl
-                      }
+                      href={consultationMeetingUrl}
                       target="_blank"
                       rel="noreferrer"
                       className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
@@ -1744,63 +2147,31 @@ function Admin() {
               </div>
             </div>
 
-            {/* ADMIN NOTE */}
-
             <div className="mt-5">
-              <label
-                htmlFor="consultation-note"
-                className="text-sm font-bold text-navy"
-              >
+              <label className="text-sm font-bold text-navy">
                 یادداشت برای پژوهشگر
               </label>
 
-              <p className="mt-1 text-xs text-muted-foreground">
-                این متن برای پژوهشگر در
-                Dashboard نمایش داده
-                خواهد شد.
-              </p>
-
               <textarea
-                id="consultation-note"
                 rows={5}
                 maxLength={5000}
-                value={
-                  consultationAdminNote
-                }
+                value={consultationAdminNote}
                 onChange={(event) =>
                   setConsultationAdminNote(
                     event.target.value,
                   )
                 }
-                placeholder="مثلاً: لطفاً پیش از جلسه فایل متادیتای نمونه‌ها را در بخش داده‌های پروژه بارگذاری کنید."
-                className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none placeholder:text-muted-foreground focus:border-primary"
+                placeholder="مثلاً: لطفاً پیش از جلسه فایل متادیتا را بارگذاری کنید."
+                className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
               />
-
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                {new Intl.NumberFormat(
-                  "fa-IR",
-                ).format(
-                  consultationAdminNote.length,
-                )}
-
-                {" / "}
-
-                ۵۰۰۰ کاراکتر
-              </p>
             </div>
-
-            {/* SAVE */}
 
             <div className="mt-6 flex justify-end">
               <button
                 type="button"
-                disabled={
-                  savingConsultation
-                }
-                onClick={
-                  saveConsultation
-                }
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={savingConsultation}
+                onClick={saveConsultation}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
               >
                 {savingConsultation ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -1826,8 +2197,7 @@ function Admin() {
           </h2>
 
           <p className="mt-1 text-xs text-muted-foreground">
-            مشاهده و مدیریت پروژه‌های
-            ثبت‌شده
+            مشاهده و مدیریت پروژه‌های ثبت‌شده
           </p>
         </div>
 
@@ -1840,164 +2210,122 @@ function Admin() {
             <table className="w-full min-w-[1050px] text-sm">
               <thead className="bg-secondary/60 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-4 text-start">
-                    شناسه
-                  </th>
-
-                  <th className="p-4 text-start">
-                    پروژه
-                  </th>
-
-                  <th className="p-4 text-start">
-                    پژوهشگر
-                  </th>
-
-                  <th className="p-4 text-start">
-                    نوع تحلیل
-                  </th>
-
-                  <th className="p-4 text-start">
-                    تاریخ ثبت
-                  </th>
-
-                  <th className="p-4 text-start">
-                    وضعیت
-                  </th>
-
-                  <th className="p-4 text-start">
-                    جزئیات
-                  </th>
+                  <th className="p-4 text-start">شناسه</th>
+                  <th className="p-4 text-start">پروژه</th>
+                  <th className="p-4 text-start">پژوهشگر</th>
+                  <th className="p-4 text-start">نوع تحلیل</th>
+                  <th className="p-4 text-start">تاریخ ثبت</th>
+                  <th className="p-4 text-start">وضعیت</th>
+                  <th className="p-4 text-start">جزئیات</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border">
-                {projects.map(
-                  (project) => {
-                    const researcher =
-                      profileMap.get(
-                        project.user_id,
-                      );
+                {projects.map((project) => {
+                  const researcher =
+                    profileMap.get(
+                      project.user_id,
+                    );
 
-                    return (
-                      <tr
-                        key={project.id}
-                        className="hover:bg-secondary/30"
+                  return (
+                    <tr
+                      key={project.id}
+                      className="hover:bg-secondary/30"
+                    >
+                      <td
+                        className="p-4 text-xs"
+                        dir="ltr"
                       >
-                        <td
-                          className="p-4 text-xs"
-                          dir="ltr"
-                        >
-                          {shortId(
-                            project.id,
-                          )}
-                        </td>
+                        {shortId(project.id)}
+                      </td>
 
-                        <td className="p-4">
-                          <p className="font-semibold text-navy">
-                            {
-                              project.title
+                      <td className="p-4">
+                        <p className="font-semibold text-navy">
+                          {project.title}
+                        </p>
+                      </td>
+
+                      <td className="p-4">
+                        <p className="font-medium text-navy">
+                          {researcher?.full_name ||
+                            "پژوهشگر"}
+                        </p>
+
+                        {researcher?.organization && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {researcher.organization}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="p-4 text-muted-foreground">
+                        {project.analysis_type ?? "—"}
+                      </td>
+
+                      <td className="p-4 text-muted-foreground">
+                        {formatDate(
+                          project.created_at,
+                        )}
+                      </td>
+
+                      <td className="p-4">
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={project.status}
+                            disabled={
+                              updatingId ===
+                              project.id
                             }
-                          </p>
-                        </td>
-
-                        <td className="p-4">
-                          <p className="font-medium text-navy">
-                            {researcher?.full_name ||
-                              "پژوهشگر"}
-                          </p>
-
-                          {researcher?.organization && (
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {
-                                researcher.organization
-                              }
-                            </p>
-                          )}
-                        </td>
-
-                        <td className="p-4 text-muted-foreground">
-                          {project.analysis_type ??
-                            "—"}
-                        </td>
-
-                        <td className="p-4 text-muted-foreground">
-                          {formatDate(
-                            project.created_at,
-                          )}
-                        </td>
-
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <select
-                              value={
-                                project.status
-                              }
-                              disabled={
-                                updatingId ===
-                                project.id
-                              }
-                              onChange={(
-                                event,
-                              ) =>
-                                updateStatus(
-                                  project.id,
-                                  event.target.value,
-                                )
-                              }
-                              className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-navy outline-none focus:border-primary"
-                            >
-                              {projectStatusOptions.map(
-                                (
-                                  option,
-                                ) => (
-                                  <option
-                                    key={
-                                      option.value
-                                    }
-                                    value={
-                                      option.value
-                                    }
-                                  >
-                                    {
-                                      option.label
-                                    }
-                                  </option>
-                                ),
-                              )}
-                            </select>
-
-                            {updatingId ===
-                              project.id && (
-                              <Loader2 className="size-4 animate-spin text-primary" />
-                            )}
-                          </div>
-
-                          <p className="mt-1 text-[11px] text-muted-foreground">
-                            {statusLabel(
-                              project.status,
-                            )}
-                          </p>
-                        </td>
-
-                        <td className="p-4">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setSelectedProject(
-                                project,
+                            onChange={(event) =>
+                              updateStatus(
+                                project.id,
+                                event.target.value,
                               )
                             }
-                            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
+                            className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-navy outline-none focus:border-primary"
                           >
-                            <Eye className="size-4 text-primary" />
+                            {projectStatusOptions.map(
+                              (option) => (
+                                <option
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </option>
+                              ),
+                            )}
+                          </select>
 
-                            مشاهده پروژه
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  },
-                )}
+                          {updatingId ===
+                            project.id && (
+                            <Loader2 className="size-4 animate-spin text-primary" />
+                          )}
+                        </div>
+
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {statusLabel(
+                            project.status,
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="p-4">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedProject(
+                              project,
+                            )
+                          }
+                          className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
+                        >
+                          <Eye className="size-4 text-primary" />
+                          مشاهده پروژه
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -2017,18 +2345,14 @@ function Admin() {
               </p>
 
               <h2 className="mt-2 text-xl font-bold text-navy">
-                {
-                  selectedProject.title
-                }
+                {selectedProject.title}
               </h2>
 
               <p
                 className="mt-1 text-xs text-muted-foreground"
                 dir="ltr"
               >
-                {shortId(
-                  selectedProject.id,
-                )}
+                {shortId(selectedProject.id)}
               </p>
             </div>
 
@@ -2037,7 +2361,7 @@ function Admin() {
               onClick={() =>
                 setSelectedProject(null)
               }
-              className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary"
+              className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground hover:bg-secondary"
             >
               بستن
             </button>
@@ -2112,8 +2436,7 @@ function Admin() {
 
           <div className="mt-8 border-t border-border pt-6">
             <h3 className="text-base font-bold text-navy">
-              اطلاعات ثبت‌شده در طراح
-              پروژه
+              اطلاعات ثبت‌شده در طراح پروژه
             </h3>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -2167,7 +2490,316 @@ function Admin() {
             </div>
           </div>
 
-          {/* OUTPUT UPLOAD */}
+          {/* =================================================
+              QUOTE MANAGEMENT
+          ================================================= */}
+
+          <div
+            id="quote-editor"
+            className="mt-8 scroll-mt-8 border-t border-border pt-6"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold text-primary">
+                  Project Quote
+                </p>
+
+                <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
+                  <BadgeDollarSign className="size-5 text-primary" />
+                  پیشنهاد قیمت پروژه
+                </h3>
+
+                <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                  Scope، خروجی‌ها، مبلغ و زمان تقریبی پروژه را
+                  مشخص کنید و برای پژوهشگر ارسال کنید.
+                </p>
+              </div>
+
+              {editingQuoteId && (
+                <button
+                  type="button"
+                  onClick={resetQuoteForm}
+                  className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
+                >
+                  لغو ویرایش پیش‌نویس
+                </button>
+              )}
+            </div>
+
+            {/* QUOTE FORM */}
+
+            <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/20 p-5">
+              {editingQuoteId && (
+                <div className="mb-5 rounded-xl border border-primary/20 bg-background p-3 text-xs text-primary">
+                  در حال ویرایش پیش‌نویس پیشنهاد قیمت
+                </div>
+              )}
+
+              <div>
+                <label className="text-sm font-bold text-navy">
+                  عنوان پیشنهاد
+                </label>
+
+                <input
+                  type="text"
+                  maxLength={200}
+                  value={quoteTitle}
+                  onChange={(event) =>
+                    setQuoteTitle(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="مثلاً: تحلیل کامل Bulk RNA-seq"
+                  className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-bold text-navy">
+                  شرح Scope پروژه
+                </label>
+
+                <textarea
+                  rows={5}
+                  maxLength={5000}
+                  value={quoteScope}
+                  onChange={(event) =>
+                    setQuoteScope(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="مثلاً: کنترل کیفیت، alignment، quantification، differential expression و تفسیر زیستی..."
+                  className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-bold text-navy">
+                  Deliverables / خروجی‌های قابل تحویل
+                </label>
+
+                <textarea
+                  rows={5}
+                  maxLength={5000}
+                  value={quoteDeliverables}
+                  onChange={(event) =>
+                    setQuoteDeliverables(
+                      event.target.value,
+                    )
+                  }
+                  placeholder={
+                    "مثلاً:\nگزارش QC\nجدول DEG\nVolcano Plot\nHeatmap\nPathway Analysis\nگزارش نهایی PDF"
+                  }
+                  className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="mt-5 grid gap-5 md:grid-cols-3">
+                <div>
+                  <label className="text-sm font-bold text-navy">
+                    مبلغ پیشنهادی
+                  </label>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      dir="ltr"
+                      value={quoteAmount}
+                      onChange={(event) =>
+                        setQuoteAmount(
+                          event.target.value,
+                        )
+                      }
+                      placeholder="15000000"
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                    />
+
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      تومان
+                    </span>
+                  </div>
+
+                  {parseIntegerInput(
+                    quoteAmount,
+                  ) !== null &&
+                    parseIntegerInput(
+                      quoteAmount,
+                    )! > 0 && (
+                      <p className="mt-2 text-xs font-semibold text-primary">
+                        {formatToman(
+                          parseIntegerInput(
+                            quoteAmount,
+                          )!,
+                        )}
+                      </p>
+                    )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-navy">
+                    زمان تقریبی انجام
+                  </label>
+
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={quoteEstimatedDays}
+                      onChange={(event) =>
+                        setQuoteEstimatedDays(
+                          event.target.value,
+                        )
+                      }
+                      placeholder="14"
+                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                    />
+
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      روز
+                    </span>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-navy">
+                    اعتبار پیشنهاد تا
+                  </label>
+
+                  <input
+                    type="datetime-local"
+                    value={quoteValidUntil}
+                    onChange={(event) =>
+                      setQuoteValidUntil(
+                        event.target.value,
+                      )
+                    }
+                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-5">
+                <label className="text-sm font-bold text-navy">
+                  یادداشت برای پژوهشگر
+                </label>
+
+                <textarea
+                  rows={4}
+                  maxLength={5000}
+                  value={quoteAdminNote}
+                  onChange={(event) =>
+                    setQuoteAdminNote(
+                      event.target.value,
+                    )
+                  }
+                  placeholder="مثلاً: هزینه شامل تحلیل و گزارش نهایی است و هزینه تولید داده آزمایشگاهی را شامل نمی‌شود."
+                  className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border pt-5">
+                <button
+                  type="button"
+                  disabled={savingQuote}
+                  onClick={() =>
+                    saveQuote("draft")
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold text-navy transition-colors hover:bg-secondary disabled:opacity-50"
+                >
+                  {savingQuote ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Save className="size-4" />
+                  )}
+
+                  ذخیره پیش‌نویس
+                </button>
+
+                <button
+                  type="button"
+                  disabled={savingQuote}
+                  onClick={() =>
+                    saveQuote("sent")
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  {savingQuote ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Send className="size-4" />
+                  )}
+
+                  ارسال برای پژوهشگر
+                </button>
+              </div>
+            </div>
+
+            {/* QUOTE HISTORY */}
+
+            <div className="mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-sm font-bold text-navy">
+                    پیشنهادهای ثبت‌شده
+                  </h4>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    تاریخچه پیشنهادهای قیمت همین پروژه
+                  </p>
+                </div>
+
+                <RefreshButton
+                  loading={quotesLoading}
+                  onClick={() =>
+                    loadProjectQuotes(
+                      selectedProject.id,
+                    )
+                  }
+                />
+              </div>
+
+              {quotesLoading ? (
+                <LoadingBox text="در حال دریافت پیشنهادهای قیمت…" />
+              ) : projectQuotes.length === 0 ? (
+                <div className="mt-4 rounded-2xl border border-border p-8 text-center">
+                  <BadgeDollarSign className="mx-auto size-7 text-primary/50" />
+
+                  <p className="mt-3 text-sm font-bold text-navy">
+                    هنوز پیشنهاد قیمتی ثبت نشده است.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  {projectQuotes.map((quote) => (
+                    <QuoteCard
+                      key={quote.id}
+                      quote={quote}
+                      sending={
+                        sendingQuoteId ===
+                        quote.id
+                      }
+                      onEdit={() =>
+                        editDraftQuote(
+                          quote,
+                        )
+                      }
+                      onSend={() =>
+                        sendExistingDraftQuote(
+                          quote,
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* =================================================
+              OUTPUT UPLOAD
+          ================================================= */}
 
           <div className="mt-8 border-t border-border pt-6">
             <p className="text-xs font-semibold text-primary">
@@ -2212,8 +2844,7 @@ function Admin() {
                 </h4>
 
                 <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                  گزارش رسمی PDF برای
-                  پژوهشگر
+                  گزارش رسمی PDF برای پژوهشگر
                 </p>
 
                 <button
@@ -2246,8 +2877,7 @@ function Admin() {
                 </h4>
 
                 <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                  Figure، Excel، CSV، ZIP
-                  و سایر خروجی‌ها
+                  Figure، Excel، CSV، ZIP و سایر خروجی‌ها
                 </p>
 
                 <button
@@ -2278,13 +2908,10 @@ function Admin() {
 
           <div className="mt-8 border-t border-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="flex items-center gap-2 text-base font-bold text-navy">
-                  <FileText className="size-5 text-primary" />
-
-                  فایل‌های پروژه
-                </h3>
-              </div>
+              <h3 className="flex items-center gap-2 text-base font-bold text-navy">
+                <FileText className="size-5 text-primary" />
+                فایل‌های پروژه
+              </h3>
 
               <RefreshButton
                 loading={filesLoading}
@@ -2302,9 +2929,7 @@ function Admin() {
               <div className="mt-5 space-y-6">
                 <FileListSection
                   title="داده‌های پژوهشگر"
-                  files={
-                    incomingFiles
-                  }
+                  files={incomingFiles}
                   emptyText="هنوز داده‌ای دریافت نشده است."
                   downloadingFileId={
                     downloadingFileId
@@ -2316,9 +2941,7 @@ function Admin() {
 
                 <FileListSection
                   title="گزارش‌های تحویلی"
-                  files={
-                    reportFiles
-                  }
+                  files={reportFiles}
                   emptyText="هنوز گزارشی تحویل نشده است."
                   downloadingFileId={
                     downloadingFileId
@@ -2330,9 +2953,7 @@ function Admin() {
 
                 <FileListSection
                   title="نتایج تحلیل"
-                  files={
-                    resultFiles
-                  }
+                  files={resultFiles}
                   emptyText="هنوز نتیجه‌ای تحویل نشده است."
                   downloadingFileId={
                     downloadingFileId
@@ -2349,18 +2970,13 @@ function Admin() {
 
           <div className="mt-8 border-t border-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h3 className="flex items-center gap-2 text-base font-bold text-navy">
-                  <MessageSquare className="size-5 text-primary" />
-
-                  پیام‌های پروژه
-                </h3>
-              </div>
+              <h3 className="flex items-center gap-2 text-base font-bold text-navy">
+                <MessageSquare className="size-5 text-primary" />
+                پیام‌های پروژه
+              </h3>
 
               <RefreshButton
-                loading={
-                  messagesLoading
-                }
+                loading={messagesLoading}
                 onClick={() =>
                   loadMessages(
                     selectedProject.id,
@@ -2374,66 +2990,55 @@ function Admin() {
                 <LoadingBox text="در حال دریافت پیام‌ها…" />
               ) : messages.length === 0 ? (
                 <div className="py-8 text-center text-sm text-muted-foreground">
-                  هنوز پیامی ثبت نشده
-                  است.
+                  هنوز پیامی ثبت نشده است.
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {messages.map(
-                    (message) => {
-                      const fromResearcher =
-                        message.sender_id ===
-                        selectedProject.user_id;
+                  {messages.map((message) => {
+                    const fromResearcher =
+                      message.sender_id ===
+                      selectedProject.user_id;
 
-                      return (
-                        <div
-                          key={
-                            message.id
-                          }
-                          className={`max-w-3xl rounded-2xl border p-4 ${
-                            fromResearcher
-                              ? "mr-auto border-border bg-background"
-                              : "ml-auto border-primary/20 bg-accent/40"
-                          }`}
-                        >
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="text-xs font-bold text-navy">
-                              {fromResearcher
-                                ? selectedResearcher?.full_name ||
-                                  "پژوهشگر"
-                                : "مدیریت هاب‌ژن"}
-                            </span>
+                    return (
+                      <div
+                        key={message.id}
+                        className={`max-w-3xl rounded-2xl border p-4 ${
+                          fromResearcher
+                            ? "mr-auto border-border bg-background"
+                            : "ml-auto border-primary/20 bg-accent/40"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-navy">
+                            {fromResearcher
+                              ? selectedResearcher?.full_name ||
+                                "پژوهشگر"
+                              : "مدیریت هاب‌ژن"}
+                          </span>
 
-                            <span className="text-[11px] text-muted-foreground">
-                              {formatDateTime(
-                                message.created_at,
-                              )}
-                            </span>
-                          </div>
-
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
-                            {
-                              message.message
-                            }
-                          </p>
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatDateTime(
+                              message.created_at,
+                            )}
+                          </span>
                         </div>
-                      );
-                    },
-                  )}
+
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
+                          {message.message}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
 
             <div className="mt-5">
-              <label
-                htmlFor="admin-message"
-                className="text-sm font-bold text-navy"
-              >
+              <label className="text-sm font-bold text-navy">
                 ارسال پیام به پژوهشگر
               </label>
 
               <textarea
-                id="admin-message"
                 value={messageText}
                 onChange={(event) =>
                   setMessageText(
@@ -2475,7 +3080,199 @@ function Admin() {
 
 /*
  * =========================================================
- * COMPONENTS
+ * QUOTE CARD
+ * =========================================================
+ */
+
+function QuoteCard({
+  quote,
+  sending,
+  onEdit,
+  onSend,
+}: {
+  quote: ProjectQuoteRow;
+  sending: boolean;
+  onEdit: () => void;
+  onSend: () => void;
+}) {
+  return (
+    <article className="overflow-hidden rounded-2xl border border-border">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-secondary/30 p-5">
+        <div>
+          <h5 className="text-sm font-bold text-navy">
+            {quote.title}
+          </h5>
+
+          <p className="mt-2 text-xl font-extrabold text-primary">
+            {formatToman(
+              Number(quote.amount),
+            )}
+          </p>
+
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            ایجاد:{" "}
+            {formatDateTime(
+              quote.created_at,
+            )}
+          </p>
+        </div>
+
+        <QuoteStatusBadge
+          status={quote.status}
+        />
+      </div>
+
+      <div className="p-5">
+        {quote.scope_summary && (
+          <QuoteTextBlock
+            label="Scope پروژه"
+            value={quote.scope_summary}
+          />
+        )}
+
+        {quote.deliverables && (
+          <div className="mt-4">
+            <QuoteTextBlock
+              label="خروجی‌های قابل تحویل"
+              value={quote.deliverables}
+            />
+          </div>
+        )}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <DetailCard
+            label="زمان تقریبی انجام"
+            value={
+              quote.estimated_days
+                ? `${new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    quote.estimated_days,
+                  )} روز`
+                : "تعیین نشده"
+            }
+          />
+
+          <DetailCard
+            label="اعتبار پیشنهاد"
+            value={
+              quote.valid_until
+                ? formatDateTime(
+                    quote.valid_until,
+                  )
+                : "بدون تاریخ انقضا"
+            }
+          />
+
+          <DetailCard
+            label="پاسخ پژوهشگر"
+            value={
+              quote.responded_at
+                ? formatDateTime(
+                    quote.responded_at,
+                  )
+                : "هنوز پاسخ نداده است"
+            }
+          />
+        </div>
+
+        {quote.admin_note && (
+          <div className="mt-4 rounded-xl border border-primary/20 bg-accent/30 p-4">
+            <p className="text-xs font-bold text-navy">
+              یادداشت
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {quote.admin_note}
+            </p>
+          </div>
+        )}
+
+        {quote.status === "draft" && (
+          <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
+            >
+              <Pencil className="size-4 text-primary" />
+              ویرایش پیش‌نویس
+            </button>
+
+            <button
+              type="button"
+              disabled={sending}
+              onClick={onSend}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
+            >
+              {sending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+
+              ارسال برای پژوهشگر
+            </button>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+function QuoteTextBlock({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold text-navy">
+        {label}
+      </p>
+
+      <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function QuoteStatusBadge({
+  status,
+}: {
+  status: string;
+}) {
+  const label =
+    quoteStatusLabels[
+      status
+    ] ?? status;
+
+  const className =
+    status === "accepted"
+      ? "border-primary/20 bg-accent text-primary"
+      : status === "rejected"
+        ? "border-destructive/20 bg-destructive/5 text-destructive"
+        : status === "sent"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : status === "draft"
+            ? "border-border bg-background text-muted-foreground"
+            : "border-border bg-secondary text-muted-foreground";
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+/*
+ * =========================================================
+ * GENERAL COMPONENTS
  * =========================================================
  */
 
@@ -2818,4 +3615,76 @@ function safeExtension(
   return rawExtension
     ? `.${rawExtension}`
     : "";
+}
+
+function normalizeDigits(
+  value: string,
+) {
+  const persianDigits =
+    "۰۱۲۳۴۵۶۷۸۹";
+
+  const arabicDigits =
+    "٠١٢٣٤٥٦٧٨٩";
+
+  return value
+    .replace(
+      /[۰-۹]/g,
+      (digit) =>
+        String(
+          persianDigits.indexOf(
+            digit,
+          ),
+        ),
+    )
+    .replace(
+      /[٠-٩]/g,
+      (digit) =>
+        String(
+          arabicDigits.indexOf(
+            digit,
+          ),
+        ),
+    );
+}
+
+function parseIntegerInput(
+  value: string,
+): number | null {
+  const normalized =
+    normalizeDigits(value)
+      .replace(
+        /[,٬،\s]/g,
+        "",
+      )
+      .trim();
+
+  if (
+    !normalized ||
+    !/^\d+$/.test(
+      normalized,
+    )
+  ) {
+    return null;
+  }
+
+  const number =
+    Number(normalized);
+
+  if (
+    !Number.isSafeInteger(
+      number,
+    )
+  ) {
+    return null;
+  }
+
+  return number;
+}
+
+function formatToman(
+  amount: number,
+) {
+  return `${new Intl.NumberFormat(
+    "fa-IR",
+  ).format(amount)} تومان`;
 }
