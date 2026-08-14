@@ -72,12 +72,6 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-/*
- * =========================================================
- * TYPES
- * =========================================================
- */
-
 type ProjectMessageRow = {
   id: string;
   project_id: string;
@@ -153,12 +147,6 @@ type ProjectInvoiceRow = {
   updated_at: string;
 };
 
-/*
- * =========================================================
- * CONSTANTS
- * =========================================================
- */
-
 const PROJECT_FILES_BUCKET = "project-files";
 
 const MAX_STANDARD_UPLOAD_BYTES =
@@ -196,12 +184,6 @@ const invoiceStatusLabels: Record<string, string> = {
   overdue: "سررسید گذشته",
   cancelled: "لغو شده",
 };
-
-/*
- * =========================================================
- * STAGE TRACKER
- * =========================================================
- */
 
 function StageTracker({
   stage,
@@ -241,12 +223,6 @@ function StageTracker({
   );
 }
 
-/*
- * =========================================================
- * DASHBOARD
- * =========================================================
- */
-
 function Dashboard() {
   const { user } = useAuth();
 
@@ -257,10 +233,6 @@ function Dashboard() {
     profile?.full_name?.trim() ||
     user?.email ||
     "پژوهشگر";
-
-  /*
-   * PROJECTS
-   */
 
   const [projects, setProjects] =
     useState<ProjectRow[]>([]);
@@ -273,10 +245,6 @@ function Dashboard() {
 
   const [active, setActive] =
     useState<string | null>(null);
-
-  /*
-   * MESSAGES
-   */
 
   const [
     projectMessages,
@@ -297,10 +265,6 @@ function Dashboard() {
     sendingMessage,
     setSendingMessage,
   ] = useState(false);
-
-  /*
-   * FILES
-   */
 
   const [
     projectFiles,
@@ -335,10 +299,6 @@ function Dashboard() {
   const fileInputRef =
     useRef<HTMLInputElement | null>(null);
 
-  /*
-   * CONSULTATIONS
-   */
-
   const [
     consultations,
     setConsultations,
@@ -348,10 +308,6 @@ function Dashboard() {
     consultationsLoading,
     setConsultationsLoading,
   ] = useState(false);
-
-  /*
-   * QUOTES
-   */
 
   const [
     projectQuotes,
@@ -368,10 +324,6 @@ function Dashboard() {
     setRespondingQuoteId,
   ] = useState<string | null>(null);
 
-  /*
-   * INVOICES
-   */
-
   const [
     projectInvoices,
     setProjectInvoices,
@@ -381,12 +333,6 @@ function Dashboard() {
     invoicesLoading,
     setInvoicesLoading,
   ] = useState(false);
-
-  /*
-   * =======================================================
-   * LOAD PROJECTS + COUNTS
-   * =======================================================
-   */
 
   useEffect(() => {
     if (!user?.id) return;
@@ -506,12 +452,6 @@ function Dashboard() {
     };
   }, [user?.id]);
 
-  /*
-   * =======================================================
-   * CONSULTATIONS
-   * =======================================================
-   */
-
   const loadConsultations =
     async () => {
       if (!user?.id) return;
@@ -563,12 +503,6 @@ function Dashboard() {
     loadConsultations();
   }, [user?.id]);
 
-  /*
-   * =======================================================
-   * CURRENT PROJECT
-   * =======================================================
-   */
-
   const current =
     projects.find(
       (project) =>
@@ -610,10 +544,6 @@ function Dashboard() {
     [projectQuotes],
   );
 
-  /*
-   * FILE CATEGORIES
-   */
-
   const dataFiles =
     projectFiles.filter(
       (file) =>
@@ -634,12 +564,6 @@ function Dashboard() {
         file.category ===
         "result",
     );
-
-  /*
-   * =======================================================
-   * MESSAGES
-   * =======================================================
-   */
 
   const loadMessages = async (
     projectId: string,
@@ -738,12 +662,6 @@ function Dashboard() {
       );
     };
 
-  /*
-   * =======================================================
-   * FILES
-   * =======================================================
-   */
-
   const loadFiles = async (
     projectId: string,
   ) => {
@@ -781,12 +699,6 @@ function Dashboard() {
 
     setFilesLoading(false);
   };
-
-  /*
-   * =======================================================
-   * QUOTES
-   * =======================================================
-   */
 
   const loadProjectQuotes =
     async (
@@ -942,12 +854,6 @@ function Dashboard() {
       }
     };
 
-  /*
-   * =======================================================
-   * INVOICES
-   * =======================================================
-   */
-
   const loadProjectInvoices =
     async (
       projectId: string,
@@ -1002,12 +908,6 @@ function Dashboard() {
       ]);
     };
 
-  /*
-   * =======================================================
-   * RELOAD CURRENT PROJECT
-   * =======================================================
-   */
-
   useEffect(() => {
     if (!current?.id) {
       setProjectMessages([]);
@@ -1040,12 +940,6 @@ function Dashboard() {
       current.id,
     );
   }, [current?.id]);
-
-  /*
-   * =======================================================
-   * DATA UPLOAD
-   * =======================================================
-   */
 
   const uploadProjectFile =
     async (file: File) => {
@@ -1196,12 +1090,6 @@ function Dashboard() {
       );
     };
 
-  /*
-   * =======================================================
-   * PRIVATE DOWNLOAD
-   * =======================================================
-   */
-
   const downloadProjectFile =
     async (
       file: ProjectFileRow,
@@ -1265,16 +1153,11 @@ function Dashboard() {
       );
     };
 
-  /*
-   * =======================================================
-   * PAGE
-   * =======================================================
-   */
-
   return (
-    <div className="mx-auto max-w-7xl px-4 py-14">
-      {/* HEADER */}
-
+    <div
+      dir="rtl"
+      className="mx-auto max-w-7xl px-4 py-14 text-right"
+    >
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl text-navy">
@@ -1296,8 +1179,6 @@ function Dashboard() {
           </Link>
         </Button>
       </div>
-
-      {/* STATS */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <DashboardStat
@@ -1361,8 +1242,6 @@ function Dashboard() {
         </div>
       ) : (
         <div className="mt-8 grid gap-6 lg:grid-cols-[320px_1fr]">
-          {/* PROJECT LIST */}
-
           <aside className="card-elevated h-fit p-5">
             <h2 className="text-sm font-bold text-navy">
               پروژه‌های من
@@ -1416,8 +1295,6 @@ function Dashboard() {
             </ul>
           </aside>
 
-          {/* PROJECT */}
-
           <section className="card-elevated p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -1470,6 +1347,7 @@ function Dashboard() {
             <Tabs
               defaultValue="files"
               className="mt-8"
+              dir="rtl"
             >
               <TabsList className="flex-wrap">
                 <TabsTrigger value="files">
@@ -1496,10 +1374,6 @@ function Dashboard() {
                   پرداخت‌ها
                 </TabsTrigger>
               </TabsList>
-
-              {/* =================================================
-                  DATA
-              ================================================= */}
 
               <TabsContent
                 value="files"
@@ -1591,10 +1465,6 @@ function Dashboard() {
                   />
                 </div>
               </TabsContent>
-
-              {/* =================================================
-                  MESSAGES
-              ================================================= */}
 
               <TabsContent
                 value="messages"
@@ -1721,10 +1591,6 @@ function Dashboard() {
                 </div>
               </TabsContent>
 
-              {/* =================================================
-                  CONSULTATIONS
-              ================================================= */}
-
               <TabsContent
                 value="consults"
                 className="mt-5"
@@ -1800,10 +1666,6 @@ function Dashboard() {
                 )}
               </TabsContent>
 
-              {/* =================================================
-                  REPORTS
-              ================================================= */}
-
               <TabsContent
                 value="reports"
                 className="mt-5"
@@ -1845,10 +1707,6 @@ function Dashboard() {
                   icon="report"
                 />
               </TabsContent>
-
-              {/* =================================================
-                  RESULTS
-              ================================================= */}
 
               <TabsContent
                 value="results"
@@ -1892,10 +1750,6 @@ function Dashboard() {
                 />
               </TabsContent>
 
-              {/* =================================================
-                  FINANCE
-              ================================================= */}
-
               <TabsContent
                 value="payments"
                 className="mt-5"
@@ -1922,10 +1776,6 @@ function Dashboard() {
                     }
                   />
                 </div>
-
-                {/* ===============================================
-                    INVOICES
-                =============================================== */}
 
                 <section className="mt-5">
                   <div>
@@ -1981,10 +1831,6 @@ function Dashboard() {
                     </div>
                   )}
                 </section>
-
-                {/* ===============================================
-                    QUOTES
-                =============================================== */}
 
                 <section className="mt-8 border-t border-border pt-6">
                   <div>
@@ -2045,8 +1891,6 @@ function Dashboard() {
                   )}
                 </section>
 
-                {/* ONLINE PAYMENT NOTE */}
-
                 <div className="mt-6 rounded-2xl border border-primary/20 bg-accent/20 p-4">
                   <p className="text-xs font-bold text-navy">
                     پرداخت آنلاین
@@ -2066,12 +1910,6 @@ function Dashboard() {
     </div>
   );
 }
-
-/*
- * =========================================================
- * INVOICE CARD
- * =========================================================
- */
 
 function ResearcherInvoiceCard({
   invoice,
@@ -2253,12 +2091,6 @@ function ResearcherInvoiceCard({
     </article>
   );
 }
-
-/*
- * =========================================================
- * QUOTE CARD
- * =========================================================
- */
 
 function ResearcherQuoteCard({
   quote,
@@ -2483,12 +2315,6 @@ function ResearcherQuoteCard({
   );
 }
 
-/*
- * =========================================================
- * FINANCE COMPONENTS
- * =========================================================
- */
-
 function FinanceInfo({
   label,
   value,
@@ -2588,12 +2414,6 @@ function InvoiceStatusBadge({
     </span>
   );
 }
-
-/*
- * =========================================================
- * CONSULTATION
- * =========================================================
- */
 
 function ConsultationCard({
   consultation,
@@ -2760,12 +2580,6 @@ function ConsultationInfo({
   );
 }
 
-/*
- * =========================================================
- * FILE LIST
- * =========================================================
- */
-
 function ProjectFileList({
   files,
   loading,
@@ -2886,12 +2700,6 @@ function ProjectFileList({
   );
 }
 
-/*
- * =========================================================
- * GENERAL
- * =========================================================
- */
-
 function DashboardStat({
   icon: Icon,
   label,
@@ -2957,12 +2765,6 @@ function LoadingBox({
     </div>
   );
 }
-
-/*
- * =========================================================
- * HELPERS
- * =========================================================
- */
 
 function isQuoteExpired(
   quote: ProjectQuoteRow,
