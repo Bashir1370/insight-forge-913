@@ -22,6 +22,7 @@ import {
   Loader2,
   MessageSquare,
   Pencil,
+  ReceiptText,
   RefreshCw,
   Save,
   Send,
@@ -96,13 +97,32 @@ type ProjectQuoteRow = {
   title: string;
   scope_summary: string | null;
   deliverables: string | null;
-  amount: number;
+  amount: number | string;
   currency: string;
   estimated_days: number | null;
   status: string;
   valid_until: string | null;
   admin_note: string | null;
   responded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ProjectInvoiceRow = {
+  id: string;
+  project_id: string;
+  quote_id: string;
+  user_id: string;
+  created_by: string;
+  title: string;
+  amount: number | string;
+  currency: string;
+  status: string;
+  due_at: string | null;
+  payment_instructions: string | null;
+  admin_note: string | null;
+  paid_at: string | null;
+  payment_reference: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -180,6 +200,37 @@ const quoteStatusLabels: Record<string, string> = {
   cancelled: "لغوشده",
 };
 
+const invoiceStatusLabels: Record<string, string> = {
+  draft: "پیش‌نویس",
+  issued: "در انتظار پرداخت",
+  paid: "پرداخت‌شده",
+  overdue: "سررسید گذشته",
+  cancelled: "لغوشده",
+};
+
+const invoiceStatusOptions = [
+  {
+    value: "draft",
+    label: "پیش‌نویس",
+  },
+  {
+    value: "issued",
+    label: "در انتظار پرداخت",
+  },
+  {
+    value: "paid",
+    label: "پرداخت‌شده",
+  },
+  {
+    value: "overdue",
+    label: "سررسید گذشته",
+  },
+  {
+    value: "cancelled",
+    label: "لغوشده",
+  },
+];
+
 /*
  * =========================================================
  * ROUTE
@@ -221,7 +272,7 @@ export const Route = createFileRoute("/admin")({
       {
         name: "description",
         content:
-          "مدیریت پروژه‌ها، قیمت‌ها، مشاوره‌ها و خروجی‌های پژوهشی هاب‌ژن",
+          "مدیریت پروژه‌ها، پیشنهاد قیمت، پرداخت، مشاوره و خروجی‌های هاب‌ژن",
       },
       {
         name: "robots",
@@ -235,21 +286,26 @@ export const Route = createFileRoute("/admin")({
 
 /*
  * =========================================================
- * ADMIN PAGE
+ * ADMIN
  * =========================================================
  */
 
 function Admin() {
   /*
-   * Main data
+   * Main
    */
 
-  const [projects, setProjects] = useState<ProjectRow[]>([]);
-  const [profiles, setProfiles] = useState<ProfileRow[]>([]);
+  const [projects, setProjects] =
+    useState<ProjectRow[]>([]);
+
+  const [profiles, setProfiles] =
+    useState<ProfileRow[]>([]);
+
   const [consultations, setConsultations] =
     useState<ConsultationRow[]>([]);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
   /*
    * Project
@@ -262,7 +318,7 @@ function Admin() {
     useState<ProjectRow | null>(null);
 
   /*
-   * Project messages
+   * Messages
    */
 
   const [messages, setMessages] =
@@ -278,7 +334,7 @@ function Admin() {
     useState(false);
 
   /*
-   * Project files
+   * Files
    */
 
   const [projectFiles, setProjectFiles] =
@@ -304,7 +360,7 @@ function Admin() {
     useRef<HTMLInputElement | null>(null);
 
   /*
-   * Consultation management
+   * Consultations
    */
 
   const [
@@ -348,23 +404,17 @@ function Admin() {
   ] = useState(false);
 
   /*
-   * Quote management
+   * Quotes
    */
 
-  const [
-    projectQuotes,
-    setProjectQuotes,
-  ] = useState<ProjectQuoteRow[]>([]);
+  const [projectQuotes, setProjectQuotes] =
+    useState<ProjectQuoteRow[]>([]);
 
-  const [
-    quotesLoading,
-    setQuotesLoading,
-  ] = useState(false);
+  const [quotesLoading, setQuotesLoading] =
+    useState(false);
 
-  const [
-    savingQuote,
-    setSavingQuote,
-  ] = useState(false);
+  const [savingQuote, setSavingQuote] =
+    useState(false);
 
   const [
     sendingQuoteId,
@@ -376,25 +426,19 @@ function Admin() {
     setEditingQuoteId,
   ] = useState<string | null>(null);
 
-  const [
-    quoteTitle,
-    setQuoteTitle,
-  ] = useState("");
+  const [quoteTitle, setQuoteTitle] =
+    useState("");
 
-  const [
-    quoteScope,
-    setQuoteScope,
-  ] = useState("");
+  const [quoteScope, setQuoteScope] =
+    useState("");
 
   const [
     quoteDeliverables,
     setQuoteDeliverables,
   ] = useState("");
 
-  const [
-    quoteAmount,
-    setQuoteAmount,
-  ] = useState("");
+  const [quoteAmount, setQuoteAmount] =
+    useState("");
 
   const [
     quoteEstimatedDays,
@@ -410,6 +454,75 @@ function Admin() {
     quoteAdminNote,
     setQuoteAdminNote,
   ] = useState("");
+
+  /*
+   * Invoices
+   */
+
+  const [
+    projectInvoices,
+    setProjectInvoices,
+  ] = useState<ProjectInvoiceRow[]>([]);
+
+  const [
+    invoicesLoading,
+    setInvoicesLoading,
+  ] = useState(false);
+
+  const [
+    editingInvoiceId,
+    setEditingInvoiceId,
+  ] = useState<string | null>(null);
+
+  const [
+    invoiceQuoteId,
+    setInvoiceQuoteId,
+  ] = useState<string | null>(null);
+
+  const [
+    invoiceTitle,
+    setInvoiceTitle,
+  ] = useState("");
+
+  const [
+    invoiceAmount,
+    setInvoiceAmount,
+  ] = useState("");
+
+  const [
+    invoiceDueAt,
+    setInvoiceDueAt,
+  ] = useState("");
+
+  const [
+    invoiceInstructions,
+    setInvoiceInstructions,
+  ] = useState("");
+
+  const [
+    invoiceAdminNote,
+    setInvoiceAdminNote,
+  ] = useState("");
+
+  const [
+    invoiceStatus,
+    setInvoiceStatus,
+  ] = useState("draft");
+
+  const [
+    invoicePaidAt,
+    setInvoicePaidAt,
+  ] = useState("");
+
+  const [
+    invoicePaymentReference,
+    setInvoicePaymentReference,
+  ] = useState("");
+
+  const [
+    savingInvoice,
+    setSavingInvoice,
+  ] = useState(false);
 
   /*
    * =======================================================
@@ -529,6 +642,19 @@ function Admin() {
         ]),
       ),
     [projects],
+  );
+
+  const invoiceByQuoteId = useMemo(
+    () =>
+      new Map(
+        projectInvoices.map(
+          (invoice) => [
+            invoice.quote_id,
+            invoice,
+          ],
+        ),
+      ),
+    [projectInvoices],
   );
 
   const activeProjects =
@@ -826,6 +952,7 @@ function Admin() {
         document.createElement("a");
 
       anchor.href = objectUrl;
+
       anchor.download =
         file.original_name;
 
@@ -845,7 +972,7 @@ function Admin() {
 
   /*
    * =======================================================
-   * ADMIN OUTPUT UPLOAD
+   * OUTPUT UPLOAD
    * =======================================================
    */
 
@@ -1359,18 +1486,11 @@ function Admin() {
     setSavingQuote(false);
     resetQuoteForm();
 
-    if (
-      targetStatus ===
-      "sent"
-    ) {
-      toast.success(
-        "پیشنهاد قیمت برای پژوهشگر ارسال شد.",
-      );
-    } else {
-      toast.success(
-        "پیشنهاد قیمت به‌صورت پیش‌نویس ذخیره شد.",
-      );
-    }
+    toast.success(
+      targetStatus === "sent"
+        ? "پیشنهاد قیمت برای پژوهشگر ارسال شد."
+        : "پیشنهاد قیمت به‌صورت پیش‌نویس ذخیره شد.",
+    );
   };
 
   const sendExistingDraftQuote =
@@ -1457,6 +1577,496 @@ function Admin() {
 
   /*
    * =======================================================
+   * INVOICES
+   * =======================================================
+   */
+
+  const resetInvoiceForm = () => {
+    setEditingInvoiceId(null);
+    setInvoiceQuoteId(null);
+    setInvoiceTitle("");
+    setInvoiceAmount("");
+    setInvoiceDueAt("");
+    setInvoiceInstructions("");
+    setInvoiceAdminNote("");
+    setInvoiceStatus("draft");
+    setInvoicePaidAt("");
+    setInvoicePaymentReference("");
+  };
+
+  const loadProjectInvoices =
+    async (
+      projectId: string,
+    ) => {
+      setInvoicesLoading(true);
+
+      const { data, error } =
+        await supabase
+          .from("project_invoices")
+          .select("*")
+          .eq(
+            "project_id",
+            projectId,
+          )
+          .order("created_at", {
+            ascending: false,
+          });
+
+      if (error) {
+        console.error(error);
+
+        setProjectInvoices([]);
+        setInvoicesLoading(false);
+
+        toast.error(
+          "دریافت درخواست‌های پرداخت انجام نشد.",
+        );
+
+        return;
+      }
+
+      setProjectInvoices(
+        (data ??
+          []) as ProjectInvoiceRow[],
+      );
+
+      setInvoicesLoading(false);
+    };
+
+  const openNewInvoice = (
+    quote: ProjectQuoteRow,
+  ) => {
+    if (
+      quote.status !==
+      "accepted"
+    ) {
+      toast.error(
+        "فقط برای پیشنهاد قیمت تأییدشده می‌توان درخواست پرداخت ایجاد کرد.",
+      );
+      return;
+    }
+
+    if (
+      invoiceByQuoteId.has(
+        quote.id,
+      )
+    ) {
+      toast.error(
+        "برای این پیشنهاد قیمت قبلاً درخواست پرداخت ایجاد شده است.",
+      );
+      return;
+    }
+
+    resetInvoiceForm();
+
+    setInvoiceQuoteId(
+      quote.id,
+    );
+
+    setInvoiceTitle(
+      `درخواست پرداخت — ${quote.title}`,
+    );
+
+    setInvoiceAmount(
+      String(quote.amount),
+    );
+
+    setInvoiceStatus(
+      "draft",
+    );
+
+    setTimeout(() => {
+      document
+        .getElementById(
+          "invoice-editor",
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 50);
+  };
+
+  const editInvoice = (
+    invoice: ProjectInvoiceRow,
+  ) => {
+    setEditingInvoiceId(
+      invoice.id,
+    );
+
+    setInvoiceQuoteId(
+      invoice.quote_id,
+    );
+
+    setInvoiceTitle(
+      invoice.title,
+    );
+
+    setInvoiceAmount(
+      String(invoice.amount),
+    );
+
+    setInvoiceDueAt(
+      toDateTimeLocalValue(
+        invoice.due_at,
+      ),
+    );
+
+    setInvoiceInstructions(
+      invoice.payment_instructions ??
+        "",
+    );
+
+    setInvoiceAdminNote(
+      invoice.admin_note ??
+        "",
+    );
+
+    setInvoiceStatus(
+      invoice.status,
+    );
+
+    setInvoicePaidAt(
+      toDateTimeLocalValue(
+        invoice.paid_at,
+      ),
+    );
+
+    setInvoicePaymentReference(
+      invoice.payment_reference ??
+        "",
+    );
+
+    setTimeout(() => {
+      document
+        .getElementById(
+          "invoice-editor",
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 50);
+  };
+
+  const saveInvoice = async (
+    forcedStatus?: "draft" | "issued",
+  ) => {
+    if (
+      !selectedProject ||
+      !invoiceQuoteId
+    ) {
+      toast.error(
+        "پیشنهاد قیمت مربوط به این درخواست پرداخت مشخص نیست.",
+      );
+      return;
+    }
+
+    const relatedQuote =
+      projectQuotes.find(
+        (quote) =>
+          quote.id ===
+          invoiceQuoteId,
+      );
+
+    if (
+      !relatedQuote ||
+      relatedQuote.status !==
+        "accepted"
+    ) {
+      toast.error(
+        "درخواست پرداخت فقط برای Quote تأییدشده قابل ثبت است.",
+      );
+      return;
+    }
+
+    const status =
+      forcedStatus ??
+      invoiceStatus;
+
+    const cleanTitle =
+      invoiceTitle.trim();
+
+    if (!cleanTitle) {
+      toast.error(
+        "عنوان درخواست پرداخت را وارد کنید.",
+      );
+      return;
+    }
+
+    const amount =
+      parseIntegerInput(
+        invoiceAmount,
+      );
+
+    if (
+      amount === null ||
+      amount <= 0
+    ) {
+      toast.error(
+        "مبلغ معتبر را به تومان وارد کنید.",
+      );
+      return;
+    }
+
+    let dueAt:
+      | string
+      | null = null;
+
+    if (invoiceDueAt) {
+      const date =
+        new Date(
+          invoiceDueAt,
+        );
+
+      if (
+        Number.isNaN(
+          date.getTime(),
+        )
+      ) {
+        toast.error(
+          "مهلت پرداخت معتبر نیست.",
+        );
+        return;
+      }
+
+      dueAt =
+        date.toISOString();
+    }
+
+    if (
+      status === "issued" &&
+      !dueAt
+    ) {
+      toast.error(
+        "برای صدور درخواست پرداخت، مهلت پرداخت را تعیین کنید.",
+      );
+      return;
+    }
+
+    if (
+      status === "issued" &&
+      dueAt &&
+      new Date(
+        dueAt,
+      ).getTime() <= Date.now()
+    ) {
+      toast.error(
+        "مهلت پرداخت باید در آینده باشد.",
+      );
+      return;
+    }
+
+    if (
+      status === "overdue" &&
+      !dueAt
+    ) {
+      toast.error(
+        "برای وضعیت سررسید گذشته، تاریخ سررسید باید مشخص باشد.",
+      );
+      return;
+    }
+
+    let paidAt:
+      | string
+      | null = null;
+
+    if (
+      status === "paid"
+    ) {
+      if (invoicePaidAt) {
+        const date =
+          new Date(
+            invoicePaidAt,
+          );
+
+        if (
+          Number.isNaN(
+            date.getTime(),
+          )
+        ) {
+          toast.error(
+            "زمان پرداخت معتبر نیست.",
+          );
+          return;
+        }
+
+        paidAt =
+          date.toISOString();
+      } else {
+        paidAt =
+          new Date().toISOString();
+      }
+    }
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      toast.error(
+        "نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.",
+      );
+      return;
+    }
+
+    setSavingInvoice(true);
+
+    const payload = {
+      title:
+        cleanTitle,
+
+      amount,
+
+      currency:
+        "TOMAN",
+
+      status,
+
+      due_at:
+        dueAt,
+
+      payment_instructions:
+        invoiceInstructions.trim() ||
+        null,
+
+      admin_note:
+        invoiceAdminNote.trim() ||
+        null,
+
+      paid_at:
+        status === "paid"
+          ? paidAt
+          : null,
+
+      payment_reference:
+        status === "paid"
+          ? invoicePaymentReference.trim() ||
+            null
+          : null,
+    };
+
+    if (editingInvoiceId) {
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("project_invoices")
+        .update(payload)
+        .eq(
+          "id",
+          editingInvoiceId,
+        )
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(error);
+
+        toast.error(
+          "ذخیره درخواست پرداخت انجام نشد.",
+        );
+
+        setSavingInvoice(false);
+        return;
+      }
+
+      const updated =
+        data as ProjectInvoiceRow;
+
+      setProjectInvoices(
+        (current) =>
+          current.map(
+            (invoice) =>
+              invoice.id ===
+              updated.id
+                ? updated
+                : invoice,
+          ),
+      );
+    } else {
+      if (
+        invoiceByQuoteId.has(
+          invoiceQuoteId,
+        )
+      ) {
+        toast.error(
+          "برای این Quote قبلاً درخواست پرداخت ایجاد شده است.",
+        );
+
+        setSavingInvoice(false);
+        return;
+      }
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from("project_invoices")
+        .insert({
+          ...payload,
+
+          project_id:
+            selectedProject.id,
+
+          quote_id:
+            invoiceQuoteId,
+
+          user_id:
+            selectedProject.user_id,
+
+          created_by:
+            user.id,
+        })
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error(error);
+
+        if (
+          error.message
+            .toLowerCase()
+            .includes(
+              "duplicate",
+            )
+        ) {
+          toast.error(
+            "برای این پیشنهاد قیمت قبلاً درخواست پرداخت ایجاد شده است.",
+          );
+        } else {
+          toast.error(
+            "ایجاد درخواست پرداخت انجام نشد.",
+          );
+        }
+
+        setSavingInvoice(false);
+        return;
+      }
+
+      setProjectInvoices(
+        (current) => [
+          data as ProjectInvoiceRow,
+          ...current,
+        ],
+      );
+    }
+
+    setSavingInvoice(false);
+    resetInvoiceForm();
+
+    toast.success(
+      status === "issued"
+        ? "درخواست پرداخت برای پژوهشگر صادر شد."
+        : status === "paid"
+          ? "پرداخت با موفقیت ثبت شد."
+          : "اطلاعات درخواست پرداخت ذخیره شد.",
+    );
+  };
+
+  /*
+   * =======================================================
    * PROJECT RESOURCE RELOAD
    * =======================================================
    */
@@ -1466,16 +2076,23 @@ function Admin() {
       setMessages([]);
       setProjectFiles([]);
       setProjectQuotes([]);
+      setProjectInvoices([]);
       setMessageText("");
+
       resetQuoteForm();
+      resetInvoiceForm();
+
       return;
     }
 
     setMessages([]);
     setProjectFiles([]);
     setProjectQuotes([]);
+    setProjectInvoices([]);
     setMessageText("");
+
     resetQuoteForm();
+    resetInvoiceForm();
 
     loadMessages(
       selectedProject.id,
@@ -1486,6 +2103,10 @@ function Admin() {
     );
 
     loadProjectQuotes(
+      selectedProject.id,
+    );
+
+    loadProjectInvoices(
       selectedProject.id,
     );
   }, [selectedProject?.id]);
@@ -1769,12 +2390,12 @@ function Admin() {
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          مدیریت پروژه‌ها، پیشنهادهای قیمت،
-          مشاوره‌ها، فایل‌ها و خروجی‌های پژوهشی
+          مدیریت پروژه‌ها، مشاوره‌ها، پیشنهادهای قیمت،
+          پرداخت‌ها و خروجی‌های پژوهشی
         </p>
       </div>
 
-      {/* STATISTICS */}
+      {/* STATS */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard
@@ -1970,16 +2591,6 @@ function Admin() {
               <h2 className="mt-2 text-xl font-bold text-navy">
                 {selectedConsultation.subject}
               </h2>
-
-              <p className="mt-2 text-xs text-muted-foreground">
-                پژوهشگر:{" "}
-                <span className="font-semibold text-navy">
-                  {profileMap.get(
-                    selectedConsultation.user_id,
-                  )?.full_name ||
-                    "پژوهشگر"}
-                </span>
-              </p>
             </div>
 
             <button
@@ -2161,7 +2772,6 @@ function Admin() {
                     event.target.value,
                   )
                 }
-                placeholder="مثلاً: لطفاً پیش از جلسه فایل متادیتا را بارگذاری کنید."
                 className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
               />
             </div>
@@ -2187,7 +2797,7 @@ function Admin() {
       )}
 
       {/* ===================================================
-          PROJECT TABLE
+          PROJECTS
       =================================================== */}
 
       <section className="card-elevated mt-8 overflow-hidden">
@@ -2367,7 +2977,7 @@ function Admin() {
             </button>
           </div>
 
-          {/* PROJECT INFO */}
+          {/* INFO */}
 
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <DetailCard
@@ -2387,7 +2997,7 @@ function Admin() {
             />
 
             <DetailCard
-              label="حوزه پژوهشی پروفایل"
+              label="حوزه پژوهشی"
               value={
                 selectedResearcher?.research_field ||
                 "—"
@@ -2417,7 +3027,7 @@ function Admin() {
             />
 
             <DetailCard
-              label="آخرین به‌روزرسانی"
+              label="آخرین بروزرسانی"
               value={formatDate(
                 selectedProject.updated_at,
               )}
@@ -2491,7 +3101,7 @@ function Admin() {
           </div>
 
           {/* =================================================
-              QUOTE MANAGEMENT
+              QUOTES
           ================================================= */}
 
           <div
@@ -2511,7 +3121,7 @@ function Admin() {
 
                 <p className="mt-1 text-xs leading-6 text-muted-foreground">
                   Scope، خروجی‌ها، مبلغ و زمان تقریبی پروژه را
-                  مشخص کنید و برای پژوهشگر ارسال کنید.
+                  مشخص کنید.
                 </p>
               </div>
 
@@ -2521,20 +3131,12 @@ function Admin() {
                   onClick={resetQuoteForm}
                   className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
                 >
-                  لغو ویرایش پیش‌نویس
+                  لغو ویرایش
                 </button>
               )}
             </div>
 
-            {/* QUOTE FORM */}
-
             <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/20 p-5">
-              {editingQuoteId && (
-                <div className="mb-5 rounded-xl border border-primary/20 bg-background p-3 text-xs text-primary">
-                  در حال ویرایش پیش‌نویس پیشنهاد قیمت
-                </div>
-              )}
-
               <div>
                 <label className="text-sm font-bold text-navy">
                   عنوان پیشنهاد
@@ -2542,7 +3144,6 @@ function Admin() {
 
                 <input
                   type="text"
-                  maxLength={200}
                   value={quoteTitle}
                   onChange={(event) =>
                     setQuoteTitle(
@@ -2561,34 +3162,28 @@ function Admin() {
 
                 <textarea
                   rows={5}
-                  maxLength={5000}
                   value={quoteScope}
                   onChange={(event) =>
                     setQuoteScope(
                       event.target.value,
                     )
                   }
-                  placeholder="مثلاً: کنترل کیفیت، alignment، quantification، differential expression و تفسیر زیستی..."
                   className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
                 />
               </div>
 
               <div className="mt-5">
                 <label className="text-sm font-bold text-navy">
-                  Deliverables / خروجی‌های قابل تحویل
+                  خروجی‌های قابل تحویل
                 </label>
 
                 <textarea
                   rows={5}
-                  maxLength={5000}
                   value={quoteDeliverables}
                   onChange={(event) =>
                     setQuoteDeliverables(
                       event.target.value,
                     )
-                  }
-                  placeholder={
-                    "مثلاً:\nگزارش QC\nجدول DEG\nVolcano Plot\nHeatmap\nPathway Analysis\nگزارش نهایی PDF"
                   }
                   className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
                 />
@@ -2597,7 +3192,7 @@ function Admin() {
               <div className="mt-5 grid gap-5 md:grid-cols-3">
                 <div>
                   <label className="text-sm font-bold text-navy">
-                    مبلغ پیشنهادی
+                    مبلغ
                   </label>
 
                   <div className="mt-2 flex items-center gap-2">
@@ -2619,26 +3214,11 @@ function Admin() {
                       تومان
                     </span>
                   </div>
-
-                  {parseIntegerInput(
-                    quoteAmount,
-                  ) !== null &&
-                    parseIntegerInput(
-                      quoteAmount,
-                    )! > 0 && (
-                      <p className="mt-2 text-xs font-semibold text-primary">
-                        {formatToman(
-                          parseIntegerInput(
-                            quoteAmount,
-                          )!,
-                        )}
-                      </p>
-                    )}
                 </div>
 
                 <div>
                   <label className="text-sm font-bold text-navy">
-                    زمان تقریبی انجام
+                    زمان تقریبی
                   </label>
 
                   <div className="mt-2 flex items-center gap-2">
@@ -2652,7 +3232,6 @@ function Admin() {
                           event.target.value,
                         )
                       }
-                      placeholder="14"
                       className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
                     />
 
@@ -2687,14 +3266,12 @@ function Admin() {
 
                 <textarea
                   rows={4}
-                  maxLength={5000}
                   value={quoteAdminNote}
                   onChange={(event) =>
                     setQuoteAdminNote(
                       event.target.value,
                     )
                   }
-                  placeholder="مثلاً: هزینه شامل تحلیل و گزارش نهایی است و هزینه تولید داده آزمایشگاهی را شامل نمی‌شود."
                   className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
                 />
               </div>
@@ -2706,14 +3283,9 @@ function Admin() {
                   onClick={() =>
                     saveQuote("draft")
                   }
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold text-navy transition-colors hover:bg-secondary disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold text-navy hover:bg-secondary disabled:opacity-50"
                 >
-                  {savingQuote ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <Save className="size-4" />
-                  )}
-
+                  <Save className="size-4" />
                   ذخیره پیش‌نویس
                 </button>
 
@@ -2723,7 +3295,7 @@ function Admin() {
                   onClick={() =>
                     saveQuote("sent")
                   }
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
                 >
                   {savingQuote ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -2746,23 +3318,32 @@ function Admin() {
                   </h4>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    تاریخچه پیشنهادهای قیمت همین پروژه
+                    Quote تأییدشده امکان ایجاد Invoice خواهد داشت.
                   </p>
                 </div>
 
                 <RefreshButton
-                  loading={quotesLoading}
-                  onClick={() =>
+                  loading={
+                    quotesLoading ||
+                    invoicesLoading
+                  }
+                  onClick={() => {
                     loadProjectQuotes(
                       selectedProject.id,
-                    )
-                  }
+                    );
+
+                    loadProjectInvoices(
+                      selectedProject.id,
+                    );
+                  }}
                 />
               </div>
 
-              {quotesLoading ? (
-                <LoadingBox text="در حال دریافت پیشنهادهای قیمت…" />
-              ) : projectQuotes.length === 0 ? (
+              {quotesLoading ||
+              invoicesLoading ? (
+                <LoadingBox text="در حال دریافت اطلاعات مالی…" />
+              ) : projectQuotes.length ===
+                0 ? (
                 <div className="mt-4 rounded-2xl border border-border p-8 text-center">
                   <BadgeDollarSign className="mx-auto size-7 text-primary/50" />
 
@@ -2776,18 +3357,35 @@ function Admin() {
                     <QuoteCard
                       key={quote.id}
                       quote={quote}
+                      invoice={
+                        invoiceByQuoteId.get(
+                          quote.id,
+                        ) ?? null
+                      }
                       sending={
                         sendingQuoteId ===
                         quote.id
                       }
-                      onEdit={() =>
+                      onEditQuote={() =>
                         editDraftQuote(
                           quote,
                         )
                       }
-                      onSend={() =>
+                      onSendQuote={() =>
                         sendExistingDraftQuote(
                           quote,
+                        )
+                      }
+                      onCreateInvoice={() =>
+                        openNewInvoice(
+                          quote,
+                        )
+                      }
+                      onEditInvoice={(
+                        invoice,
+                      ) =>
+                        editInvoice(
+                          invoice,
                         )
                       }
                     />
@@ -2798,7 +3396,329 @@ function Admin() {
           </div>
 
           {/* =================================================
-              OUTPUT UPLOAD
+              INVOICE EDITOR
+          ================================================= */}
+
+          {invoiceQuoteId && (
+            <div
+              id="invoice-editor"
+              className="mt-8 scroll-mt-8 border-t border-border pt-6"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold text-primary">
+                    Invoice
+                  </p>
+
+                  <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-navy">
+                    <ReceiptText className="size-5 text-primary" />
+
+                    {editingInvoiceId
+                      ? "مدیریت درخواست پرداخت"
+                      : "ایجاد درخواست پرداخت"}
+                  </h3>
+
+                  <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                    این درخواست فقط به Quote تأییدشده همین پروژه
+                    متصل است.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={resetInvoiceForm}
+                  className="rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground hover:bg-secondary"
+                >
+                  بستن
+                </button>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-primary/20 bg-accent/20 p-5">
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <p className="text-[11px] text-muted-foreground">
+                    Quote مرتبط
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold text-navy">
+                    {projectQuotes.find(
+                      (quote) =>
+                        quote.id ===
+                        invoiceQuoteId,
+                    )?.title || "—"}
+                  </p>
+                </div>
+
+                <div className="mt-5">
+                  <label className="text-sm font-bold text-navy">
+                    عنوان درخواست پرداخت
+                  </label>
+
+                  <input
+                    type="text"
+                    value={invoiceTitle}
+                    onChange={(event) =>
+                      setInvoiceTitle(
+                        event.target.value,
+                      )
+                    }
+                    className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="mt-5 grid gap-5 md:grid-cols-2">
+                  <div>
+                    <label className="text-sm font-bold text-navy">
+                      مبلغ
+                    </label>
+
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        dir="ltr"
+                        value={invoiceAmount}
+                        onChange={(event) =>
+                          setInvoiceAmount(
+                            event.target.value,
+                          )
+                        }
+                        placeholder="15000000"
+                        className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                      />
+
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        تومان
+                      </span>
+                    </div>
+
+                    {parseIntegerInput(
+                      invoiceAmount,
+                    ) !== null &&
+                      parseIntegerInput(
+                        invoiceAmount,
+                      )! > 0 && (
+                        <p className="mt-2 text-xs font-semibold text-primary">
+                          {formatToman(
+                            parseIntegerInput(
+                              invoiceAmount,
+                            )!,
+                          )}
+                        </p>
+                      )}
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-bold text-navy">
+                      مهلت پرداخت
+                    </label>
+
+                    <input
+                      type="datetime-local"
+                      value={invoiceDueAt}
+                      onChange={(event) =>
+                        setInvoiceDueAt(
+                          event.target.value,
+                        )
+                      }
+                      className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                    />
+                  </div>
+                </div>
+
+                {editingInvoiceId && (
+                  <div className="mt-5">
+                    <label className="text-sm font-bold text-navy">
+                      وضعیت درخواست پرداخت
+                    </label>
+
+                    <select
+                      value={invoiceStatus}
+                      onChange={(event) =>
+                        setInvoiceStatus(
+                          event.target.value,
+                        )
+                      }
+                      className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                    >
+                      {invoiceStatusOptions.map(
+                        (option) => (
+                          <option
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                  </div>
+                )}
+
+                <div className="mt-5">
+                  <label className="text-sm font-bold text-navy">
+                    دستور پرداخت
+                  </label>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    فعلاً می‌توانید توضیحات پرداخت دستی، شماره حساب
+                    یا روند پرداخت را اینجا وارد کنید.
+                  </p>
+
+                  <textarea
+                    rows={5}
+                    value={invoiceInstructions}
+                    onChange={(event) =>
+                      setInvoiceInstructions(
+                        event.target.value,
+                      )
+                    }
+                    placeholder="مثلاً: پس از تأیید، اطلاعات پرداخت از طریق هاب‌ژن اعلام می‌شود."
+                    className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                  />
+                </div>
+
+                <div className="mt-5">
+                  <label className="text-sm font-bold text-navy">
+                    یادداشت برای پژوهشگر
+                  </label>
+
+                  <textarea
+                    rows={4}
+                    value={invoiceAdminNote}
+                    onChange={(event) =>
+                      setInvoiceAdminNote(
+                        event.target.value,
+                      )
+                    }
+                    className="mt-2 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                  />
+                </div>
+
+                {editingInvoiceId &&
+                  invoiceStatus ===
+                    "paid" && (
+                    <div className="mt-5 rounded-2xl border border-primary/20 bg-background p-5">
+                      <p className="text-sm font-bold text-navy">
+                        اطلاعات پرداخت انجام‌شده
+                      </p>
+
+                      <div className="mt-4 grid gap-5 md:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-bold text-navy">
+                            زمان پرداخت
+                          </label>
+
+                          <input
+                            type="datetime-local"
+                            value={
+                              invoicePaidAt
+                            }
+                            onChange={(
+                              event,
+                            ) =>
+                              setInvoicePaidAt(
+                                event
+                                  .target
+                                  .value,
+                              )
+                            }
+                            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                          />
+
+                          <p className="mt-2 text-[11px] text-muted-foreground">
+                            اگر خالی بماند، زمان فعلی ثبت می‌شود.
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-bold text-navy">
+                            کد / مرجع پرداخت
+                          </label>
+
+                          <input
+                            type="text"
+                            dir="ltr"
+                            value={
+                              invoicePaymentReference
+                            }
+                            onChange={(
+                              event,
+                            ) =>
+                              setInvoicePaymentReference(
+                                event
+                                  .target
+                                  .value,
+                              )
+                            }
+                            placeholder="PAY-12345"
+                            className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-navy outline-none focus:border-primary"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                <div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-border pt-5">
+                  {!editingInvoiceId ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={savingInvoice}
+                        onClick={() =>
+                          saveInvoice(
+                            "draft",
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-5 py-2.5 text-sm font-bold text-navy hover:bg-secondary disabled:opacity-50"
+                      >
+                        <Save className="size-4" />
+                        ذخیره پیش‌نویس
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={savingInvoice}
+                        onClick={() =>
+                          saveInvoice(
+                            "issued",
+                          )
+                        }
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                      >
+                        {savingInvoice ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Send className="size-4" />
+                        )}
+
+                        صدور درخواست پرداخت
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={savingInvoice}
+                      onClick={() =>
+                        saveInvoice()
+                      }
+                      className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    >
+                      {savingInvoice ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Save className="size-4" />
+                      )}
+
+                      ذخیره تغییرات
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =================================================
+              OUTPUTS
           ================================================= */}
 
           <div className="mt-8 border-t border-border pt-6">
@@ -2843,10 +3763,6 @@ function Admin() {
                   گزارش پروژه
                 </h4>
 
-                <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                  گزارش رسمی PDF برای پژوهشگر
-                </p>
-
                 <button
                   type="button"
                   disabled={
@@ -2876,10 +3792,6 @@ function Admin() {
                   نتیجه / خروجی تحلیل
                 </h4>
 
-                <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                  Figure، Excel، CSV، ZIP و سایر خروجی‌ها
-                </p>
-
                 <button
                   type="button"
                   disabled={
@@ -2904,7 +3816,7 @@ function Admin() {
             </div>
           </div>
 
-          {/* PROJECT FILES */}
+          {/* FILES */}
 
           <div className="mt-8 border-t border-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -3034,10 +3946,6 @@ function Admin() {
             </div>
 
             <div className="mt-5">
-              <label className="text-sm font-bold text-navy">
-                ارسال پیام به پژوهشگر
-              </label>
-
               <textarea
                 value={messageText}
                 onChange={(event) =>
@@ -3047,8 +3955,8 @@ function Admin() {
                 }
                 rows={4}
                 maxLength={5000}
-                placeholder="پیام خود را بنویسید..."
-                className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
+                placeholder="پیام خود را برای پژوهشگر بنویسید..."
+                className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
               />
 
               <div className="mt-3 flex justify-end">
@@ -3086,14 +3994,22 @@ function Admin() {
 
 function QuoteCard({
   quote,
+  invoice,
   sending,
-  onEdit,
-  onSend,
+  onEditQuote,
+  onSendQuote,
+  onCreateInvoice,
+  onEditInvoice,
 }: {
   quote: ProjectQuoteRow;
+  invoice: ProjectInvoiceRow | null;
   sending: boolean;
-  onEdit: () => void;
-  onSend: () => void;
+  onEditQuote: () => void;
+  onSendQuote: () => void;
+  onCreateInvoice: () => void;
+  onEditInvoice: (
+    invoice: ProjectInvoiceRow,
+  ) => void;
 }) {
   return (
     <article className="overflow-hidden rounded-2xl border border-border">
@@ -3192,7 +4108,7 @@ function QuoteCard({
           <div className="mt-5 flex flex-wrap justify-end gap-2 border-t border-border pt-4">
             <button
               type="button"
-              onClick={onEdit}
+              onClick={onEditQuote}
               className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
             >
               <Pencil className="size-4 text-primary" />
@@ -3202,7 +4118,7 @@ function QuoteCard({
             <button
               type="button"
               disabled={sending}
-              onClick={onSend}
+              onClick={onSendQuote}
               className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground disabled:opacity-50"
             >
               {sending ? (
@@ -3215,10 +4131,90 @@ function QuoteCard({
             </button>
           </div>
         )}
+
+        {quote.status ===
+          "accepted" && (
+          <div className="mt-5 border-t border-border pt-5">
+            <p className="flex items-center gap-2 text-sm font-bold text-navy">
+              <ReceiptText className="size-4 text-primary" />
+              درخواست پرداخت
+            </p>
+
+            {!invoice ? (
+              <div className="mt-3 rounded-2xl border border-dashed border-primary/30 bg-accent/20 p-4">
+                <p className="text-xs leading-6 text-muted-foreground">
+                  پژوهشگر Quote را تأیید کرده است. اکنون می‌توانید
+                  درخواست پرداخت مربوط به این Scope را صادر کنید.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={onCreateInvoice}
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-primary-foreground"
+                >
+                  <ReceiptText className="size-4" />
+                  ایجاد درخواست پرداخت
+                </button>
+              </div>
+            ) : (
+              <div className="mt-3 rounded-2xl border border-border bg-secondary/20 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-bold text-navy">
+                      {invoice.title}
+                    </p>
+
+                    <p className="mt-2 text-lg font-extrabold text-primary">
+                      {formatToman(
+                        Number(
+                          invoice.amount,
+                        ),
+                      )}
+                    </p>
+
+                    {invoice.due_at && (
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        مهلت پرداخت:{" "}
+                        {formatDateTime(
+                          invoice.due_at,
+                        )}
+                      </p>
+                    )}
+                  </div>
+
+                  <InvoiceStatusBadge
+                    status={invoice.status}
+                  />
+                </div>
+
+                <div className="mt-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onEditInvoice(
+                        invoice,
+                      )
+                    }
+                    className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
+                  >
+                    <Pencil className="size-4 text-primary" />
+                    مدیریت درخواست پرداخت
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );
 }
+
+/*
+ * =========================================================
+ * SMALL COMPONENTS
+ * =========================================================
+ */
 
 function QuoteTextBlock({
   label,
@@ -3257,9 +4253,7 @@ function QuoteStatusBadge({
         ? "border-destructive/20 bg-destructive/5 text-destructive"
         : status === "sent"
           ? "border-primary/30 bg-primary/10 text-primary"
-          : status === "draft"
-            ? "border-border bg-background text-muted-foreground"
-            : "border-border bg-secondary text-muted-foreground";
+          : "border-border bg-background text-muted-foreground";
 
   return (
     <span
@@ -3270,11 +4264,65 @@ function QuoteStatusBadge({
   );
 }
 
-/*
- * =========================================================
- * GENERAL COMPONENTS
- * =========================================================
- */
+function InvoiceStatusBadge({
+  status,
+}: {
+  status: string;
+}) {
+  const label =
+    invoiceStatusLabels[
+      status
+    ] ?? status;
+
+  const className =
+    status === "paid"
+      ? "border-primary/20 bg-accent text-primary"
+      : status === "overdue"
+        ? "border-destructive/20 bg-destructive/5 text-destructive"
+        : status === "issued"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : status === "cancelled"
+            ? "border-border bg-secondary text-muted-foreground"
+            : "border-border bg-background text-muted-foreground";
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ConsultationStatusBadge({
+  status,
+}: {
+  status: string;
+}) {
+  const label =
+    consultationStatusLabels[
+      status
+    ] ?? status;
+
+  const className =
+    status === "completed"
+      ? "border-primary/20 bg-accent text-primary"
+      : status === "cancelled"
+        ? "border-destructive/20 bg-destructive/5 text-destructive"
+        : status === "scheduled"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : status === "reviewing"
+            ? "border-primary/20 bg-accent/50 text-navy"
+            : "border-border bg-background text-muted-foreground";
+
+  return (
+    <span
+      className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
 
 function StatCard({
   icon: Icon,
@@ -3319,36 +4367,6 @@ function DetailCard({
         {value || "—"}
       </p>
     </div>
-  );
-}
-
-function ConsultationStatusBadge({
-  status,
-}: {
-  status: string;
-}) {
-  const label =
-    consultationStatusLabels[
-      status
-    ] ?? status;
-
-  const className =
-    status === "completed"
-      ? "border-primary/20 bg-accent text-primary"
-      : status === "cancelled"
-        ? "border-destructive/20 bg-destructive/5 text-destructive"
-        : status === "scheduled"
-          ? "border-primary/30 bg-primary/10 text-primary"
-          : status === "reviewing"
-            ? "border-primary/20 bg-accent/50 text-navy"
-            : "border-border bg-background text-muted-foreground";
-
-  return (
-    <span
-      className={`inline-flex rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
-    >
-      {label}
-    </span>
   );
 }
 
