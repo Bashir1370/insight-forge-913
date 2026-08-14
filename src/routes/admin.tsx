@@ -6,6 +6,9 @@ import {
   Eye,
   FolderKanban,
   Loader2,
+  MessageSquare,
+  RefreshCw,
+  Send,
   Users2,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -24,6 +27,14 @@ type ProfileRow = {
   full_name: string | null;
   organization: string | null;
   research_field: string | null;
+};
+
+type ProjectMessageRow = {
+  id: string;
+  project_id: string;
+  sender_id: string;
+  message: string;
+  created_at: string;
 };
 
 const statusOptions = [
@@ -83,9 +94,16 @@ function Admin() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [profiles, setProfiles] = useState<ProfileRow[]>([]);
   const [loading, setLoading] = useState(true);
+
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+
   const [selectedProject, setSelectedProject] =
     useState<ProjectRow | null>(null);
+
+  const [messages, setMessages] = useState<ProjectMessageRow[]>([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -191,10 +209,90 @@ function Admin() {
     setUpdatingId(null);
   };
 
+  const loadMessages = async (projectId: string) => {
+    setMessagesLoading(true);
+
+    const { data, error } = await supabase
+      .from("project_messages")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      toast.error("دریافت پیام‌های پروژه انجام نشد.");
+      setMessagesLoading(false);
+      return;
+    }
+
+    setMessages((data ?? []) as ProjectMessageRow[]);
+    setMessagesLoading(false);
+  };
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setMessages([]);
+      setMessageText("");
+      return;
+    }
+
+    loadMessages(selectedProject.id);
+  }, [selectedProject?.id]);
+
+  const sendMessage = async () => {
+    if (!selectedProject) return;
+
+    const cleanMessage = messageText.trim();
+
+    if (!cleanMessage) {
+      toast.error("متن پیام را وارد کنید.");
+      return;
+    }
+
+    setSendingMessage(true);
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      toast.error("نشست مدیریتی معتبر نیست؛ دوباره وارد شوید.");
+      setSendingMessage(false);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("project_messages")
+      .insert({
+        project_id: selectedProject.id,
+        sender_id: user.id,
+        message: cleanMessage,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      toast.error("ارسال پیام انجام نشد.");
+      setSendingMessage(false);
+      return;
+    }
+
+    setMessages((current) => [
+      ...current,
+      data as ProjectMessageRow,
+    ]);
+
+    setMessageText("");
+    setSendingMessage(false);
+
+    toast.success("پیام برای پژوهشگر ارسال شد.");
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-2">
         <Loader2 className="size-5 animate-spin text-primary" />
+
         <span className="text-sm text-muted-foreground">
           در حال بارگذاری پنل مدیریت…
         </span>
@@ -264,13 +362,33 @@ function Admin() {
             <table className="w-full min-w-[1050px] text-sm">
               <thead className="bg-secondary/60 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-4 text-start">شناسه</th>
-                  <th className="p-4 text-start">پروژه</th>
-                  <th className="p-4 text-start">پژوهشگر</th>
-                  <th className="p-4 text-start">نوع تحلیل</th>
-                  <th className="p-4 text-start">تاریخ ثبت</th>
-                  <th className="p-4 text-start">وضعیت</th>
-                  <th className="p-4 text-start">جزئیات</th>
+                  <th className="p-4 text-start">
+                    شناسه
+                  </th>
+
+                  <th className="p-4 text-start">
+                    پروژه
+                  </th>
+
+                  <th className="p-4 text-start">
+                    پژوهشگر
+                  </th>
+
+                  <th className="p-4 text-start">
+                    نوع تحلیل
+                  </th>
+
+                  <th className="p-4 text-start">
+                    تاریخ ثبت
+                  </th>
+
+                  <th className="p-4 text-start">
+                    وضعیت
+                  </th>
+
+                  <th className="p-4 text-start">
+                    جزئیات
+                  </th>
                 </tr>
               </thead>
 
@@ -285,7 +403,10 @@ function Admin() {
                       key={project.id}
                       className="hover:bg-secondary/30"
                     >
-                      <td className="p-4 text-xs" dir="ltr">
+                      <td
+                        className="p-4 text-xs"
+                        dir="ltr"
+                      >
                         {shortId(project.id)}
                       </td>
 
@@ -297,7 +418,8 @@ function Admin() {
 
                       <td className="p-4">
                         <p className="font-medium text-navy">
-                          {researcher?.full_name || "پژوهشگر"}
+                          {researcher?.full_name ||
+                            "پژوهشگر"}
                         </p>
 
                         {researcher?.organization && (
@@ -330,17 +452,20 @@ function Admin() {
                             }
                             className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-navy outline-none focus:border-primary"
                           >
-                            {statusOptions.map((option) => (
-                              <option
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </option>
-                            ))}
+                            {statusOptions.map(
+                              (option) => (
+                                <option
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </option>
+                              ),
+                            )}
                           </select>
 
-                          {updatingId === project.id && (
+                          {updatingId ===
+                            project.id && (
                             <Loader2 className="size-4 animate-spin text-primary" />
                           )}
                         </div>
@@ -358,6 +483,7 @@ function Admin() {
                           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
                         >
                           <Eye className="size-4 text-primary" />
+
                           مشاهده پروژه
                         </button>
                       </td>
@@ -391,7 +517,9 @@ function Admin() {
             </div>
 
             <button
-              onClick={() => setSelectedProject(null)}
+              onClick={() =>
+                setSelectedProject(null)
+              }
               className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary"
             >
               بستن
@@ -402,42 +530,53 @@ function Admin() {
             <DetailCard
               label="پژوهشگر"
               value={
-                selectedResearcher?.full_name || "پژوهشگر"
+                selectedResearcher?.full_name ||
+                "پژوهشگر"
               }
             />
 
             <DetailCard
               label="سازمان / دانشگاه"
               value={
-                selectedResearcher?.organization || "—"
+                selectedResearcher?.organization ||
+                "—"
               }
             />
 
             <DetailCard
               label="حوزه پژوهشی پروفایل"
               value={
-                selectedResearcher?.research_field || "—"
+                selectedResearcher?.research_field ||
+                "—"
               }
             />
 
             <DetailCard
               label="نوع تحلیل"
-              value={selectedProject.analysis_type || "—"}
+              value={
+                selectedProject.analysis_type || "—"
+              }
             />
 
             <DetailCard
               label="وضعیت پروژه"
-              value={statusLabel(selectedProject.status)}
+              value={statusLabel(
+                selectedProject.status,
+              )}
             />
 
             <DetailCard
               label="تاریخ ثبت"
-              value={formatDate(selectedProject.created_at)}
+              value={formatDate(
+                selectedProject.created_at,
+              )}
             />
 
             <DetailCard
               label="آخرین به‌روزرسانی"
-              value={formatDate(selectedProject.updated_at)}
+              value={formatDate(
+                selectedProject.updated_at,
+              )}
             />
 
             <DetailCard
@@ -455,7 +594,8 @@ function Admin() {
             </h3>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              پاسخ‌هایی که پژوهشگر هنگام ثبت پروژه وارد کرده است.
+              پاسخ‌هایی که پژوهشگر هنگام ثبت پروژه
+              وارد کرده است.
             </p>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -501,22 +641,161 @@ function Admin() {
 
               <DetailCard
                 label="نوع تحلیل پیشنهادی"
-                value={selectedProject.analysis_type || "—"}
+                value={
+                  selectedProject.analysis_type ||
+                  "—"
+                }
               />
             </div>
           </div>
 
-          <div className="mt-8 rounded-2xl border border-primary/20 bg-accent/30 p-5">
-            <p className="text-sm font-bold text-navy">
-              مدیریت پروژه
-            </p>
+          <div className="mt-8 border-t border-border pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-bold text-navy">
+                  <MessageSquare className="size-5 text-primary" />
+                  پیام‌های پروژه
+                </h3>
 
-            <p className="mt-1 text-xs leading-6 text-muted-foreground">
-              در این مرحله می‌توانید وضعیت پروژه را از جدول
-              بالا تغییر دهید. پیام‌ها، فایل‌ها، یادداشت مدیریتی
-              و تخصیص تحلیل‌گر در مراحل بعد به همین صفحه اضافه
-              خواهند شد.
-            </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ارتباط مستقیم مدیریت هاب‌ژن با
+                  پژوهشگر این پروژه
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={messagesLoading}
+                onClick={() =>
+                  loadMessages(selectedProject.id)
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`size-4 ${
+                    messagesLoading
+                      ? "animate-spin"
+                      : ""
+                  }`}
+                />
+
+                بروزرسانی پیام‌ها
+              </button>
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-4">
+              {messagesLoading ? (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  در حال دریافت پیام‌ها…
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="py-8 text-center">
+                  <MessageSquare className="mx-auto size-7 text-primary/60" />
+
+                  <p className="mt-3 text-sm font-semibold text-navy">
+                    هنوز پیامی ثبت نشده است.
+                  </p>
+
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    اولین پیام پروژه را برای پژوهشگر
+                    ارسال کنید.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {messages.map((message) => {
+                    const fromResearcher =
+                      message.sender_id ===
+                      selectedProject.user_id;
+
+                    return (
+                      <div
+                        key={message.id}
+                        className={`max-w-3xl rounded-2xl border p-4 ${
+                          fromResearcher
+                            ? "mr-auto border-border bg-background"
+                            : "ml-auto border-primary/20 bg-accent/40"
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-navy">
+                            {fromResearcher
+                              ? selectedResearcher?.full_name ||
+                                "پژوهشگر"
+                              : "مدیریت هاب‌ژن"}
+                          </span>
+
+                          <span className="text-[11px] text-muted-foreground">
+                            {formatDateTime(
+                              message.created_at,
+                            )}
+                          </span>
+                        </div>
+
+                        <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-navy-soft">
+                          {message.message}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <label
+                htmlFor="admin-project-message"
+                className="text-sm font-bold text-navy"
+              >
+                ارسال پیام به پژوهشگر
+              </label>
+
+              <p className="mt-1 text-xs text-muted-foreground">
+                پیام در داشبورد همین پروژه برای
+                پژوهشگر نمایش داده خواهد شد.
+              </p>
+
+              <textarea
+                id="admin-project-message"
+                value={messageText}
+                onChange={(event) =>
+                  setMessageText(event.target.value)
+                }
+                rows={4}
+                maxLength={5000}
+                placeholder="برای مثال: متادیتای نمونه‌ها دریافت شد. لطفاً گروه کنترل را مشخص کنید."
+                className="mt-3 w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+              />
+
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-[11px] text-muted-foreground">
+                  {new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(messageText.length)}
+                  {" / "}
+                  ۵۰۰۰ کاراکتر
+                </span>
+
+                <button
+                  type="button"
+                  disabled={
+                    sendingMessage ||
+                    !messageText.trim()
+                  }
+                  onClick={sendMessage}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {sendingMessage ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Send className="size-4" />
+                  )}
+
+                  ارسال پیام
+                </button>
+              </div>
+            </div>
           </div>
         </section>
       )}
@@ -538,7 +817,9 @@ function StatCard({
       <Icon className="size-5 text-primary" />
 
       <p className="mt-3 text-2xl font-extrabold text-navy">
-        {new Intl.NumberFormat("fa-IR").format(value)}
+        {new Intl.NumberFormat(
+          "fa-IR",
+        ).format(value)}
       </p>
 
       <p className="mt-1 text-xs text-muted-foreground">
@@ -566,4 +847,15 @@ function DetailCard({
       </p>
     </div>
   );
+}
+
+function formatDateTime(iso: string) {
+  try {
+    return new Intl.DateTimeFormat("fa-IR", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
 }
