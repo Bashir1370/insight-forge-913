@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
@@ -18,6 +19,7 @@ import {
   Image,
   Loader2,
   MessageSquare,
+  ReceiptText,
   RefreshCw,
   Send,
   Users2,
@@ -58,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
       {
         name: "description",
         content:
-          "پیگیری پروژه، داده‌ها، پیام‌ها، مشاوره‌ها، گزارش‌ها، نتایج و پیشنهادهای قیمت در داشبورد پژوهشگر هاب‌ژن.",
+          "پیگیری پروژه، داده‌ها، پیام‌ها، مشاوره‌ها، گزارش‌ها، نتایج، پیشنهادهای قیمت و پرداخت‌ها در هاب‌ژن.",
       },
       {
         property: "og:title",
@@ -132,6 +134,25 @@ type ProjectQuoteRow = {
   updated_at: string;
 };
 
+type ProjectInvoiceRow = {
+  id: string;
+  project_id: string;
+  quote_id: string;
+  user_id: string;
+  created_by: string;
+  title: string;
+  amount: number | string;
+  currency: string;
+  status: string;
+  due_at: string | null;
+  payment_instructions: string | null;
+  admin_note: string | null;
+  paid_at: string | null;
+  payment_reference: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 /*
  * =========================================================
  * CONSTANTS
@@ -168,6 +189,14 @@ const quoteStatusLabels: Record<string, string> = {
   cancelled: "لغو شده",
 };
 
+const invoiceStatusLabels: Record<string, string> = {
+  draft: "پیش‌نویس",
+  issued: "در انتظار پرداخت",
+  paid: "پرداخت شده",
+  overdue: "سررسید گذشته",
+  cancelled: "لغو شده",
+};
+
 /*
  * =========================================================
  * STAGE TRACKER
@@ -183,8 +212,7 @@ function StageTracker({
     <div className="mt-4">
       <Progress
         value={
-          (stage /
-            projectStages.length) *
+          (stage / projectStages.length) *
           100
         }
         className="h-1.5"
@@ -341,6 +369,20 @@ function Dashboard() {
   ] = useState<string | null>(null);
 
   /*
+   * INVOICES
+   */
+
+  const [
+    projectInvoices,
+    setProjectInvoices,
+  ] = useState<ProjectInvoiceRow[]>([]);
+
+  const [
+    invoicesLoading,
+    setInvoicesLoading,
+  ] = useState(false);
+
+  /*
    * =======================================================
    * LOAD PROJECTS + COUNTS
    * =======================================================
@@ -363,6 +405,7 @@ function Dashboard() {
               error.message,
             ),
           );
+
           return;
         }
 
@@ -425,18 +468,14 @@ function Dashboard() {
 
         if (!mounted) return;
 
-        if (
-          !fileCountResult.error
-        ) {
+        if (!fileCountResult.error) {
           setTotalFileCount(
             fileCountResult.count ??
               0,
           );
         }
 
-        if (
-          !reportCountResult.error
-        ) {
+        if (!reportCountResult.error) {
           setTotalReportCount(
             reportCountResult.count ??
               0,
@@ -558,6 +597,19 @@ function Dashboard() {
         )
       : consultations;
 
+  const quoteMap = useMemo(
+    () =>
+      new Map(
+        projectQuotes.map(
+          (quote) => [
+            quote.id,
+            quote,
+          ],
+        ),
+      ),
+    [projectQuotes],
+  );
+
   /*
    * FILE CATEGORIES
    */
@@ -647,8 +699,10 @@ function Dashboard() {
           .insert({
             project_id:
               current.id,
+
             sender_id:
               user.id,
+
             message:
               cleanMessage,
           })
@@ -819,6 +873,7 @@ function Dashboard() {
           {
             quote_id:
               quote.id,
+
             response,
           },
         );
@@ -889,7 +944,67 @@ function Dashboard() {
 
   /*
    * =======================================================
-   * RELOAD CURRENT PROJECT RESOURCES
+   * INVOICES
+   * =======================================================
+   */
+
+  const loadProjectInvoices =
+    async (
+      projectId: string,
+    ) => {
+      setInvoicesLoading(true);
+
+      const { data, error } =
+        await supabase
+          .from("project_invoices")
+          .select("*")
+          .eq(
+            "project_id",
+            projectId,
+          )
+          .order("created_at", {
+            ascending: false,
+          });
+
+      if (error) {
+        console.error(error);
+
+        setProjectInvoices([]);
+        setInvoicesLoading(false);
+
+        toast.error(
+          "دریافت درخواست‌های پرداخت انجام نشد.",
+        );
+
+        return;
+      }
+
+      setProjectInvoices(
+        (data ??
+          []) as ProjectInvoiceRow[],
+      );
+
+      setInvoicesLoading(false);
+    };
+
+  const refreshFinance =
+    async () => {
+      if (!current) return;
+
+      await Promise.all([
+        loadProjectQuotes(
+          current.id,
+        ),
+
+        loadProjectInvoices(
+          current.id,
+        ),
+      ]);
+    };
+
+  /*
+   * =======================================================
+   * RELOAD CURRENT PROJECT
    * =======================================================
    */
 
@@ -898,6 +1013,7 @@ function Dashboard() {
       setProjectMessages([]);
       setProjectFiles([]);
       setProjectQuotes([]);
+      setProjectInvoices([]);
       setMessageText("");
       return;
     }
@@ -905,11 +1021,22 @@ function Dashboard() {
     setProjectMessages([]);
     setProjectFiles([]);
     setProjectQuotes([]);
+    setProjectInvoices([]);
     setMessageText("");
 
-    loadMessages(current.id);
-    loadFiles(current.id);
+    loadMessages(
+      current.id,
+    );
+
+    loadFiles(
+      current.id,
+    );
+
     loadProjectQuotes(
+      current.id,
+    );
+
+    loadProjectInvoices(
       current.id,
     );
   }, [current?.id]);
@@ -1211,8 +1338,7 @@ function Dashboard() {
       {loading ? (
         <div className="mt-8 flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin" />
-          در حال بارگذاری
-          پروژه‌ها…
+          در حال بارگذاری پروژه‌ها…
         </div>
       ) : projects.length ===
         0 ? (
@@ -1220,8 +1346,7 @@ function Dashboard() {
           <FolderKanban className="mx-auto size-8 text-primary" />
 
           <p className="mt-4 text-base font-bold text-navy">
-            هنوز پروژه‌ای ثبت
-            نکرده‌اید.
+            هنوز پروژه‌ای ثبت نکرده‌اید.
           </p>
 
           <Button
@@ -1319,6 +1444,13 @@ function Dashboard() {
                     current!
                       .created_at,
                   )}
+
+                  {" · آخرین بروزرسانی "}
+
+                  {formatDate(
+                    current!
+                      .updated_at,
+                  )}
                 </p>
               </div>
 
@@ -1365,7 +1497,9 @@ function Dashboard() {
                 </TabsTrigger>
               </TabsList>
 
-              {/* DATA */}
+              {/* =================================================
+                  DATA
+              ================================================= */}
 
               <TabsContent
                 value="files"
@@ -1388,11 +1522,8 @@ function Dashboard() {
                   </p>
 
                   <p className="mx-auto mt-1 max-w-xl text-xs leading-6 text-muted-foreground">
-                    برای متادیتا،
-                    CSV، Excel،
-                    ماتریس داده و
-                    فایل‌های کوچک
-                    پژوهشی
+                    برای متادیتا، CSV، Excel، ماتریس داده و
+                    فایل‌های کوچک پژوهشی
                   </p>
 
                   <Button
@@ -1408,8 +1539,7 @@ function Dashboard() {
                     {uploadingFile ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
-                        در حال
-                        بارگذاری…
+                        در حال بارگذاری…
                       </>
                     ) : (
                       <>
@@ -1420,8 +1550,7 @@ function Dashboard() {
                   </Button>
 
                   <p className="mt-3 text-[11px] text-muted-foreground">
-                    حداکثر حجم فعلی:
-                    ۶ مگابایت
+                    حداکثر حجم فعلی: ۶ مگابایت
                   </p>
                 </div>
 
@@ -1463,7 +1592,9 @@ function Dashboard() {
                 </div>
               </TabsContent>
 
-              {/* MESSAGES */}
+              {/* =================================================
+                  MESSAGES
+              ================================================= */}
 
               <TabsContent
                 value="messages"
@@ -1495,8 +1626,7 @@ function Dashboard() {
                     ) : projectMessages.length ===
                       0 ? (
                       <div className="py-14 text-center text-sm text-muted-foreground">
-                        هنوز پیامی ثبت
-                        نشده است.
+                        هنوز پیامی ثبت نشده است.
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -1561,9 +1691,7 @@ function Dashboard() {
                         )
                       }
                       rows={4}
-                      maxLength={
-                        5000
-                      }
+                      maxLength={5000}
                       placeholder="پیام خود را درباره این پروژه بنویسید..."
                       className="w-full resize-y rounded-2xl border border-border bg-background px-4 py-3 text-sm leading-7 text-navy outline-none focus:border-primary"
                     />
@@ -1593,21 +1721,21 @@ function Dashboard() {
                 </div>
               </TabsContent>
 
-              {/* CONSULTATIONS */}
+              {/* =================================================
+                  CONSULTATIONS
+              ================================================= */}
 
               <TabsContent
                 value="consults"
                 className="mt-5"
               >
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
-                      <CalendarClock className="size-4 text-primary" />
-                      مشاوره‌های پژوهشی
-                    </h3>
-                  </div>
+                  <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
+                    <CalendarClock className="size-4 text-primary" />
+                    مشاوره‌های پژوهشی
+                  </h3>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     <RefreshButton
                       loading={
                         consultationsLoading
@@ -1639,8 +1767,7 @@ function Dashboard() {
                     <CalendarClock className="mx-auto size-8 text-primary/50" />
 
                     <p className="mt-4 text-sm font-bold text-navy">
-                      هنوز درخواست
-                      مشاوره‌ای ندارید.
+                      هنوز درخواست مشاوره‌ای ندارید.
                     </p>
 
                     <Button
@@ -1673,7 +1800,9 @@ function Dashboard() {
                 )}
               </TabsContent>
 
-              {/* REPORTS */}
+              {/* =================================================
+                  REPORTS
+              ================================================= */}
 
               <TabsContent
                 value="reports"
@@ -1717,7 +1846,9 @@ function Dashboard() {
                 />
               </TabsContent>
 
-              {/* RESULTS */}
+              {/* =================================================
+                  RESULTS
+              ================================================= */}
 
               <TabsContent
                 value="results"
@@ -1761,9 +1892,9 @@ function Dashboard() {
                 />
               </TabsContent>
 
-              {/* ===========================================
-                  REAL QUOTES / PAYMENTS
-              =========================================== */}
+              {/* =================================================
+                  FINANCE
+              ================================================= */}
 
               <TabsContent
                 value="payments"
@@ -1773,88 +1904,158 @@ function Dashboard() {
                   <div>
                     <h3 className="flex items-center gap-2 text-sm font-bold text-navy">
                       <BadgeDollarSign className="size-4 text-primary" />
-                      پیشنهاد قیمت پروژه
+                      امور مالی پروژه
                     </h3>
 
                     <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                      پیشنهادهای رسمی هاب‌ژن برای اجرای این پروژه
+                      پیشنهادهای قیمت و درخواست‌های پرداخت این پروژه
                     </p>
                   </div>
 
                   <RefreshButton
                     loading={
-                      quotesLoading
+                      quotesLoading ||
+                      invoicesLoading
                     }
-                    onClick={() =>
-                      current &&
-                      loadProjectQuotes(
-                        current.id,
-                      )
+                    onClick={
+                      refreshFinance
                     }
                   />
                 </div>
 
-                {quotesLoading ? (
-                  <div className="mt-4">
-                    <LoadingBox text="در حال دریافت پیشنهاد قیمت…" />
-                  </div>
-                ) : projectQuotes.length ===
-                  0 ? (
-                  <div className="mt-4 rounded-2xl border border-border p-10 text-center">
-                    <BadgeDollarSign className="mx-auto size-8 text-primary/50" />
+                {/* ===============================================
+                    INVOICES
+                =============================================== */}
 
-                    <p className="mt-4 text-sm font-bold text-navy">
-                      هنوز پیشنهاد قیمتی برای این پروژه ارسال نشده است.
-                    </p>
+                <section className="mt-5">
+                  <div>
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <ReceiptText className="size-4 text-primary" />
+                      درخواست‌های پرداخت
+                    </h4>
 
-                    <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-muted-foreground">
-                      پس از بررسی علمی پروژه، پیشنهاد شامل Scope،
-                      خروجی‌ها، هزینه و زمان تقریبی اجرا در این قسمت
-                      نمایش داده می‌شود.
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Invoiceهای صادرشده توسط هاب‌ژن
                     </p>
                   </div>
-                ) : (
-                  <div className="mt-4 space-y-5">
-                    {projectQuotes.map(
-                      (quote) => (
-                        <ResearcherQuoteCard
-                          key={
-                            quote.id
-                          }
-                          quote={
-                            quote
-                          }
-                          responding={
-                            respondingQuoteId ===
-                            quote.id
-                          }
-                          onAccept={() =>
-                            respondToQuote(
-                              quote,
-                              "accepted",
-                            )
-                          }
-                          onReject={() =>
-                            respondToQuote(
-                              quote,
-                              "rejected",
-                            )
-                          }
-                        />
-                      ),
-                    )}
-                  </div>
-                )}
 
-                <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-4">
+                  {invoicesLoading ? (
+                    <div className="mt-4">
+                      <LoadingBox text="در حال دریافت درخواست‌های پرداخت…" />
+                    </div>
+                  ) : projectInvoices.length ===
+                    0 ? (
+                    <div className="mt-4 rounded-2xl border border-border p-8 text-center">
+                      <ReceiptText className="mx-auto size-7 text-primary/50" />
+
+                      <p className="mt-3 text-sm font-bold text-navy">
+                        هنوز درخواست پرداختی صادر نشده است.
+                      </p>
+
+                      <p className="mx-auto mt-2 max-w-xl text-xs leading-6 text-muted-foreground">
+                        بعد از تأیید پیشنهاد قیمت و صدور Invoice توسط
+                        مدیریت هاب‌ژن، اطلاعات پرداخت در این بخش نمایش
+                        داده می‌شود.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-4">
+                      {projectInvoices.map(
+                        (invoice) => (
+                          <ResearcherInvoiceCard
+                            key={
+                              invoice.id
+                            }
+                            invoice={
+                              invoice
+                            }
+                            quote={
+                              quoteMap.get(
+                                invoice.quote_id,
+                              ) ??
+                              null
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* ===============================================
+                    QUOTES
+                =============================================== */}
+
+                <section className="mt-8 border-t border-border pt-6">
+                  <div>
+                    <h4 className="flex items-center gap-2 text-sm font-bold text-navy">
+                      <BadgeDollarSign className="size-4 text-primary" />
+                      پیشنهادهای قیمت
+                    </h4>
+
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Scope، مبلغ و شرایط پیشنهادی هاب‌ژن
+                    </p>
+                  </div>
+
+                  {quotesLoading ? (
+                    <div className="mt-4">
+                      <LoadingBox text="در حال دریافت پیشنهاد قیمت…" />
+                    </div>
+                  ) : projectQuotes.length ===
+                    0 ? (
+                    <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+                      <BadgeDollarSign className="mx-auto size-8 text-primary/50" />
+
+                      <p className="mt-4 text-sm font-bold text-navy">
+                        هنوز پیشنهاد قیمتی برای این پروژه ارسال نشده است.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-4 space-y-5">
+                      {projectQuotes.map(
+                        (quote) => (
+                          <ResearcherQuoteCard
+                            key={
+                              quote.id
+                            }
+                            quote={
+                              quote
+                            }
+                            responding={
+                              respondingQuoteId ===
+                              quote.id
+                            }
+                            onAccept={() =>
+                              respondToQuote(
+                                quote,
+                                "accepted",
+                              )
+                            }
+                            onReject={() =>
+                              respondToQuote(
+                                quote,
+                                "rejected",
+                              )
+                            }
+                          />
+                        ),
+                      )}
+                    </div>
+                  )}
+                </section>
+
+                {/* ONLINE PAYMENT NOTE */}
+
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-accent/20 p-4">
                   <p className="text-xs font-bold text-navy">
                     پرداخت آنلاین
                   </p>
 
                   <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                    در این مرحله ابتدا پیشنهاد قیمت را بررسی و تأیید
-                    می‌کنید. سیستم پرداخت آنلاین در مرحله بعد به هاب‌ژن
-                    اضافه خواهد شد.
+                    در نسخه فعلی، اطلاعات پرداخت از طریق درخواست پرداخت
+                    رسمی هاب‌ژن نمایش داده می‌شود. درگاه پرداخت آنلاین
+                    در مرحله بعد به همین Invoiceها متصل خواهد شد.
                   </p>
                 </div>
               </TabsContent>
@@ -1868,7 +2069,194 @@ function Dashboard() {
 
 /*
  * =========================================================
- * RESEARCHER QUOTE CARD
+ * INVOICE CARD
+ * =========================================================
+ */
+
+function ResearcherInvoiceCard({
+  invoice,
+  quote,
+}: {
+  invoice: ProjectInvoiceRow;
+  quote: ProjectQuoteRow | null;
+}) {
+  const overdue =
+    isInvoiceOverdue(
+      invoice,
+    );
+
+  const effectiveStatus =
+    overdue &&
+    invoice.status === "issued"
+      ? "overdue"
+      : invoice.status;
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-primary/20">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-accent/25 p-5">
+        <div>
+          <p className="text-xs font-semibold text-primary">
+            درخواست پرداخت هاب‌ژن
+          </p>
+
+          <h5 className="mt-2 text-lg font-bold text-navy">
+            {invoice.title}
+          </h5>
+
+          <p className="mt-3 text-2xl font-extrabold text-primary">
+            {formatToman(
+              Number(
+                invoice.amount,
+              ),
+            )}
+          </p>
+        </div>
+
+        <InvoiceStatusBadge
+          status={
+            effectiveStatus
+          }
+        />
+      </div>
+
+      <div className="p-5">
+        {quote && (
+          <div className="rounded-xl border border-border bg-secondary/20 p-4">
+            <p className="text-[11px] text-muted-foreground">
+              پیشنهاد قیمت مرتبط
+            </p>
+
+            <p className="mt-1 text-sm font-semibold text-navy">
+              {quote.title}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <FinanceInfo
+            label="تاریخ صدور"
+            value={formatDateTime(
+              invoice.created_at,
+            )}
+          />
+
+          <FinanceInfo
+            label="مهلت پرداخت"
+            value={
+              invoice.due_at
+                ? formatDateTime(
+                    invoice.due_at,
+                  )
+                : "تعیین نشده"
+            }
+          />
+
+          <FinanceInfo
+            label="وضعیت"
+            value={
+              invoiceStatusLabels[
+                effectiveStatus
+              ] ??
+              effectiveStatus
+            }
+          />
+        </div>
+
+        {invoice.payment_instructions && (
+          <div className="mt-5 rounded-2xl border border-border bg-secondary/20 p-4">
+            <p className="text-xs font-bold text-navy">
+              دستور پرداخت
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {
+                invoice.payment_instructions
+              }
+            </p>
+          </div>
+        )}
+
+        {invoice.admin_note && (
+          <div className="mt-4 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <p className="text-xs font-bold text-navy">
+              یادداشت تیم هاب‌ژن
+            </p>
+
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
+              {
+                invoice.admin_note
+              }
+            </p>
+          </div>
+        )}
+
+        {invoice.status ===
+          "paid" && (
+          <div className="mt-5 flex gap-3 rounded-2xl border border-primary/20 bg-accent/30 p-4">
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-primary" />
+
+            <div>
+              <p className="text-sm font-bold text-navy">
+                پرداخت ثبت شده است
+              </p>
+
+              {invoice.paid_at && (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  زمان پرداخت:{" "}
+                  {formatDateTime(
+                    invoice.paid_at,
+                  )}
+                </p>
+              )}
+
+              {invoice.payment_reference && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  کد مرجع:{" "}
+                  <span
+                    dir="ltr"
+                    className="font-semibold text-navy"
+                  >
+                    {
+                      invoice.payment_reference
+                    }
+                  </span>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {overdue &&
+          invoice.status ===
+            "issued" && (
+            <div className="mt-5 rounded-2xl border border-destructive/20 bg-destructive/5 p-4">
+              <p className="text-sm font-bold text-navy">
+                مهلت پرداخت این درخواست گذشته است.
+              </p>
+
+              <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                برای هماهنگی یا تمدید مهلت پرداخت از بخش پیام‌های پروژه
+                با تیم هاب‌ژن در ارتباط باشید.
+              </p>
+            </div>
+          )}
+
+        {invoice.status ===
+          "cancelled" && (
+          <div className="mt-5 rounded-2xl border border-border bg-secondary/30 p-4">
+            <p className="text-sm font-bold text-navy">
+              این درخواست پرداخت لغو شده است.
+            </p>
+          </div>
+        )}
+      </div>
+    </article>
+  );
+}
+
+/*
+ * =========================================================
+ * QUOTE CARD
  * =========================================================
  */
 
@@ -1942,7 +2330,7 @@ function ResearcherQuoteCard({
         )}
 
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <QuoteInfo
+          <FinanceInfo
             label="زمان تقریبی انجام"
             value={
               quote.estimated_days
@@ -1955,7 +2343,7 @@ function ResearcherQuoteCard({
             }
           />
 
-          <QuoteInfo
+          <FinanceInfo
             label="اعتبار پیشنهاد"
             value={
               quote.valid_until
@@ -1966,8 +2354,8 @@ function ResearcherQuoteCard({
             }
           />
 
-          <QuoteInfo
-            label="تاریخ ارسال"
+          <FinanceInfo
+            label="تاریخ پیشنهاد"
             value={formatDateTime(
               quote.created_at,
             )}
@@ -1997,8 +2385,8 @@ function ResearcherQuoteCard({
               </p>
 
               <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                تیم هاب‌ژن می‌تواند مراحل بعدی پروژه را بر اساس Scope
-                تأییدشده ادامه دهد.
+                پس از صدور درخواست پرداخت توسط هاب‌ژن، Invoice مربوط
+                به این پیشنهاد در بالای همین صفحه نمایش داده می‌شود.
               </p>
 
               {quote.responded_at && (
@@ -2024,8 +2412,8 @@ function ResearcherQuoteCard({
               </p>
 
               <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                برای بررسی Scope یا هزینه جدید می‌توانید از بخش پیام‌ها
-                با تیم هاب‌ژن در ارتباط باشید.
+                برای دریافت پیشنهاد جدید از بخش پیام‌های پروژه با تیم
+                هاب‌ژن در ارتباط باشید.
               </p>
             </div>
           </div>
@@ -2037,11 +2425,6 @@ function ResearcherQuoteCard({
             <div className="mt-5 rounded-2xl border border-border bg-secondary/40 p-4">
               <p className="text-sm font-bold text-navy">
                 اعتبار این پیشنهاد به پایان رسیده است.
-              </p>
-
-              <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                برای دریافت پیشنهاد جدید از بخش پیام‌های پروژه با
-                مدیریت هاب‌ژن در ارتباط باشید.
               </p>
             </div>
           )}
@@ -2055,8 +2438,8 @@ function ResearcherQuoteCard({
               </p>
 
               <p className="mt-1 text-xs leading-6 text-muted-foreground">
-                پس از تأیید یا رد، پاسخ شما برای مدیریت هاب‌ژن ثبت
-                می‌شود.
+                پس از تأیید یا رد، پاسخ برای مدیریت هاب‌ژن ثبت
+                خواهد شد.
               </p>
 
               <div className="mt-4 flex flex-wrap gap-3">
@@ -2068,7 +2451,7 @@ function ResearcherQuoteCard({
                   onClick={
                     onAccept
                   }
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50"
                 >
                   {responding ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -2087,10 +2470,9 @@ function ResearcherQuoteCard({
                   onClick={
                     onReject
                   }
-                  className="inline-flex items-center gap-2 rounded-xl border border-destructive/30 px-5 py-2.5 text-sm font-bold text-destructive transition-colors hover:bg-destructive/5 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-xl border border-destructive/30 px-5 py-2.5 text-sm font-bold text-destructive hover:bg-destructive/5 disabled:opacity-50"
                 >
                   <XCircle className="size-4" />
-
                   رد پیشنهاد
                 </button>
               </div>
@@ -2098,6 +2480,32 @@ function ResearcherQuoteCard({
           )}
       </div>
     </article>
+  );
+}
+
+/*
+ * =========================================================
+ * FINANCE COMPONENTS
+ * =========================================================
+ */
+
+function FinanceInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xs font-semibold leading-6 text-navy">
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -2121,26 +2529,6 @@ function QuoteTextBlock({
   );
 }
 
-function QuoteInfo({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-secondary/20 p-3">
-      <p className="text-[11px] text-muted-foreground">
-        {label}
-      </p>
-
-      <p className="mt-1 text-xs font-semibold leading-6 text-navy">
-        {value}
-      </p>
-    </div>
-  );
-}
-
 function QuoteStatusBadge({
   status,
 }: {
@@ -2154,14 +2542,41 @@ function QuoteStatusBadge({
   const className =
     status === "accepted"
       ? "border-primary/20 bg-accent text-primary"
-      : status ===
-          "rejected"
+      : status === "rejected"
         ? "border-destructive/20 bg-destructive/5 text-destructive"
-        : status ===
-            "sent"
+        : status === "sent"
           ? "border-primary/30 bg-primary/10 text-primary"
-          : status ===
-              "expired"
+          : status === "expired"
+            ? "border-border bg-secondary text-muted-foreground"
+            : "border-border bg-background text-muted-foreground";
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function InvoiceStatusBadge({
+  status,
+}: {
+  status: string;
+}) {
+  const label =
+    invoiceStatusLabels[
+      status
+    ] ?? status;
+
+  const className =
+    status === "paid"
+      ? "border-primary/20 bg-accent text-primary"
+      : status === "overdue"
+        ? "border-destructive/20 bg-destructive/5 text-destructive"
+        : status === "issued"
+          ? "border-primary/30 bg-primary/10 text-primary"
+          : status === "cancelled"
             ? "border-border bg-secondary text-muted-foreground"
             : "border-border bg-background text-muted-foreground";
 
@@ -2310,11 +2725,9 @@ function ConsultationStatusBadge({
   const className =
     status === "completed"
       ? "border-primary/20 bg-accent text-primary"
-      : status ===
-          "cancelled"
+      : status === "cancelled"
         ? "border-destructive/20 bg-destructive/5 text-destructive"
-        : status ===
-            "scheduled"
+        : status === "scheduled"
           ? "border-primary/30 bg-primary/10 text-primary"
           : "border-border bg-background text-muted-foreground";
 
@@ -2388,11 +2801,9 @@ function ProjectFileList({
   if (files.length === 0) {
     return (
       <div className="mt-4 rounded-2xl border border-border p-10 text-center">
-        {icon ===
-        "report" ? (
+        {icon === "report" ? (
           <FileBarChart className="mx-auto size-7 text-primary/50" />
-        ) : icon ===
-          "result" ? (
+        ) : icon === "result" ? (
           <Image className="mx-auto size-7 text-primary/50" />
         ) : (
           <FileText className="mx-auto size-7 text-primary/50" />
@@ -2577,6 +2988,36 @@ function isQuoteExpired(
 
   return (
     expiration <
+    Date.now()
+  );
+}
+
+function isInvoiceOverdue(
+  invoice: ProjectInvoiceRow,
+) {
+  if (
+    invoice.status !==
+      "issued" ||
+    !invoice.due_at
+  ) {
+    return false;
+  }
+
+  const dueTime =
+    new Date(
+      invoice.due_at,
+    ).getTime();
+
+  if (
+    Number.isNaN(
+      dueTime,
+    )
+  ) {
+    return false;
+  }
+
+  return (
+    dueTime <
     Date.now()
   );
 }
