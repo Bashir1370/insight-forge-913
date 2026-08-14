@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
   CheckCircle2,
+  Download,
   Eye,
+  FileText,
   FolderKanban,
   Loader2,
   MessageSquare,
@@ -34,6 +36,19 @@ type ProjectMessageRow = {
   project_id: string;
   sender_id: string;
   message: string;
+  created_at: string;
+};
+
+type ProjectFileRow = {
+  id: string;
+  project_id: string;
+  uploader_id: string;
+  bucket_id: string;
+  storage_path: string;
+  original_name: string;
+  mime_type: string | null;
+  size_bytes: number;
+  category: string;
   created_at: string;
 };
 
@@ -100,11 +115,25 @@ function Admin() {
   const [selectedProject, setSelectedProject] =
     useState<ProjectRow | null>(null);
 
+  /*
+   * Messages
+   */
   const [messages, setMessages] = useState<ProjectMessageRow[]>([]);
   const [messagesLoading, setMessagesLoading] = useState(false);
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
+  /*
+   * Files
+   */
+  const [projectFiles, setProjectFiles] = useState<ProjectFileRow[]>([]);
+  const [filesLoading, setFilesLoading] = useState(false);
+  const [downloadingFileId, setDownloadingFileId] =
+    useState<string | null>(null);
+
+  /*
+   * Load projects + profiles
+   */
   useEffect(() => {
     let mounted = true;
 
@@ -164,6 +193,12 @@ function Admin() {
   const selectedWizard = (selectedProject?.wizard_data ??
     {}) as WizardAnswers;
 
+  /*
+   * =========================
+   * STATUS
+   * =========================
+   */
+
   const updateStatus = async (
     projectId: string,
     status: string,
@@ -209,6 +244,12 @@ function Admin() {
     setUpdatingId(null);
   };
 
+  /*
+   * =========================
+   * MESSAGES
+   * =========================
+   */
+
   const loadMessages = async (projectId: string) => {
     setMessagesLoading(true);
 
@@ -227,16 +268,6 @@ function Admin() {
     setMessages((data ?? []) as ProjectMessageRow[]);
     setMessagesLoading(false);
   };
-
-  useEffect(() => {
-    if (!selectedProject) {
-      setMessages([]);
-      setMessageText("");
-      return;
-    }
-
-    loadMessages(selectedProject.id);
-  }, [selectedProject?.id]);
 
   const sendMessage = async () => {
     if (!selectedProject) return;
@@ -288,6 +319,87 @@ function Admin() {
     toast.success("پیام برای پژوهشگر ارسال شد.");
   };
 
+  /*
+   * =========================
+   * FILES
+   * =========================
+   */
+
+  const loadProjectFiles = async (projectId: string) => {
+    setFilesLoading(true);
+
+    const { data, error } = await supabase
+      .from("project_files")
+      .select("*")
+      .eq("project_id", projectId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error(error);
+
+      setProjectFiles([]);
+      setFilesLoading(false);
+
+      toast.error("دریافت فایل‌های پروژه انجام نشد.");
+      return;
+    }
+
+    setProjectFiles((data ?? []) as ProjectFileRow[]);
+    setFilesLoading(false);
+  };
+
+  const downloadProjectFile = async (file: ProjectFileRow) => {
+    setDownloadingFileId(file.id);
+
+    const { data, error } = await supabase.storage
+      .from(file.bucket_id)
+      .download(file.storage_path);
+
+    if (error || !data) {
+      console.error(error);
+
+      toast.error("دانلود فایل انجام نشد.");
+      setDownloadingFileId(null);
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(data);
+
+    const anchor = document.createElement("a");
+
+    anchor.href = objectUrl;
+    anchor.download = file.original_name;
+
+    document.body.appendChild(anchor);
+
+    anchor.click();
+    anchor.remove();
+
+    URL.revokeObjectURL(objectUrl);
+
+    setDownloadingFileId(null);
+  };
+
+  /*
+   * When admin opens a project,
+   * load both messages and files.
+   */
+  useEffect(() => {
+    if (!selectedProject) {
+      setMessages([]);
+      setProjectFiles([]);
+      setMessageText("");
+      return;
+    }
+
+    setMessages([]);
+    setProjectFiles([]);
+    setMessageText("");
+
+    loadMessages(selectedProject.id);
+    loadProjectFiles(selectedProject.id);
+  }, [selectedProject?.id]);
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center gap-2">
@@ -302,6 +414,10 @@ function Admin() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-14">
+      {/* =========================
+          HEADER
+      ========================= */}
+
       <div>
         <p className="text-sm font-semibold text-primary">
           HubGene Admin
@@ -315,6 +431,10 @@ function Admin() {
           مدیریت پروژه‌های پژوهشی و وضعیت اجرای آن‌ها
         </p>
       </div>
+
+      {/* =========================
+          STATISTICS
+      ========================= */}
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
@@ -342,6 +462,10 @@ function Admin() {
         />
       </div>
 
+      {/* =========================
+          PROJECT TABLE
+      ========================= */}
+
       <div className="card-elevated mt-8 overflow-hidden">
         <div className="border-b border-border p-5">
           <h2 className="text-lg font-bold text-navy">
@@ -362,51 +486,26 @@ function Admin() {
             <table className="w-full min-w-[1050px] text-sm">
               <thead className="bg-secondary/60 text-xs text-muted-foreground">
                 <tr>
-                  <th className="p-4 text-start">
-                    شناسه
-                  </th>
-
-                  <th className="p-4 text-start">
-                    پروژه
-                  </th>
-
-                  <th className="p-4 text-start">
-                    پژوهشگر
-                  </th>
-
-                  <th className="p-4 text-start">
-                    نوع تحلیل
-                  </th>
-
-                  <th className="p-4 text-start">
-                    تاریخ ثبت
-                  </th>
-
-                  <th className="p-4 text-start">
-                    وضعیت
-                  </th>
-
-                  <th className="p-4 text-start">
-                    جزئیات
-                  </th>
+                  <th className="p-4 text-start">شناسه</th>
+                  <th className="p-4 text-start">پروژه</th>
+                  <th className="p-4 text-start">پژوهشگر</th>
+                  <th className="p-4 text-start">نوع تحلیل</th>
+                  <th className="p-4 text-start">تاریخ ثبت</th>
+                  <th className="p-4 text-start">وضعیت</th>
+                  <th className="p-4 text-start">جزئیات</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-border">
                 {projects.map((project) => {
-                  const researcher = profileMap.get(
-                    project.user_id,
-                  );
+                  const researcher = profileMap.get(project.user_id);
 
                   return (
                     <tr
                       key={project.id}
                       className="hover:bg-secondary/30"
                     >
-                      <td
-                        className="p-4 text-xs"
-                        dir="ltr"
-                      >
+                      <td className="p-4 text-xs" dir="ltr">
                         {shortId(project.id)}
                       </td>
 
@@ -418,8 +517,7 @@ function Admin() {
 
                       <td className="p-4">
                         <p className="font-medium text-navy">
-                          {researcher?.full_name ||
-                            "پژوهشگر"}
+                          {researcher?.full_name || "پژوهشگر"}
                         </p>
 
                         {researcher?.organization && (
@@ -441,9 +539,7 @@ function Admin() {
                         <div className="flex items-center gap-2">
                           <select
                             value={project.status}
-                            disabled={
-                              updatingId === project.id
-                            }
+                            disabled={updatingId === project.id}
                             onChange={(event) =>
                               updateStatus(
                                 project.id,
@@ -452,20 +548,17 @@ function Admin() {
                             }
                             className="rounded-xl border border-border bg-background px-3 py-2 text-xs text-navy outline-none focus:border-primary"
                           >
-                            {statusOptions.map(
-                              (option) => (
-                                <option
-                                  key={option.value}
-                                  value={option.value}
-                                >
-                                  {option.label}
-                                </option>
-                              ),
-                            )}
+                            {statusOptions.map((option) => (
+                              <option
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </option>
+                            ))}
                           </select>
 
-                          {updatingId ===
-                            project.id && (
+                          {updatingId === project.id && (
                             <Loader2 className="size-4 animate-spin text-primary" />
                           )}
                         </div>
@@ -477,9 +570,7 @@ function Admin() {
 
                       <td className="p-4">
                         <button
-                          onClick={() =>
-                            setSelectedProject(project)
-                          }
+                          onClick={() => setSelectedProject(project)}
                           className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent"
                         >
                           <Eye className="size-4 text-primary" />
@@ -495,6 +586,10 @@ function Admin() {
           </div>
         )}
       </div>
+
+      {/* =========================
+          SELECTED PROJECT
+      ========================= */}
 
       {selectedProject && (
         <section className="card-elevated mt-8 p-6">
@@ -517,76 +612,62 @@ function Admin() {
             </div>
 
             <button
-              onClick={() =>
-                setSelectedProject(null)
-              }
+              onClick={() => setSelectedProject(null)}
               className="rounded-xl border border-border px-4 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary"
             >
               بستن
             </button>
           </div>
 
+          {/* =========================
+              PROJECT DETAILS
+          ========================= */}
+
           <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <DetailCard
               label="پژوهشگر"
-              value={
-                selectedResearcher?.full_name ||
-                "پژوهشگر"
-              }
+              value={selectedResearcher?.full_name || "پژوهشگر"}
             />
 
             <DetailCard
               label="سازمان / دانشگاه"
-              value={
-                selectedResearcher?.organization ||
-                "—"
-              }
+              value={selectedResearcher?.organization || "—"}
             />
 
             <DetailCard
               label="حوزه پژوهشی پروفایل"
-              value={
-                selectedResearcher?.research_field ||
-                "—"
-              }
+              value={selectedResearcher?.research_field || "—"}
             />
 
             <DetailCard
               label="نوع تحلیل"
-              value={
-                selectedProject.analysis_type || "—"
-              }
+              value={selectedProject.analysis_type || "—"}
             />
 
             <DetailCard
               label="وضعیت پروژه"
-              value={statusLabel(
-                selectedProject.status,
-              )}
+              value={statusLabel(selectedProject.status)}
             />
 
             <DetailCard
               label="تاریخ ثبت"
-              value={formatDate(
-                selectedProject.created_at,
-              )}
+              value={formatDate(selectedProject.created_at)}
             />
 
             <DetailCard
               label="آخرین به‌روزرسانی"
-              value={formatDate(
-                selectedProject.updated_at,
-              )}
+              value={formatDate(selectedProject.updated_at)}
             />
 
             <DetailCard
               label="مرحله پژوهش"
-              value={labelFor(
-                "stage",
-                selectedWizard.stage,
-              )}
+              value={labelFor("stage", selectedWizard.stage)}
             />
           </div>
+
+          {/* =========================
+              WIZARD DATA
+          ========================= */}
 
           <div className="mt-8 border-t border-border pt-6">
             <h3 className="text-base font-bold text-navy">
@@ -594,72 +675,184 @@ function Admin() {
             </h3>
 
             <p className="mt-1 text-xs text-muted-foreground">
-              پاسخ‌هایی که پژوهشگر هنگام ثبت پروژه
-              وارد کرده است.
+              پاسخ‌هایی که پژوهشگر هنگام ثبت پروژه وارد کرده است.
             </p>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <DetailCard
                 label="مرحله پژوهش"
-                value={labelFor(
-                  "stage",
-                  selectedWizard.stage,
-                )}
+                value={labelFor("stage", selectedWizard.stage)}
               />
 
               <DetailCard
                 label="حوزه پژوهشی"
-                value={labelFor(
-                  "field",
-                  selectedWizard.field,
-                )}
+                value={labelFor("field", selectedWizard.field)}
               />
 
               <DetailCard
                 label="ارگانیسم / مدل"
-                value={labelFor(
-                  "organism",
-                  selectedWizard.organism,
-                )}
+                value={labelFor("organism", selectedWizard.organism)}
               />
 
               <DetailCard
                 label="نوع داده"
-                value={labelFor(
-                  "dataType",
-                  selectedWizard.dataType,
-                )}
+                value={labelFor("dataType", selectedWizard.dataType)}
               />
 
               <DetailCard
                 label="هدف پژوهشی"
-                value={labelFor(
-                  "goal",
-                  selectedWizard.goal,
-                )}
+                value={labelFor("goal", selectedWizard.goal)}
               />
 
               <DetailCard
                 label="نوع تحلیل پیشنهادی"
-                value={
-                  selectedProject.analysis_type ||
-                  "—"
-                }
+                value={selectedProject.analysis_type || "—"}
               />
             </div>
           </div>
+
+          {/* =========================
+              REAL PROJECT FILES
+          ========================= */}
+
+          <div className="mt-8 border-t border-border pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h3 className="flex items-center gap-2 text-base font-bold text-navy">
+                  <FileText className="size-5 text-primary" />
+
+                  فایل‌های پروژه
+                </h3>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  فایل‌هایی که پژوهشگر برای این پروژه بارگذاری کرده است.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                disabled={filesLoading}
+                onClick={() =>
+                  loadProjectFiles(selectedProject.id)
+                }
+                className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+              >
+                <RefreshCw
+                  className={`size-4 ${
+                    filesLoading ? "animate-spin" : ""
+                  }`}
+                />
+
+                بروزرسانی فایل‌ها
+              </button>
+            </div>
+
+            {filesLoading ? (
+              <div className="mt-4 flex items-center justify-center gap-2 rounded-2xl border border-border py-12 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />
+
+                در حال دریافت فایل‌ها…
+              </div>
+            ) : projectFiles.length === 0 ? (
+              <div className="mt-4 rounded-2xl border border-border p-10 text-center">
+                <FileText className="mx-auto size-7 text-primary/50" />
+
+                <p className="mt-3 text-sm font-bold text-navy">
+                  هنوز فایلی برای این پروژه ثبت نشده است.
+                </p>
+
+                <p className="mt-1 text-xs text-muted-foreground">
+                  فایل‌هایی که پژوهشگر بارگذاری کند در این بخش
+                  نمایش داده می‌شوند.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-4 overflow-hidden rounded-2xl border border-border">
+                <div className="border-b border-border bg-secondary/30 px-4 py-3">
+                  <p className="text-xs text-muted-foreground">
+                    تعداد فایل‌های پروژه:{" "}
+                    <span className="font-bold text-navy">
+                      {new Intl.NumberFormat("fa-IR").format(
+                        projectFiles.length,
+                      )}
+                    </span>
+                  </p>
+                </div>
+
+                <ul className="divide-y divide-border">
+                  {projectFiles.map((file) => (
+                    <li
+                      key={file.id}
+                      className="flex flex-wrap items-center justify-between gap-4 p-4"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <FileText className="size-4 shrink-0 text-primary" />
+
+                          <p
+                            className="truncate text-sm font-semibold text-navy"
+                            dir="auto"
+                          >
+                            {file.original_name}
+                          </p>
+                        </div>
+
+                        <p className="mt-1 text-[11px] text-muted-foreground">
+                          {formatFileSize(file.size_bytes)}
+
+                          {" · "}
+
+                          {file.mime_type || "نوع فایل نامشخص"}
+
+                          {" · "}
+
+                          {formatDateTime(file.created_at)}
+                        </p>
+
+                        <p
+                          className="mt-1 max-w-xl truncate text-[10px] text-muted-foreground/70"
+                          dir="ltr"
+                        >
+                          {file.storage_path}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={downloadingFileId === file.id}
+                        onClick={() => downloadProjectFile(file)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-navy transition-colors hover:border-primary hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {downloadingFileId === file.id ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <Download className="size-4 text-primary" />
+                        )}
+
+                        دانلود فایل
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          {/* =========================
+              REAL MESSAGES
+          ========================= */}
 
           <div className="mt-8 border-t border-border pt-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="flex items-center gap-2 text-base font-bold text-navy">
                   <MessageSquare className="size-5 text-primary" />
+
                   پیام‌های پروژه
                 </h3>
 
                 <p className="mt-1 text-xs text-muted-foreground">
-                  ارتباط مستقیم مدیریت هاب‌ژن با
-                  پژوهشگر این پروژه
+                  ارتباط مستقیم مدیریت هاب‌ژن با پژوهشگر این پروژه
                 </p>
               </div>
 
@@ -673,9 +866,7 @@ function Admin() {
               >
                 <RefreshCw
                   className={`size-4 ${
-                    messagesLoading
-                      ? "animate-spin"
-                      : ""
+                    messagesLoading ? "animate-spin" : ""
                   }`}
                 />
 
@@ -687,6 +878,7 @@ function Admin() {
               {messagesLoading ? (
                 <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />
+
                   در حال دریافت پیام‌ها…
                 </div>
               ) : messages.length === 0 ? (
@@ -698,16 +890,14 @@ function Admin() {
                   </p>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    اولین پیام پروژه را برای پژوهشگر
-                    ارسال کنید.
+                    اولین پیام پروژه را برای پژوهشگر ارسال کنید.
                   </p>
                 </div>
               ) : (
                 <div className="space-y-3">
                   {messages.map((message) => {
                     const fromResearcher =
-                      message.sender_id ===
-                      selectedProject.user_id;
+                      message.sender_id === selectedProject.user_id;
 
                     return (
                       <div
@@ -727,9 +917,7 @@ function Admin() {
                           </span>
 
                           <span className="text-[11px] text-muted-foreground">
-                            {formatDateTime(
-                              message.created_at,
-                            )}
+                            {formatDateTime(message.created_at)}
                           </span>
                         </div>
 
@@ -743,6 +931,8 @@ function Admin() {
               )}
             </div>
 
+            {/* SEND MESSAGE */}
+
             <div className="mt-5">
               <label
                 htmlFor="admin-project-message"
@@ -752,8 +942,8 @@ function Admin() {
               </label>
 
               <p className="mt-1 text-xs text-muted-foreground">
-                پیام در داشبورد همین پروژه برای
-                پژوهشگر نمایش داده خواهد شد.
+                پیام در داشبورد همین پروژه برای پژوهشگر نمایش داده
+                خواهد شد.
               </p>
 
               <textarea
@@ -770,10 +960,12 @@ function Admin() {
 
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <span className="text-[11px] text-muted-foreground">
-                  {new Intl.NumberFormat(
-                    "fa-IR",
-                  ).format(messageText.length)}
+                  {new Intl.NumberFormat("fa-IR").format(
+                    messageText.length,
+                  )}
+
                   {" / "}
+
                   ۵۰۰۰ کاراکتر
                 </span>
 
@@ -803,6 +995,12 @@ function Admin() {
   );
 }
 
+/*
+ * =========================
+ * STAT CARD
+ * =========================
+ */
+
 function StatCard({
   icon: Icon,
   label,
@@ -817,9 +1015,7 @@ function StatCard({
       <Icon className="size-5 text-primary" />
 
       <p className="mt-3 text-2xl font-extrabold text-navy">
-        {new Intl.NumberFormat(
-          "fa-IR",
-        ).format(value)}
+        {new Intl.NumberFormat("fa-IR").format(value)}
       </p>
 
       <p className="mt-1 text-xs text-muted-foreground">
@@ -828,6 +1024,12 @@ function StatCard({
     </div>
   );
 }
+
+/*
+ * =========================
+ * DETAIL CARD
+ * =========================
+ */
 
 function DetailCard({
   label,
@@ -849,6 +1051,12 @@ function DetailCard({
   );
 }
 
+/*
+ * =========================
+ * DATE + TIME
+ * =========================
+ */
+
 function formatDateTime(iso: string) {
   try {
     return new Intl.DateTimeFormat("fa-IR", {
@@ -858,4 +1066,42 @@ function formatDateTime(iso: string) {
   } catch {
     return iso;
   }
+}
+
+/*
+ * =========================
+ * FILE SIZE
+ * =========================
+ */
+
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return "۰ بایت";
+  }
+
+  const units = [
+    "بایت",
+    "کیلوبایت",
+    "مگابایت",
+    "گیگابایت",
+  ];
+
+  let value = bytes;
+  let unitIndex = 0;
+
+  while (
+    value >= 1024 &&
+    unitIndex < units.length - 1
+  ) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  const formatted =
+    new Intl.NumberFormat("fa-IR", {
+      maximumFractionDigits:
+        unitIndex === 0 ? 0 : 1,
+    }).format(value);
+
+  return `${formatted} ${units[unitIndex]}`;
 }
