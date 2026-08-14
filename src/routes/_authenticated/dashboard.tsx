@@ -23,6 +23,8 @@ import {
   ReceiptText,
   RefreshCw,
   Send,
+  Sparkles,
+  Target,
   Users2,
   XCircle,
 } from "lucide-react";
@@ -163,6 +165,35 @@ type LearningProgressRow = {
   selected_answer: number | null;
   is_correct: boolean | null;
   updated_at: string;
+};
+
+type ResearchAssessmentRow = {
+  id: string;
+  user_id: string;
+  research_line: string;
+  question_type: string | null;
+  data_stage: string | null;
+  replicate_level: string | null;
+  metadata_level: string | null;
+  analysis_goal: string | null;
+  recommendation_level:
+    | "learn"
+    | "review"
+    | "design"
+    | null;
+  recommendation_destination: string | null;
+  answers: Record<string, unknown> | null;
+  status: "active" | "completed" | "archived";
+  created_at: string;
+  updated_at: string;
+};
+
+type PersonalizedGuidance = {
+  title: string;
+  description: string;
+  focusNodes: string[];
+  actionHref: string;
+  actionLabel: string;
 };
 
 const RNA_SEQ_TOTAL_NODES = 12;
@@ -367,6 +398,21 @@ function Dashboard() {
   const [
     learningError,
     setLearningError,
+  ] = useState<string | null>(null);
+
+  const [
+    researchAssessment,
+    setResearchAssessment,
+  ] = useState<ResearchAssessmentRow | null>(null);
+
+  const [
+    assessmentLoading,
+    setAssessmentLoading,
+  ] = useState(false);
+
+  const [
+    assessmentError,
+    setAssessmentError,
   ] = useState<string | null>(null);
 
   useEffect(() => {
@@ -592,6 +638,79 @@ function Dashboard() {
     void loadLearningProgress();
   }, [user?.id]);
 
+  const loadResearchAssessment =
+    async () => {
+      if (!user?.id) return;
+
+      setAssessmentLoading(true);
+      setAssessmentError(null);
+
+      const { data, error } =
+        await (supabase as any)
+          .from("research_assessments")
+          .select(
+            `
+              id,
+              user_id,
+              research_line,
+              question_type,
+              data_stage,
+              replicate_level,
+              metadata_level,
+              analysis_goal,
+              recommendation_level,
+              recommendation_destination,
+              answers,
+              status,
+              created_at,
+              updated_at
+            `,
+          )
+          .eq(
+            "user_id",
+            user.id,
+          )
+          .eq(
+            "research_line",
+            "rna-seq",
+          )
+          .maybeSingle();
+
+      if (error) {
+        console.error(error);
+
+        setResearchAssessment(null);
+        setAssessmentError(
+          "دریافت بررسی پروژه RNA-seq انجام نشد.",
+        );
+        setAssessmentLoading(false);
+
+        return;
+      }
+
+      setResearchAssessment(
+        data
+          ? (data as ResearchAssessmentRow)
+          : null,
+      );
+
+      setAssessmentLoading(false);
+    };
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    void loadResearchAssessment();
+  }, [user?.id]);
+
+  const refreshResearchProfile =
+    async () => {
+      await Promise.all([
+        loadLearningProgress(),
+        loadResearchAssessment(),
+      ]);
+    };
+
   const current =
     projects.find(
       (project) =>
@@ -640,6 +759,12 @@ function Dashboard() {
     learningProgress[0]
       ?.updated_at ??
     null;
+
+  const personalizedGuidance =
+    buildPersonalizedGuidance(
+      researchAssessment,
+      learningProgress,
+    );
 
   const currentConsultations =
     current
@@ -1336,6 +1461,31 @@ function Dashboard() {
           {loadError}
         </p>
       )}
+
+      <ResearchPathCard
+        assessment={
+          researchAssessment
+        }
+        loading={
+          assessmentLoading ||
+          learningLoading
+        }
+        error={
+          assessmentError
+        }
+        guidance={
+          personalizedGuidance
+        }
+        learningCompleted={
+          completedLearningCount
+        }
+        learningTotal={
+          RNA_SEQ_TOTAL_NODES
+        }
+        onRefresh={
+          refreshResearchProfile
+        }
+      />
 
       <LearningProgressCard
         loading={
@@ -2057,6 +2207,612 @@ function Dashboard() {
       )}
     </div>
   );
+}
+
+function ResearchPathCard({
+  assessment,
+  loading,
+  error,
+  guidance,
+  learningCompleted,
+  learningTotal,
+  onRefresh,
+}: {
+  assessment: ResearchAssessmentRow | null;
+  loading: boolean;
+  error: string | null;
+  guidance: PersonalizedGuidance;
+  learningCompleted: number;
+  learningTotal: number;
+  onRefresh: () => Promise<void>;
+}) {
+  const assessmentFinished =
+    assessment?.status === "completed";
+
+  return (
+    <section className="card-elevated mt-8 overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-gradient-to-l from-accent/40 via-background to-background p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Target className="size-5" />
+          </span>
+
+          <div>
+            <p className="text-xs font-semibold text-primary">
+              مسیر پژوهشی من
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-navy">
+              مرکز شخصی RNA-seq
+            </h2>
+
+            <p className="mt-1 max-w-2xl text-xs leading-6 text-muted-foreground">
+              هاب‌ژن از وضعیت یادگیری و بررسی پروژه شما برای پیشنهاد قدم بعدی استفاده می‌کند.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            void onRefresh();
+          }}
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs text-muted-foreground transition hover:bg-secondary disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`size-4 ${
+              loading
+                ? "animate-spin"
+                : ""
+            }`}
+          />
+          بروزرسانی
+        </button>
+      </div>
+
+      <div className="p-5 sm:p-6">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            در حال ساخت تصویر شخصی مسیر پژوهشی…
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5">
+            <p className="text-sm font-bold text-navy">
+              مسیر پژوهشی فعلاً کامل دریافت نشد.
+            </p>
+
+            <p className="mt-2 text-xs leading-6 text-muted-foreground">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                void onRefresh();
+              }}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
+            >
+              <RefreshCw className="size-4 text-primary" />
+              تلاش دوباره
+            </button>
+          </div>
+        ) : !assessment ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p className="text-base font-bold text-navy">
+                هنوز وضعیت پروژه RNA-seq خود را بررسی نکرده‌اید.
+              </p>
+
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
+                با پاسخ به پنج سؤال کوتاه، هاب‌ژن می‌تواند هدف تحلیلی، وضعیت داده و مسیر مناسب بعدی را برای پروژه شما مشخص کند. این اطلاعات بعداً برای شخصی‌سازی همین داشبورد استفاده می‌شوند.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              variant="hero"
+            >
+              <Link to="/learn/rna-seq/project">
+                بررسی پروژه RNA-seq من
+              </Link>
+            </Button>
+          </div>
+        ) : !assessmentFinished ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-800">
+                بررسی نیمه‌کاره
+              </span>
+
+              <p className="mt-4 text-base font-bold text-navy">
+                بررسی پروژه RNA-seq شما هنوز کامل نشده است.
+              </p>
+
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
+                پاسخ‌های قبلی ذخیره شده‌اند. از همان جایی که متوقف شده‌اید ادامه دهید تا هاب‌ژن بتواند مسیر پژوهشی شخصی شما را کامل‌تر پیشنهاد دهد.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              variant="hero"
+            >
+              <Link to="/learn/rna-seq/project">
+                ادامه بررسی پروژه
+              </Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-2xl border border-primary/20 bg-accent/20 p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold text-primary">
+                      تمرکز پژوهشی فعلی شما
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-bold text-navy">
+                      {assessmentGoalLabel(
+                        assessment.analysis_goal,
+                      )}
+                    </h3>
+
+                    <p
+                      dir="ltr"
+                      className="mt-1 text-left text-[11px] font-semibold text-muted-foreground"
+                    >
+                      {assessmentGoalEnglishLabel(
+                        assessment.analysis_goal,
+                      )}
+                    </p>
+                  </div>
+
+                  <RecommendationBadge
+                    level={
+                      assessment.recommendation_level
+                    }
+                  />
+                </div>
+
+                <div className="mt-5 rounded-xl border border-border bg-background/80 p-4">
+                  <p className="text-[11px] text-muted-foreground">
+                    مسیر پیشنهادی بعدی
+                  </p>
+
+                  <p className="mt-1 text-sm font-bold leading-7 text-navy">
+                    {assessmentDestinationLabel(
+                      assessment.recommendation_destination,
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                <ResearchMetric
+                  label="وضعیت داده"
+                  value={assessmentDataStageLabel(
+                    assessment.data_stage,
+                  )}
+                />
+
+                <ResearchMetric
+                  label="یادگیری RNA-seq"
+                  value={`${new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    Math.min(
+                      learningCompleted,
+                      learningTotal,
+                    ),
+                  )} از ${new Intl.NumberFormat(
+                    "fa-IR",
+                  ).format(
+                    learningTotal,
+                  )} مرحله`}
+                />
+
+                <ResearchMetric
+                  label="آخرین بررسی پروژه"
+                  value={formatDateTime(
+                    assessment.updated_at,
+                  )}
+                />
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-teal-200 bg-teal-50/70 p-5 sm:p-6">
+              <div className="flex items-start gap-3">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm">
+                  <Sparkles className="size-4" />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-teal-800">
+                    پیشنهاد شخصی هاب‌ژن
+                  </p>
+
+                  <h3 className="mt-2 text-lg font-bold leading-8 text-navy">
+                    {guidance.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
+                    {guidance.description}
+                  </p>
+
+                  {guidance.focusNodes.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {guidance.focusNodes.map(
+                        (node) => (
+                          <span
+                            key={node}
+                            className="rounded-lg border border-teal-200 bg-background px-3 py-1.5 text-xs font-semibold text-teal-800"
+                          >
+                            {node}
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  )}
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Button
+                      asChild
+                      variant="hero"
+                    >
+                      <Link
+                        to={
+                          guidance.actionHref as any
+                        }
+                      >
+                        {guidance.actionLabel}
+                      </Link>
+                    </Button>
+
+                    <Button
+                      asChild
+                      variant="outline"
+                    >
+                      <Link to="/learn/rna-seq/project">
+                        مشاهده بررسی پروژه
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function RecommendationBadge({
+  level,
+}: {
+  level: ResearchAssessmentRow["recommendation_level"];
+}) {
+  const label =
+    level === "design"
+      ? "آماده طراحی مسیر"
+      : level === "review"
+        ? "نیازمند بازبینی"
+        : level === "learn"
+          ? "نیازمند تکمیل پیش‌نیازها"
+          : "در حال بررسی";
+
+  const className =
+    level === "design"
+      ? "border-primary/20 bg-accent text-primary"
+      : level === "review"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : level === "learn"
+          ? "border-cyan-200 bg-cyan-50 text-cyan-800"
+          : "border-border bg-background text-muted-foreground";
+
+  return (
+    <span
+      className={`rounded-full border px-3 py-1.5 text-[11px] font-semibold ${className}`}
+    >
+      {label}
+    </span>
+  );
+}
+
+function ResearchMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-secondary/20 p-3">
+      <p className="text-[11px] text-muted-foreground">
+        {label}
+      </p>
+
+      <p className="mt-1 text-xs font-bold leading-6 text-navy">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function buildPersonalizedGuidance(
+  assessment: ResearchAssessmentRow | null,
+  learningProgress: LearningProgressRow[],
+): PersonalizedGuidance {
+  if (!assessment) {
+    return {
+      title: "ابتدا پروژه خود را بررسی کنید",
+      description:
+        "بعد از بررسی پروژه، هاب‌ژن می‌تواند یادگیری و تصمیم‌های بعدی را بر اساس هدف واقعی شما شخصی‌سازی کند.",
+      focusNodes: [],
+      actionHref: "/learn/rna-seq/project",
+      actionLabel: "بررسی پروژه من",
+    };
+  }
+
+  if (assessment.status !== "completed") {
+    return {
+      title: "بررسی پروژه را کامل کنید",
+      description:
+        "پاسخ‌های شما ذخیره شده‌اند، اما هنوز اطلاعات کافی برای ساخت پیشنهاد شخصی کامل وجود ندارد.",
+      focusNodes: [],
+      actionHref: "/learn/rna-seq/project",
+      actionLabel: "ادامه بررسی پروژه",
+    };
+  }
+
+  const completedNodeIds = new Set(
+    learningProgress
+      .filter(
+        (row) =>
+          row.selected_answer !== null &&
+          Boolean(row.confidence) &&
+          row.status !== "needs_review",
+      )
+      .map((row) => row.node_id),
+  );
+
+  const reviewNodeIds = new Set(
+    learningProgress
+      .filter(
+        (row) =>
+          row.status === "needs_review",
+      )
+      .map((row) => row.node_id),
+  );
+
+  const nodeTitles: Record<string, string> = {
+    "research-question": "سؤال پژوهشی",
+    "study-design": "طراحی مطالعه",
+    sequencing: "از نمونه تا FASTQ",
+    "quality-control": "کنترل کیفیت",
+    quantification: "کمی‌سازی بیان",
+    "expression-matrix": "ماتریس بیان",
+    normalization: "نرمال‌سازی داده",
+    "sample-exploration": "بررسی ساختار نمونه‌ها",
+    "differential-expression": "تحلیل بیان افتراقی",
+    visualization: "نمایش نتایج",
+    "functional-analysis": "تحلیل عملکردی",
+    interpretation: "تفسیر زیستی",
+  };
+
+  const goalRequirements: Record<string, string[]> = {
+    network: [
+      "study-design",
+      "expression-matrix",
+      "normalization",
+      "sample-exploration",
+    ],
+    biomarker: [
+      "study-design",
+      "differential-expression",
+      "functional-analysis",
+      "interpretation",
+    ],
+    functional: [
+      "differential-expression",
+      "functional-analysis",
+      "interpretation",
+    ],
+    "differential-expression": [
+      "study-design",
+      "expression-matrix",
+      "normalization",
+      "sample-exploration",
+      "differential-expression",
+    ],
+    explore: [
+      "quality-control",
+      "sample-exploration",
+    ],
+    unsure: [
+      "research-question",
+      "study-design",
+      "expression-matrix",
+    ],
+  };
+
+  const required =
+    goalRequirements[
+      assessment.analysis_goal ?? "unsure"
+    ] ?? goalRequirements.unsure;
+
+  const needsAttention = required.filter(
+    (nodeId) =>
+      !completedNodeIds.has(nodeId) ||
+      reviewNodeIds.has(nodeId),
+  );
+
+  const focusNodes = needsAttention
+    .slice(0, 3)
+    .map(
+      (nodeId) =>
+        nodeTitles[nodeId] ?? nodeId,
+    );
+
+  if (focusNodes.length > 0) {
+    const goal = assessmentGoalLabel(
+      assessment.analysis_goal,
+    );
+
+    return {
+      title: `قبل از ادامه ${goal}، این بخش‌ها را تقویت کنید`,
+      description:
+        "این پیشنهاد از ترکیب هدف پروژه شما با وضعیت واقعی مسیر یادگیری ساخته شده است. بخش‌های زیر هنوز تکمیل نشده‌اند یا برای مرور دوباره علامت خورده‌اند.",
+      focusNodes,
+      actionHref: "/learn/rna-seq/navigator",
+      actionLabel: "ادامه مسیر یادگیری",
+    };
+  }
+
+  if (
+    assessment.recommendation_destination ===
+    "network-biology"
+  ) {
+    return {
+      title: "پیش‌نیازهای آموزشی اصلی WGCNA را پوشش داده‌اید",
+      description:
+        "قدم بعدی، بررسی آمادگی واقعی داده برای تحلیل شبکه است؛ به‌ویژه تعداد کل نمونه‌های مستقل، نوع ماتریس بیان و ویژگی‌هایی که قرار است با ماژول‌ها مقایسه شوند.",
+      focusNodes: [],
+      actionHref: "/consultation",
+      actionLabel: "بازبینی آمادگی WGCNA",
+    };
+  }
+
+  if (
+    assessment.recommendation_destination ===
+    "biomarker-discovery"
+  ) {
+    return {
+      title: "حالا روی راهبرد کشف و اعتبارسنجی نشانگر تمرکز کنید",
+      description:
+        "پیش‌نیازهای آموزشی مرتبط تا حد خوبی پوشش داده شده‌اند. قدم بعدی تعریف هدف نشانگر، روش انتخاب کاندیدا و برنامه اعتبارسنجی مستقل است.",
+      focusNodes: [],
+      actionHref: "/consultation",
+      actionLabel: "بازبینی راهبرد نشانگر زیستی",
+    };
+  }
+
+  if (
+    assessment.recommendation_level === "review"
+  ) {
+    return {
+      title: "یادگیری مرتبط خوب پیش رفته؛ حالا طراحی پروژه را بازبینی کنید",
+      description:
+        "بر اساس ارزیابی پروژه، مسئله اصلی دیگر صرفاً آموزشی نیست و بهتر است تصمیم‌های طراحی یا تحلیل متناسب با پروژه واقعی شما بررسی شوند.",
+      focusNodes: [],
+      actionHref: "/consultation",
+      actionLabel: "درخواست بازبینی تخصصی",
+    };
+  }
+
+  return {
+    title: "برای تبدیل این مسیر به یک طرح تحلیل آماده‌اید",
+    description:
+      "پیش‌نیازهای آموزشی مرتبط با هدف فعلی شما پوشش داده شده‌اند. قدم بعدی تبدیل سؤال، داده و طراحی مطالعه به یک نقشه تحلیل دقیق است.",
+    focusNodes: [],
+    actionHref: "/learn/rna-seq/project",
+    actionLabel: "ادامه طراحی پروژه",
+  };
+}
+
+function assessmentGoalLabel(
+  value: string | null,
+) {
+  const labels: Record<string, string> = {
+    "differential-expression":
+      "تحلیل بیان افتراقی",
+    functional:
+      "تحلیل عملکردی و مسیرهای زیستی",
+    network:
+      "تحلیل شبکه و WGCNA",
+    biomarker:
+      "کشف نشانگر زیستی",
+    explore:
+      "بررسی اکتشافی داده",
+    unsure:
+      "تعیین راهبرد تحلیل",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "هنوز مشخص نشده";
+}
+
+function assessmentGoalEnglishLabel(
+  value: string | null,
+) {
+  const labels: Record<string, string> = {
+    "differential-expression":
+      "Differential Expression Analysis",
+    functional:
+      "Functional Analysis",
+    network:
+      "Network Analysis / WGCNA",
+    biomarker:
+      "Biomarker Discovery",
+    explore:
+      "Data Exploration",
+    unsure:
+      "Analysis Strategy",
+  };
+
+  return value
+    ? labels[value] ?? "RNA-seq"
+    : "RNA-seq";
+}
+
+function assessmentDestinationLabel(
+  value: string | null,
+) {
+  const labels: Record<string, string> = {
+    "rna-seq-foundations":
+      "روشن‌کردن پیش‌نیازهای RNA-seq",
+    "differential-expression":
+      "طراحی تحلیل بیان افتراقی",
+    "functional-analysis":
+      "تحلیل عملکردی و مسیرهای زیستی",
+    "network-biology":
+      "بررسی آمادگی برای تحلیل شبکه و WGCNA",
+    "biomarker-discovery":
+      "طراحی مسیر کشف و اعتبارسنجی نشانگر زیستی",
+    "data-exploration":
+      "بررسی ساختار و کیفیت داده",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "در حال تعیین مسیر";
+}
+
+function assessmentDataStageLabel(
+  value: string | null,
+) {
+  const labels: Record<string, string> = {
+    planning:
+      "در مرحله طراحی",
+    fastq:
+      "داده خام FASTQ",
+    "count-matrix":
+      "ماتریس شمارش",
+    "processed-matrix":
+      "ماتریس بیان پردازش‌شده",
+    "public-data":
+      "مجموعه‌داده عمومی",
+    unsure:
+      "نیازمند تعیین نوع داده",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "—";
 }
 
 function LearningProgressCard({
