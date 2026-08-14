@@ -1,11 +1,40 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/learn_/rna-seq_/navigator")({
   component: RnaSeqLearningNavigator,
 });
 
 type Confidence = "unclear" | "developing" | "clear";
+
+type ProgressStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+  | "needs_review";
+
+type SaveState =
+  | "guest"
+  | "loading"
+  | "saving"
+  | "saved"
+  | "error";
+
+type LearningProgressRow = {
+  node_id: string;
+  status: ProgressStatus;
+  confidence: Confidence | null;
+  selected_answer: number | null;
+  is_correct: boolean | null;
+  updated_at: string;
+};
 
 type NavigatorNode = {
   id: string;
@@ -504,13 +533,29 @@ const confidenceOptions: {
 ];
 
 function RnaSeqLearningNavigator() {
+  const { session } = useAuth();
+  const userId = session?.user?.id ?? null;
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, number>>({});
+
+  const [answers, setAnswers] = useState<
+    Record<string, number>
+  >({});
+
   const [confidence, setConfidence] = useState<
     Record<string, Confidence>
   >({});
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const [expanded, setExpanded] = useState<
+    Record<string, boolean>
+  >({});
+
   const [showSummary, setShowSummary] = useState(false);
+
+  const [saveState, setSaveState] =
+    useState<SaveState>("guest");
+
+  const [saveError, setSaveError] = useState("");
 
   const currentNode = navigatorNodes[currentIndex];
 
@@ -586,11 +631,188 @@ function RnaSeqLearningNavigator() {
   const nodeReady =
     hasAnswered && Boolean(currentConfidence);
 
+  /*
+   * Progress loading
+   *
+   * We cast the Supabase client here so this file can use the newly
+   * created table immediately even if generated Database types have
+   * not yet been regenerated.
+   *
+   * RLS remains authoritative in Supabase.
+   */
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProgress() {
+      if (!userId) {
+        setSaveState("guest");
+        setSaveError("");
+        return;
+      }
+
+      setSaveState("loading");
+      setSaveError("");
+
+      const { data, error } = await (supabase as any)
+        .from("learning_progress")
+        .select(
+          "node_id, status, confidence, selected_answer, is_correct, updated_at",
+        )
+        .eq("user_id", userId)
+        .eq("research_line", "rna-seq");
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error(
+          "Failed to load learning progress:",
+          error,
+        );
+
+        setSaveState("error");
+        setSaveError(
+          "بازیابی پیشرفت قبلی انجام نشد. می‌توانید مسیر را ادامه دهید.",
+        );
+
+        return;
+      }
+
+      const rows = (data ?? []) as LearningProgressRow[];
+
+      const loadedAnswers: Record<string, number> = {};
+      const loadedConfidence: Record<string, Confidence> =
+        {};
+
+      for (const row of rows) {
+        if (row.selected_answer !== null) {
+          loadedAnswers[row.node_id] = row.selected_answer;
+        }
+
+        if (row.confidence) {
+          loadedConfidence[row.node_id] = row.confidence;
+        }
+      }
+
+      /*
+       * Saved database values are loaded first.
+       * Any interaction already made in the current page session
+       * takes precedence.
+       */
+      setAnswers((previous) => ({
+        ...loadedAnswers,
+        ...previous,
+      }));
+
+      setConfidence((previous) => ({
+        ...loadedConfidence,
+        ...previous,
+      }));
+
+      /*
+       * Continue from the first node that has not been completely
+       * answered yet.
+       */
+      if (rows.length > 0) {
+        const firstIncompleteIndex =
+          navigatorNodes.findIndex((node) => {
+            const row = rows.find(
+              (item) => item.node_id === node.id,
+            );
+
+            return (
+              !row ||
+              row.selected_answer === null ||
+              !row.confidence
+            );
+          });
+
+        if (firstIncompleteIndex >= 0) {
+          setCurrentIndex(firstIncompleteIndex);
+        } else {
+          setCurrentIndex(navigatorNodes.length - 1);
+        }
+      }
+
+      setSaveState("saved");
+    }
+
+    void loadProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+
+  async function saveNodeProgress(
+    node: NavigatorNode,
+    answer: number,
+    nodeConfidence: Confidence,
+  ) {
+    if (!userId) return;
+
+    const isCorrect =
+      answer === node.checkpoint.correctIndex;
+
+    const status: ProgressStatus =
+      nodeConfidence === "unclear" || !isCorrect
+        ? "needs_review"
+        : "completed";
+
+    setSaveState("saving");
+    setSaveError("");
+
+    const { error } = await (supabase as any)
+      .from("learning_progress")
+      .upsert(
+        {
+          user_id: userId,
+          research_line: "rna-seq",
+          node_id: node.id,
+          status,
+          confidence: nodeConfidence,
+          selected_answer: answer,
+          is_correct: isCorrect,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "user_id,research_line,node_id",
+        },
+      );
+
+    if (error) {
+      console.error(
+        "Failed to save learning progress:",
+        error,
+      );
+
+      setSaveState("error");
+      setSaveError(
+        "ذخیره پیشرفت این مرحله انجام نشد. پاسخ شما فعلاً در همین صفحه باقی می‌ماند.",
+      );
+
+      return;
+    }
+
+    setSaveState("saved");
+  }
+
   function selectAnswer(index: number) {
     setAnswers((previous) => ({
       ...previous,
       [currentNode.id]: index,
     }));
+
+    /*
+     * Save only when both parts of the node are available.
+     * This avoids competing partial writes to the database.
+     */
+    if (currentConfidence) {
+      void saveNodeProgress(
+        currentNode,
+        index,
+        currentConfidence,
+      );
+    }
   }
 
   function selectConfidence(value: Confidence) {
@@ -598,6 +820,14 @@ function RnaSeqLearningNavigator() {
       ...previous,
       [currentNode.id]: value,
     }));
+
+    if (selectedAnswer !== undefined) {
+      void saveNodeProgress(
+        currentNode,
+        selectedAnswer,
+        value,
+      );
+    }
   }
 
   function goToNode(index: number) {
@@ -645,6 +875,7 @@ function RnaSeqLearningNavigator() {
       dir="rtl"
       className="min-h-screen bg-slate-50 text-right text-slate-900"
     >
+      {/* TOP BAR */}
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -680,6 +911,7 @@ function RnaSeqLearningNavigator() {
         </div>
       </header>
 
+      {/* HERO */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-teal-100/70 blur-3xl" />
@@ -745,21 +977,23 @@ function RnaSeqLearningNavigator() {
                 />
               </div>
 
-              <p className="mt-5 text-sm leading-7 text-slate-300">
-                در این نسخه پیشرفت فقط تا زمانی که صفحه باز است نگهداری
-                می‌شود. ذخیره دائمی مسیر در حساب کاربری را در مرحله
-                بعد اضافه می‌کنیم.
-              </p>
+              <ProgressSaveStatus
+                userId={userId}
+                state={saveState}
+                error={saveError}
+              />
             </div>
           </div>
         </div>
       </section>
 
+      {/* MAIN NAVIGATOR */}
       <section
         id="navigator-content"
         className="scroll-mt-6"
       >
         <div className="mx-auto grid max-w-7xl gap-8 px-4 py-12 sm:px-6 lg:px-8 xl:grid-cols-[0.72fr_1.28fr]">
+          {/* SIDE MAP */}
           <aside className="xl:sticky xl:top-6 xl:self-start">
             <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-5">
@@ -866,6 +1100,7 @@ function RnaSeqLearningNavigator() {
             </div>
           </aside>
 
+          {/* ACTIVE NODE */}
           <div>
             {!showSummary ? (
               <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
@@ -1002,6 +1237,7 @@ function RnaSeqLearningNavigator() {
                     </div>
                   </LearningBlock>
 
+                  {/* CHECKPOINT */}
                   <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
                     <div className="flex items-start gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-bold text-white">
@@ -1084,6 +1320,7 @@ function RnaSeqLearningNavigator() {
                     )}
                   </section>
 
+                  {/* CONFIDENCE */}
                   <section>
                     <div>
                       <p className="font-bold text-slate-950">
@@ -1127,6 +1364,20 @@ function RnaSeqLearningNavigator() {
                     </div>
                   </section>
 
+                  {/* SAVE FEEDBACK */}
+                  {userId && saveState === "saving" && (
+                    <div className="rounded-xl border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm text-cyan-800">
+                      در حال ذخیره پیشرفت این مرحله...
+                    </div>
+                  )}
+
+                  {userId && saveState === "error" && saveError && (
+                    <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-7 text-rose-800">
+                      {saveError}
+                    </div>
+                  )}
+
+                  {/* NAVIGATION */}
                   <div className="border-t border-slate-100 pt-7">
                     {!nodeReady && (
                       <div className="mb-4 rounded-xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-500">
@@ -1151,7 +1402,8 @@ function RnaSeqLearningNavigator() {
                         disabled={!nodeReady}
                         className="min-h-11 rounded-xl bg-slate-950 px-6 py-2.5 font-bold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                       >
-                        {currentIndex === navigatorNodes.length - 1
+                        {currentIndex ===
+                        navigatorNodes.length - 1
                           ? "مشاهده جمع‌بندی مسیر"
                           : "رفتن به مرحله بعد"}
                       </button>
@@ -1175,6 +1427,117 @@ function RnaSeqLearningNavigator() {
         </div>
       </section>
     </main>
+  );
+}
+
+function ProgressSaveStatus({
+  userId,
+  state,
+  error,
+}: {
+  userId: string | null;
+  state: SaveState;
+  error: string;
+}) {
+  if (!userId) {
+    return (
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-amber-400" />
+
+          <div>
+            <p className="text-sm font-semibold text-white">
+              حالت مهمان
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-slate-400">
+              می‌توانید کل مسیر را بدون ثبت‌نام استفاده کنید. پیشرفت
+              این نشست پس از بستن صفحه ذخیره دائمی نمی‌شود.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "loading") {
+    return (
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-cyan-400" />
+
+          <div>
+            <p className="text-sm font-semibold text-white">
+              در حال بازیابی پیشرفت...
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-slate-400">
+              مراحل قبلی شما از حساب هاب‌ژن دریافت می‌شوند.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <div className="mt-5 rounded-2xl border border-rose-400/20 bg-rose-400/10 p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-400" />
+
+          <div>
+            <p className="text-sm font-semibold text-white">
+              مشکل در همگام‌سازی
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-slate-300">
+              {error ||
+                "پیشرفت فعلاً با حساب کاربری همگام نشده است."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "saving") {
+    return (
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-cyan-400" />
+
+          <div>
+            <p className="text-sm font-semibold text-white">
+              در حال ذخیره...
+            </p>
+
+            <p className="mt-1 text-xs leading-6 text-slate-400">
+              پیشرفت این مرحله با حساب شما همگام می‌شود.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-4">
+      <div className="flex items-start gap-3">
+        <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-400" />
+
+        <div>
+          <p className="text-sm font-semibold text-white">
+            پیشرفت در حساب شما ذخیره می‌شود
+          </p>
+
+          <p className="mt-1 text-xs leading-6 text-slate-300">
+            بعد از تکمیل هر مرحله، پاسخ و وضعیت یادگیری شما به‌صورت
+            خودکار ذخیره می‌شود.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1326,7 +1689,9 @@ function LearningBlock({
 }) {
   return (
     <section>
-      <h3 className="font-bold text-slate-950">{title}</h3>
+      <h3 className="font-bold text-slate-950">
+        {title}
+      </h3>
 
       <div className="mt-3 text-sm leading-8 text-slate-600">
         {children}
@@ -1390,7 +1755,9 @@ function Legend({
         {marker}
       </span>
 
-      <span className="text-slate-500">{text}</span>
+      <span className="text-slate-500">
+        {text}
+      </span>
     </div>
   );
 }
