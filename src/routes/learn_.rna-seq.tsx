@@ -273,8 +273,8 @@ const entryModes: {
     englishTitle: "Project Mode",
     description:
       "یک سؤال یا پروژه واقعی دارم و می‌خواهم بدانم این مراحل برای پروژه من چگونه‌اند.",
-    destination: "#project-mode",
-    action: "بررسی مسیر پروژه",
+    destination: "/learn/rna-seq/project",
+    action: "بررسی پروژه من",
   },
   {
     id: "problem",
@@ -305,7 +305,6 @@ function RnaSeqHubPage() {
       dir="rtl"
       className="min-h-screen overflow-hidden bg-slate-50 text-right text-slate-900"
     >
-      {/* BREADCRUMB */}
       <div className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -334,7 +333,6 @@ function RnaSeqHubPage() {
         </div>
       </div>
 
-      {/* HERO */}
       <section className="relative overflow-hidden border-b border-slate-200 bg-white">
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -right-28 -top-28 h-96 w-96 rounded-full bg-teal-100/70 blur-3xl" />
@@ -380,17 +378,17 @@ function RnaSeqHubPage() {
                 </a>
 
                 <a
-                  href="#workflow"
-                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-slate-300 bg-white px-6 py-3 font-semibold text-slate-800 transition hover:border-teal-400 hover:text-teal-800"
+                  href="/learn/rna-seq/project"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-teal-300 bg-teal-50 px-6 py-3 font-semibold text-teal-800 transition hover:bg-teal-100"
                 >
-                  مسیر کامل تحلیل را ببینم
+                  پروژه RNA-seq خودم را بررسی کنم
                 </a>
               </div>
 
               <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-slate-500">
                 <HeroPoint text="بدون نیاز به برنامه‌نویسی برای شروع" />
                 <HeroPoint text="تمرکز روی منطق پژوهش" />
-                <HeroPoint text="از مفهوم تا تفسیر زیستی" />
+                <HeroPoint text="از مفهوم تا تصمیم پژوهشی" />
               </div>
             </div>
 
@@ -399,7 +397,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* START */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-start">
           <div>
@@ -449,7 +446,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* CHOOSE MODE */}
       <section
         id="choose-path"
         className="scroll-mt-8 border-y border-slate-200 bg-white"
@@ -542,7 +538,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* WORKFLOW */}
       <section
         id="workflow"
         className="mx-auto max-w-7xl scroll-mt-8 px-4 py-20 sm:px-6 lg:px-8"
@@ -653,7 +648,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* DATA FLOW */}
       <section className="border-y border-slate-200 bg-slate-950 text-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
@@ -708,7 +702,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* PRINCIPLES */}
       <section className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <span className="text-sm font-semibold text-teal-700">
@@ -759,7 +752,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* PROJECT MODE */}
       <section
         id="project-mode"
         className="scroll-mt-8 border-y border-slate-200 bg-white"
@@ -781,20 +773,29 @@ function RnaSeqHubPage() {
 
               <p className="mt-5 leading-8 text-slate-600">
                 حالت پروژه همین مسیر عمومی را روی سؤال پژوهشی، گروه‌ها،
-                نمونه‌ها، نوع داده و اهداف واقعی پروژه شما اعمال
-                می‌کند.
+                نمونه‌ها، نوع داده و هدف واقعی پروژه شما اعمال می‌کند
+                و بر اساس وضعیت پروژه، قدم بعدی مناسب‌تری پیشنهاد
+                می‌دهد.
               </p>
 
               <div className="mt-7 rounded-2xl border border-amber-200 bg-amber-50 p-5">
                 <p className="font-bold text-amber-950">
-                  یک اصل مهم هاب‌ژن
+                  قابل اجرا بودن ≠ مناسب بودن
                 </p>
 
                 <p className="mt-2 text-sm leading-7 text-amber-900/80">
-                  هر تحلیلی که از نظر فنی قابل اجرا باشد، الزاماً
-                  تحلیل مناسبی برای سؤال یا طراحی پژوهش شما نیست.
+                  اینکه یک تحلیل از نظر فنی قابل اجرا باشد، به این
+                  معنی نیست که برای سؤال پژوهشی، داده و طراحی مطالعه
+                  شما انتخاب مناسبی است.
                 </p>
               </div>
+
+              <a
+                href="/learn/rna-seq/project"
+                className="mt-7 inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-950 px-6 py-3 font-bold text-white transition hover:bg-slate-800"
+              >
+                بررسی پروژه RNA-seq من
+              </a>
             </div>
 
             <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6 sm:p-8">
@@ -803,26 +804,26 @@ function RnaSeqHubPage() {
               </p>
 
               <div className="mt-6 space-y-3">
-                <CheckRow text="سؤال زیستی و مقایسه اصلی" />
-                <CheckRow text="تعداد گروه‌ها و تکرارهای زیستی" />
-                <CheckRow text="وضعیت داده: پیش از توالی‌یابی، FASTQ یا ماتریس شمارش" />
-                <CheckRow text="فراداده، اثر دسته‌ای و هم‌متغیرهای احتمالی" />
-                <CheckRow text="هدف تحلیل بیان افتراقی، مسیر زیستی، تحلیل شبکه یا اعتبارسنجی" />
-                <CheckRow text="مراحل مناسب و بخش‌هایی که نیاز به بازبینی دارند" />
+                <CheckRow text="ساختار سؤال پژوهشی و مقایسه اصلی" />
+                <CheckRow text="مرحله فعلی داده: طراحی، FASTQ، ماتریس شمارش یا داده پردازش‌شده" />
+                <CheckRow text="تکرارهای زیستی و محدودیت‌های طراحی مطالعه" />
+                <CheckRow text="فراداده و عوامل احتمالی مداخله‌گر" />
+                <CheckRow text="هدف واقعی تحلیل: بیان افتراقی، تحلیل عملکردی، WGCNA یا نشانگر زیستی" />
+                <CheckRow text="مسیر بعدی مناسب یا نیاز به بازبینی تخصصی" />
               </div>
 
               <div className="mt-7 rounded-2xl bg-slate-950 p-5 text-white">
                 <p className="text-sm font-semibold text-teal-300">
-                  خروجی پیشنهادی
+                  خروجی
                 </p>
 
                 <p className="mt-2 text-lg font-bold">
-                  نقشه اختصاصی پروژه RNA-seq شما
+                  پیشنهاد اولیه متناسب با پروژه شما
                 </p>
 
                 <p className="mt-2 text-sm leading-7 text-slate-300">
-                  مسیری متناسب با وضعیت واقعی پروژه، نه یک دستور ثابت
-                  و یکسان برای همه.
+                  به‌جای یک دستور ثابت برای همه، مقصد بعدی بر اساس
+                  سؤال، داده و هدف پروژه تغییر می‌کند.
                 </p>
               </div>
             </div>
@@ -830,7 +831,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* PROBLEM SOLVER */}
       <section
         id="problem-solver"
         className="mx-auto max-w-7xl scroll-mt-8 px-4 py-20 sm:px-6 lg:px-8"
@@ -887,7 +887,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* CONNECTIONS */}
       <section className="border-y border-slate-200 bg-slate-100">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="max-w-3xl">
@@ -900,8 +899,8 @@ function RnaSeqHubPage() {
             </h2>
 
             <p className="mt-4 leading-8 text-slate-600">
-              وقتی سؤال پژوهشی تغییر می‌کند، ممکن است از این مسیر وارد
-              یکی از حوزه‌های دیگر هاب‌ژن شوید.
+              وقتی سؤال پژوهشی یا هدف تحلیل تغییر می‌کند، ممکن است از
+              این مسیر وارد یکی از حوزه‌های دیگر هاب‌ژن شوید.
             </p>
           </div>
 
@@ -933,7 +932,6 @@ function RnaSeqHubPage() {
         </div>
       </section>
 
-      {/* FINAL */}
       <section className="bg-white">
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-[2rem] bg-slate-950 text-white">
@@ -949,9 +947,8 @@ function RnaSeqHubPage() {
                 </h2>
 
                 <p className="mt-5 max-w-2xl leading-8 text-slate-300">
-                  مسیر یادگیری تعاملی اکنون مفاهیم را مرحله‌به‌مرحله
-                  آموزش می‌دهد و در مراحل بعد، پیشرفت کاربر نیز در حساب
-                  او ذخیره خواهد شد.
+                  می‌توانید ابتدا مسیر را یاد بگیرید یا مستقیماً وضعیت
+                  پروژه واقعی خودتان را بررسی کنید.
                 </p>
 
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -963,10 +960,10 @@ function RnaSeqHubPage() {
                   </a>
 
                   <a
-                    href="/consultation"
+                    href="/learn/rna-seq/project"
                     className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/20 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10"
                   >
-                    مشاوره برای پروژه واقعی
+                    بررسی پروژه من
                   </a>
                 </div>
               </div>
@@ -984,8 +981,8 @@ function RnaSeqHubPage() {
                 </div>
 
                 <div className="mt-8 rounded-2xl border border-teal-400/20 bg-teal-400/10 p-5">
-                  <p className="text-sm font-bold tracking-wide text-teal-200">
-                    سؤال ← داده ← تحلیل ← تفسیر
+                  <p className="text-sm font-bold text-teal-200">
+                    سؤال ← داده ← تحلیل ← تصمیم ← تفسیر
                   </p>
                 </div>
               </div>
@@ -1231,17 +1228,8 @@ function LearningNodeCard({ node }: { node: WorkflowNode }) {
         </LearningSection>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <IOCard
-            label="ورودی"
-            value={node.input}
-            type="IN"
-          />
-
-          <IOCard
-            label="خروجی"
-            value={node.output}
-            type="OUT"
-          />
+          <IOCard label="ورودی" value={node.input} type="IN" />
+          <IOCard label="خروجی" value={node.output} type="OUT" />
         </div>
 
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -1274,11 +1262,6 @@ function LearningNodeCard({ node }: { node: WorkflowNode }) {
           >
             این مفهوم را در مسیر یادگیری تمرین کنم
           </a>
-
-          <p className="mt-3 text-center text-xs leading-6 text-slate-400">
-            در مسیر یادگیری می‌توانید توضیح عمیق‌تر بخوانید، ایستگاه
-            آموزشی انجام دهید و جمع‌بندی یادگیری بگیرید.
-          </p>
         </div>
       </div>
     </article>
@@ -1294,9 +1277,7 @@ function LearningSection({
 }) {
   return (
     <section>
-      <h4 className="text-sm font-bold text-slate-950">
-        {title}
-      </h4>
+      <h4 className="text-sm font-bold text-slate-950">{title}</h4>
 
       <div className="mt-2 text-sm leading-8 text-slate-600">
         {children}
@@ -1317,9 +1298,7 @@ function IOCard({
   return (
     <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-bold text-slate-900">
-          {label}
-        </p>
+        <p className="text-sm font-bold text-slate-900">{label}</p>
 
         <span
           className={[
@@ -1333,9 +1312,7 @@ function IOCard({
         </span>
       </div>
 
-      <p className="mt-3 text-sm leading-7 text-slate-600">
-        {value}
-      </p>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{value}</p>
     </div>
   );
 }
@@ -1355,13 +1332,9 @@ function DataFlowRow({
         {label}
       </p>
 
-      <p className="text-sm text-slate-200">
-        {description}
-      </p>
+      <p className="text-sm text-slate-200">{description}</p>
 
-      <p className="text-sm text-slate-400">
-        {position}
-      </p>
+      <p className="text-sm text-slate-400">{position}</p>
     </div>
   );
 }
@@ -1402,9 +1375,7 @@ function CheckRow({ text }: { text: string }) {
         ✓
       </span>
 
-      <p className="text-sm leading-7 text-slate-700">
-        {text}
-      </p>
+      <p className="text-sm leading-7 text-slate-700">{text}</p>
     </div>
   );
 }
@@ -1422,13 +1393,9 @@ function ProblemCard({
         ?
       </div>
 
-      <h3 className="mt-5 font-bold text-slate-950">
-        {title}
-      </h3>
+      <h3 className="mt-5 font-bold text-slate-950">{title}</h3>
 
-      <p className="mt-2 text-sm leading-7 text-slate-600">
-        {text}
-      </p>
+      <p className="mt-2 text-sm leading-7 text-slate-600">{text}</p>
 
       <div className="mt-4 border-t border-slate-100 pt-4">
         <span className="text-xs font-semibold text-teal-700">
@@ -1461,9 +1428,7 @@ function ResearchConnectionCard({
         {direction}
       </span>
 
-      <h3 className="mt-6 text-lg font-bold text-slate-950">
-        {title}
-      </h3>
+      <h3 className="mt-6 text-lg font-bold text-slate-950">{title}</h3>
 
       <p
         dir="ltr"
@@ -1499,9 +1464,7 @@ function FinalStep({
         {number}
       </span>
 
-      <p className="font-semibold text-slate-200">
-        {text}
-      </p>
+      <p className="font-semibold text-slate-200">{text}</p>
     </div>
   );
 }
