@@ -192,6 +192,7 @@ type PersonalizedGuidance = {
   title: string;
   description: string;
   focusNodes: string[];
+  focusNodeIds: string[];
   actionHref: string;
   actionLabel: string;
 };
@@ -2411,11 +2412,9 @@ function NextBestActionCard({
                       asChild
                       variant="hero"
                     >
-                      <Link
-                        to={action.actionHref as any}
-                      >
+                      <a href={action.actionHref}>
                         {action.actionLabel}
-                      </Link>
+                      </a>
                     </Button>
 
                     {action.secondaryHref &&
@@ -2736,14 +2735,37 @@ function ResearchPathCard({
                   {guidance.focusNodes.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
                       {guidance.focusNodes.map(
-                        (node) => (
-                          <span
-                            key={node}
-                            className="rounded-lg border border-teal-200 bg-background px-3 py-1.5 text-xs font-semibold text-teal-800"
-                          >
-                            {node}
-                          </span>
-                        ),
+                        (node, index) => {
+                          const nodeId =
+                            guidance.focusNodeIds[
+                              index
+                            ];
+
+                          const goalQuery =
+                            assessment.analysis_goal ??
+                            "unsure";
+
+                          const href = nodeId
+                            ? `/learn/rna-seq/navigator?node=${encodeURIComponent(
+                                nodeId,
+                              )}&source=dashboard&goal=${encodeURIComponent(
+                                goalQuery,
+                              )}`
+                            : guidance.actionHref;
+
+                          return (
+                            <a
+                              key={`${node}-${nodeId ?? index}`}
+                              href={href}
+                              className="rounded-lg border border-teal-200 bg-background px-3 py-1.5 text-xs font-semibold text-teal-800 transition hover:border-primary hover:bg-accent"
+                            >
+                              {node}
+                              <span className="mr-1">
+                                ←
+                              </span>
+                            </a>
+                          );
+                        },
                       )}
                     </div>
                   )}
@@ -2753,13 +2775,9 @@ function ResearchPathCard({
                       asChild
                       variant="hero"
                     >
-                      <Link
-                        to={
-                          guidance.actionHref as any
-                        }
-                      >
+                      <a href={guidance.actionHref}>
                         {guidance.actionLabel}
-                      </Link>
+                      </a>
                     </Button>
 
                     <Button
@@ -2843,6 +2861,7 @@ function buildPersonalizedGuidance(
       description:
         "بعد از بررسی پروژه، هاب‌ژن می‌تواند یادگیری و تصمیم‌های بعدی را بر اساس هدف واقعی شما شخصی‌سازی کند.",
       focusNodes: [],
+      focusNodeIds: [],
       actionHref: "/learn/rna-seq/project",
       actionLabel: "بررسی پروژه من",
     };
@@ -2854,6 +2873,7 @@ function buildPersonalizedGuidance(
       description:
         "پاسخ‌های شما ذخیره شده‌اند، اما هنوز اطلاعات کافی برای ساخت پیشنهاد شخصی کامل وجود ندارد.",
       focusNodes: [],
+      focusNodeIds: [],
       actionHref: "/learn/rna-seq/project",
       actionLabel: "ادامه بررسی پروژه",
     };
@@ -2941,25 +2961,43 @@ function buildPersonalizedGuidance(
       reviewNodeIds.has(nodeId),
   );
 
-  const focusNodes = needsAttention
-    .slice(0, 3)
-    .map(
-      (nodeId) =>
-        nodeTitles[nodeId] ?? nodeId,
-    );
+  const focusNodeIds =
+    needsAttention.slice(0, 3);
+
+  const focusNodes = focusNodeIds.map(
+    (nodeId) =>
+      nodeTitles[nodeId] ?? nodeId,
+  );
 
   if (focusNodes.length > 0) {
     const goal = assessmentGoalLabel(
       assessment.analysis_goal,
     );
 
+    const firstFocusId =
+      focusNodeIds[0];
+
+    const firstFocusTitle =
+      focusNodes[0];
+
+    const goalQuery =
+      assessment.analysis_goal ??
+      "unsure";
+
     return {
       title: `قبل از ادامه ${goal}، این بخش‌ها را تقویت کنید`,
       description:
         "این پیشنهاد از ترکیب هدف پروژه شما با وضعیت واقعی مسیر یادگیری ساخته شده است. بخش‌های زیر هنوز تکمیل نشده‌اند یا برای مرور دوباره علامت خورده‌اند.",
       focusNodes,
-      actionHref: "/learn/rna-seq/navigator",
-      actionLabel: "ادامه مسیر یادگیری",
+      focusNodeIds,
+      actionHref:
+        `/learn/rna-seq/navigator?node=${encodeURIComponent(
+          firstFocusId,
+        )}&source=dashboard&goal=${encodeURIComponent(
+          goalQuery,
+        )}`,
+      actionLabel:
+        `رفتن به «${firstFocusTitle}»`,
     };
   }
 
@@ -2972,6 +3010,7 @@ function buildPersonalizedGuidance(
       description:
         "قدم بعدی، بررسی آمادگی واقعی داده برای تحلیل شبکه است؛ به‌ویژه تعداد کل نمونه‌های مستقل، نوع ماتریس بیان و ویژگی‌هایی که قرار است با ماژول‌ها مقایسه شوند.",
       focusNodes: [],
+      focusNodeIds: [],
       actionHref: "/consultation",
       actionLabel: "بازبینی آمادگی WGCNA",
     };
@@ -2986,6 +3025,7 @@ function buildPersonalizedGuidance(
       description:
         "پیش‌نیازهای آموزشی مرتبط تا حد خوبی پوشش داده شده‌اند. قدم بعدی تعریف هدف نشانگر، روش انتخاب کاندیدا و برنامه اعتبارسنجی مستقل است.",
       focusNodes: [],
+      focusNodeIds: [],
       actionHref: "/consultation",
       actionLabel: "بازبینی راهبرد نشانگر زیستی",
     };
@@ -2999,6 +3039,7 @@ function buildPersonalizedGuidance(
       description:
         "بر اساس ارزیابی پروژه، مسئله اصلی دیگر صرفاً آموزشی نیست و بهتر است تصمیم‌های طراحی یا تحلیل متناسب با پروژه واقعی شما بررسی شوند.",
       focusNodes: [],
+      focusNodeIds: [],
       actionHref: "/consultation",
       actionLabel: "درخواست بازبینی تخصصی",
     };
@@ -3009,6 +3050,7 @@ function buildPersonalizedGuidance(
     description:
       "پیش‌نیازهای آموزشی مرتبط با هدف فعلی شما پوشش داده شده‌اند. قدم بعدی تبدیل سؤال، داده و طراحی مطالعه به یک نقشه تحلیل دقیق است.",
     focusNodes: [],
+    focusNodeIds: [],
     actionHref: "/learn/rna-seq/project",
     actionLabel: "ادامه طراحی پروژه",
   };
