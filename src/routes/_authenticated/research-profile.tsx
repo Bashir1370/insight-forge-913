@@ -52,6 +52,12 @@ type ExperienceLevel =
   | "intermediate"
   | "advanced";
 
+type ProgrammingLevel =
+  | "none"
+  | "basic"
+  | "intermediate"
+  | "advanced";
+
 type ResearchLine =
   | "rna-seq"
   | "public-data"
@@ -90,7 +96,7 @@ type ResearchProfileForm = {
   careerStage: CareerStage | "";
   discipline: string;
   bioinformaticsLevel: ExperienceLevel | "";
-  programmingLevel: ExperienceLevel | "";
+  programmingLevel: ProgrammingLevel | "";
   primaryResearchLine: ResearchLine | "";
   primaryGoal: PrimaryGoal | "";
   preferredSupport: PreferredSupport | "";
@@ -102,7 +108,7 @@ type ResearchProfileRow = {
   career_stage: CareerStage | null;
   discipline: string | null;
   bioinformatics_level: ExperienceLevel | null;
-  programming_level: ExperienceLevel | null;
+  programming_level: ProgrammingLevel | null;
   primary_research_line: ResearchLine | null;
   primary_goal: PrimaryGoal | null;
   preferred_support: PreferredSupport | null;
@@ -171,6 +177,28 @@ const levelOptions: {
   {
     id: "new",
     title: "تازه‌کار",
+  },
+  {
+    id: "basic",
+    title: "مقدماتی",
+  },
+  {
+    id: "intermediate",
+    title: "متوسط",
+  },
+  {
+    id: "advanced",
+    title: "پیشرفته",
+  },
+];
+
+const programmingLevelOptions: {
+  id: ProgrammingLevel;
+  title: string;
+}[] = [
+  {
+    id: "none",
+    title: "بدون تجربه",
   },
   {
     id: "basic",
@@ -699,7 +727,7 @@ function ResearchProfilePage() {
             />
 
             <div className="mt-6">
-              <LevelSelector
+              <ProgrammingLevelSelector
                 title="تجربه شما در برنامه‌نویسی"
                 value={form.programmingLevel}
                 onChange={(value) =>
@@ -1072,6 +1100,48 @@ function LevelSelector({
 
       <div className="mt-3 grid gap-2 sm:grid-cols-4">
         {levelOptions.map(
+          (option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() =>
+                onChange(option.id)
+              }
+              className={[
+                "rounded-xl border px-3 py-3 text-sm font-semibold transition",
+                value === option.id
+                  ? "border-primary bg-accent text-primary"
+                  : "border-border bg-background text-muted-foreground hover:border-primary/40",
+              ].join(" ")}
+            >
+              {option.title}
+            </button>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProgrammingLevelSelector({
+  title,
+  value,
+  onChange,
+}: {
+  title: string;
+  value: ProgrammingLevel | "";
+  onChange: (
+    value: ProgrammingLevel,
+  ) => void;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-bold text-navy">
+        {title}
+      </p>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-4">
+        {programmingLevelOptions.map(
           (option) => (
             <button
               key={option.id}
