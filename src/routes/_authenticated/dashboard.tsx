@@ -196,6 +196,18 @@ type PersonalizedGuidance = {
   actionLabel: string;
 };
 
+type NextBestAction = {
+  stage: "learn" | "design" | "consult";
+  eyebrow: string;
+  title: string;
+  description: string;
+  reason: string;
+  actionHref: string;
+  actionLabel: string;
+  secondaryHref?: string;
+  secondaryLabel?: string;
+};
+
 const RNA_SEQ_TOTAL_NODES = 12;
 
 const PROJECT_FILES_BUCKET = "project-files";
@@ -764,6 +776,14 @@ function Dashboard() {
     buildPersonalizedGuidance(
       researchAssessment,
       learningProgress,
+    );
+
+  const nextBestAction =
+    buildNextBestAction(
+      researchAssessment,
+      personalizedGuidance,
+      completedLearningCount,
+      learningReviewCount,
     );
 
   const currentConsultations =
@@ -1461,6 +1481,14 @@ function Dashboard() {
           {loadError}
         </p>
       )}
+
+      <NextBestActionCard
+        action={nextBestAction}
+        loading={
+          assessmentLoading ||
+          learningLoading
+        }
+      />
 
       <ResearchPathCard
         assessment={
@@ -2206,6 +2234,269 @@ function Dashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+function buildNextBestAction(
+  assessment: ResearchAssessmentRow | null,
+  guidance: PersonalizedGuidance,
+  learningCompleted: number,
+  learningReviewCount: number,
+): NextBestAction {
+  if (!assessment) {
+    return {
+      stage: "design",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: "وضعیت پروژه RNA-seq خود را مشخص کنید",
+      description:
+        "با پنج سؤال کوتاه، هدف تحلیل، وضعیت داده و محدودیت‌های اصلی پروژه مشخص می‌شوند تا پیشنهادهای بعدی هاب‌ژن واقعاً برای پروژه شما شخصی شوند.",
+      reason:
+        learningCompleted > 0
+          ? `شما ${new Intl.NumberFormat("fa-IR").format(learningCompleted)} مرحله از مسیر یادگیری را طی کرده‌اید؛ حالا بهتر است این دانش را به پروژه واقعی خودتان متصل کنید.`
+          : "بدون شناخت پروژه واقعی شما، هاب‌ژن فقط می‌تواند پیشنهادهای عمومی ارائه کند.",
+      actionHref: "/learn/rna-seq/project",
+      actionLabel: "بررسی پروژه RNA-seq من",
+      secondaryHref: "/learn/rna-seq/navigator",
+      secondaryLabel: "ادامه مسیر یادگیری",
+    };
+  }
+
+  if (assessment.status !== "completed") {
+    return {
+      stage: "design",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: "بررسی نیمه‌کاره پروژه را کامل کنید",
+      description:
+        "پاسخ‌های قبلی شما ذخیره شده‌اند. با تکمیل بررسی پروژه، هاب‌ژن می‌تواند مسیر علمی و قدم بعدی مناسب را دقیق‌تر تعیین کند.",
+      reason:
+        "تا زمانی که هدف تحلیل و وضعیت پروژه کامل نشده باشند، پیشنهاد شخصی نهایی ساخته نمی‌شود.",
+      actionHref: "/learn/rna-seq/project",
+      actionLabel: "ادامه بررسی پروژه",
+      secondaryHref: "/learn/rna-seq/navigator",
+      secondaryLabel: "مرور مسیر RNA-seq",
+    };
+  }
+
+  if (guidance.focusNodes.length > 0) {
+    const firstFocus = guidance.focusNodes[0];
+    const remaining = guidance.focusNodes.length - 1;
+
+    return {
+      stage: "learn",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: `اول «${firstFocus}» را تقویت کنید`,
+      description:
+        remaining > 0
+          ? `برای هدف فعلی پروژه شما، این مفهوم و ${new Intl.NumberFormat("fa-IR").format(remaining)} بخش مرتبط دیگر هنوز نیاز به تکمیل یا مرور دارند.`
+          : "برای هدف فعلی پروژه شما، این مفهوم هنوز نیاز به تکمیل یا مرور دارد.",
+      reason:
+        `این پیشنهاد از ترکیب هدف «${assessmentGoalLabel(assessment.analysis_goal)}» با پیشرفت واقعی شما در Navigator ساخته شده است.`,
+      actionHref: guidance.actionHref,
+      actionLabel: guidance.actionLabel,
+      secondaryHref: "/learn/rna-seq/project",
+      secondaryLabel: "مشاهده بررسی پروژه",
+    };
+  }
+
+  if (
+    assessment.recommendation_destination ===
+      "network-biology" ||
+    assessment.recommendation_destination ===
+      "biomarker-discovery" ||
+    assessment.recommendation_level === "review"
+  ) {
+    return {
+      stage: "consult",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: guidance.title,
+      description: guidance.description,
+      reason:
+        learningReviewCount > 0
+          ? `پیش‌نیازهای اصلی پوشش داده شده‌اند، اما ${new Intl.NumberFormat("fa-IR").format(learningReviewCount)} مرحله از مسیر یادگیری هنوز برای مرور علامت خورده است. بازبینی تخصصی می‌تواند تصمیم پروژه را دقیق‌تر کند.`
+          : "پیش‌نیازهای آموزشی مرتبط تا حد خوبی پوشش داده شده‌اند و مسئله اصلی حالا به تصمیم‌های پروژه‌محور نزدیک شده است.",
+      actionHref: guidance.actionHref,
+      actionLabel: guidance.actionLabel,
+      secondaryHref: "/learn/rna-seq/project",
+      secondaryLabel: "مشاهده بررسی پروژه",
+    };
+  }
+
+  return {
+    stage: "design",
+    eyebrow: "اقدام بعدی پیشنهادی",
+    title: guidance.title,
+    description: guidance.description,
+    reason:
+      "بر اساس وضعیت فعلی یادگیری و ارزیابی پروژه، قدم بعدی شما بیشتر به طراحی مسیر تحلیل مربوط است تا یادگیری عمومی.",
+    actionHref: guidance.actionHref,
+    actionLabel: guidance.actionLabel,
+    secondaryHref: "/learn/rna-seq/navigator",
+    secondaryLabel: "مرور مسیر یادگیری",
+  };
+}
+
+function NextBestActionCard({
+  action,
+  loading,
+}: {
+  action: NextBestAction;
+  loading: boolean;
+}) {
+  const stageIndex =
+    action.stage === "learn"
+      ? 0
+      : action.stage === "design"
+        ? 1
+        : 2;
+
+  const stages = [
+    {
+      id: "learn",
+      title: "یادگیری",
+      description: "فهم مفاهیم لازم",
+    },
+    {
+      id: "design",
+      title: "طراحی پروژه",
+      description: "اتصال دانش به پروژه واقعی",
+    },
+    {
+      id: "consult",
+      title: "بازبینی تخصصی",
+      description: "تصمیم‌های پروژه‌محور",
+    },
+  ];
+
+  return (
+    <section className="card-elevated mt-8 overflow-hidden border-primary/20">
+      <div className="grid lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="p-5 sm:p-7">
+          <div className="flex items-start gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
+              <Sparkles className="size-5" />
+            </span>
+
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-primary">
+                {action.eyebrow}
+              </p>
+
+              {loading ? (
+                <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="size-4 animate-spin" />
+                  در حال تعیین بهترین قدم بعدی…
+                </div>
+              ) : (
+                <>
+                  <h2 className="mt-2 text-xl font-extrabold leading-8 text-navy sm:text-2xl">
+                    {action.title}
+                  </h2>
+
+                  <p className="mt-3 max-w-3xl text-sm leading-7 text-muted-foreground">
+                    {action.description}
+                  </p>
+
+                  <div className="mt-5 rounded-2xl border border-primary/15 bg-accent/25 p-4">
+                    <p className="text-[11px] font-bold text-primary">
+                      چرا این قدم؟
+                    </p>
+
+                    <p className="mt-1 text-xs leading-6 text-muted-foreground">
+                      {action.reason}
+                    </p>
+                  </div>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Button
+                      asChild
+                      variant="hero"
+                    >
+                      <Link
+                        to={action.actionHref as any}
+                      >
+                        {action.actionLabel}
+                      </Link>
+                    </Button>
+
+                    {action.secondaryHref &&
+                      action.secondaryLabel && (
+                        <Button
+                          asChild
+                          variant="outline"
+                        >
+                          <Link
+                            to={action.secondaryHref as any}
+                          >
+                            {action.secondaryLabel}
+                          </Link>
+                        </Button>
+                      )}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-border bg-secondary/20 p-5 sm:p-6 lg:border-r lg:border-t-0">
+          <p className="text-xs font-bold text-navy">
+            جایگاه فعلی شما
+          </p>
+
+          <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
+            این مسیر با تغییر رفتار و وضعیت پروژه شما به‌روزرسانی می‌شود.
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {stages.map((stage, index) => {
+              const active = index === stageIndex;
+              const passed = index < stageIndex;
+
+              return (
+                <div
+                  key={stage.id}
+                  className={`rounded-2xl border p-3 transition ${
+                    active
+                      ? "border-primary/30 bg-accent/50"
+                      : "border-border bg-background/70"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        passed
+                          ? "bg-primary/10 text-primary"
+                          : active
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-muted-foreground"
+                      }`}
+                    >
+                      {passed ? "✓" : new Intl.NumberFormat("fa-IR").format(index + 1)}
+                    </span>
+
+                    <div>
+                      <p
+                        className={`text-xs font-bold ${
+                          active
+                            ? "text-primary"
+                            : "text-navy"
+                        }`}
+                      >
+                        {stage.title}
+                      </p>
+
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">
+                        {stage.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
