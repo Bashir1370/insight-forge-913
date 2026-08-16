@@ -9,6 +9,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
 export const Route = createFileRoute("/learn_/rna-seq_/navigator")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    node:
+      typeof search.node === "string"
+        ? search.node
+        : undefined,
+    source:
+      typeof search.source === "string"
+        ? search.source
+        : undefined,
+    goal:
+      typeof search.goal === "string"
+        ? search.goal
+        : undefined,
+  }),
   component: RnaSeqLearningNavigator,
 });
 
@@ -536,6 +550,22 @@ function RnaSeqLearningNavigator() {
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
 
+  const search = Route.useSearch();
+
+  const requestedNodeId = search.node;
+  const requestedSource = search.source;
+  const requestedGoal = search.goal;
+
+  const requestedNodeIndex = useMemo(
+    () =>
+      requestedNodeId
+        ? navigatorNodes.findIndex(
+            (node) => node.id === requestedNodeId,
+          )
+        : -1,
+    [requestedNodeId],
+  );
+
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [answers, setAnswers] = useState<
@@ -645,6 +675,11 @@ function RnaSeqLearningNavigator() {
 
     async function loadProgress() {
       if (!userId) {
+        if (requestedNodeIndex >= 0) {
+          setCurrentIndex(requestedNodeIndex);
+          setShowSummary(false);
+        }
+
         setSaveState("guest");
         setSaveError("");
         return;
@@ -709,10 +744,14 @@ function RnaSeqLearningNavigator() {
       }));
 
       /*
-       * Continue from the first node that has not been completely
-       * answered yet.
+       * A deep link from the researcher dashboard takes priority over
+       * normal resume behavior. Without a requested node, continue from
+       * the first node that has not been completely answered yet.
        */
-      if (rows.length > 0) {
+      if (requestedNodeIndex >= 0) {
+        setCurrentIndex(requestedNodeIndex);
+        setShowSummary(false);
+      } else if (rows.length > 0) {
         const firstIncompleteIndex =
           navigatorNodes.findIndex((node) => {
             const row = rows.find(
@@ -741,7 +780,7 @@ function RnaSeqLearningNavigator() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, requestedNodeIndex]);
 
   async function saveNodeProgress(
     node: NavigatorNode,
@@ -1102,6 +1141,16 @@ function RnaSeqLearningNavigator() {
 
           {/* ACTIVE NODE */}
           <div>
+            {!showSummary &&
+              requestedSource === "dashboard" &&
+              requestedNodeIndex >= 0 &&
+              currentNode.id === requestedNodeId && (
+                <DashboardRecommendationContext
+                  node={currentNode}
+                  goal={requestedGoal}
+                />
+              )}
+
             {!showSummary ? (
               <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
                 <div className="border-b border-slate-200 bg-gradient-to-l from-teal-50 via-white to-white p-6 sm:p-8">
@@ -1428,6 +1477,78 @@ function RnaSeqLearningNavigator() {
       </section>
     </main>
   );
+}
+
+function DashboardRecommendationContext({
+  node,
+  goal,
+}: {
+  node: NavigatorNode;
+  goal?: string;
+}) {
+  const goalLabel = navigatorGoalLabel(goal);
+
+  return (
+    <section className="mb-5 overflow-hidden rounded-3xl border border-teal-200 bg-gradient-to-l from-teal-50 via-white to-cyan-50 p-5 shadow-sm sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-teal-700 text-lg font-bold text-white">
+          ↗
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-bold text-teal-700">
+            پیشنهاد شخصی از داشبورد پژوهشگر
+          </p>
+
+          <h2 className="mt-2 text-lg font-bold leading-8 text-slate-950">
+            چرا هاب‌ژن «{node.title}» را به شما پیشنهاد کرده؟
+          </h2>
+
+          <p className="mt-2 text-sm leading-7 text-slate-600">
+            هدف فعلی پروژه شما «{goalLabel}» است و این مفهوم یکی از
+            بخش‌های مرتبط با تصمیم بعدی شماست. آن را مرور کنید، ایستگاه
+            یادگیری را پاسخ دهید و میزان روشن بودن مفهوم را مشخص کنید؛
+            داشبورد بعداً از همین پیشرفت برای به‌روزرسانی پیشنهاد شخصی
+            شما استفاده می‌کند.
+          </p>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <span className="rounded-lg border border-teal-200 bg-white px-3 py-1.5 text-xs font-semibold text-teal-800">
+              هدف پروژه: {goalLabel}
+            </span>
+
+            <a
+              href="/dashboard"
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-teal-300 hover:text-teal-800"
+            >
+              بازگشت به داشبورد
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function navigatorGoalLabel(value?: string) {
+  const labels: Record<string, string> = {
+    "differential-expression":
+      "تحلیل بیان افتراقی",
+    functional:
+      "تحلیل عملکردی و مسیرهای زیستی",
+    network:
+      "تحلیل شبکه و WGCNA",
+    biomarker:
+      "کشف نشانگر زیستی",
+    explore:
+      "بررسی اکتشافی داده",
+    unsure:
+      "تعیین راهبرد تحلیل",
+  };
+
+  return value
+    ? labels[value] ?? "مسیر فعلی پروژه"
+    : "مسیر فعلی پروژه";
 }
 
 function ProgressSaveStatus({
