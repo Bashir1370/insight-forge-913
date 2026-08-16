@@ -13,11 +13,10 @@ export const Route = createFileRoute(
       {
         name: "description",
         content:
-          "یک درس تعاملی برای فهم تفاوت Genome، Transcriptome و Gene Expression در هاب‌ژن.",
+          "یک درس تعاملی برای فهم تفاوت ژنوم، ترنسکریپتوم و بیان ژن در هاب‌ژن.",
       },
     ],
   }),
 
-  component:
-    GenomeToTranscriptomeLesson,
+  component: GenomeToTranscriptomeLesson,
 });
