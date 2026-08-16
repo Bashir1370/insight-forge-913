@@ -209,6 +209,20 @@ type NextBestAction = {
   secondaryLabel?: string;
 };
 
+type PersonalPlanStep = {
+  state: "done" | "current" | "next";
+  title: string;
+  description: string;
+  href?: string;
+  actionLabel?: string;
+};
+
+type PersonalResearchPlan = {
+  title: string;
+  description: string;
+  steps: PersonalPlanStep[];
+};
+
 const RNA_SEQ_TOTAL_NODES = 12;
 
 const PROJECT_FILES_BUCKET = "project-files";
@@ -785,6 +799,13 @@ function Dashboard() {
       personalizedGuidance,
       completedLearningCount,
       learningReviewCount,
+    );
+
+  const personalResearchPlan =
+    buildPersonalResearchPlan(
+      researchAssessment,
+      personalizedGuidance,
+      completedLearningCount,
     );
 
   const currentConsultations =
@@ -1485,6 +1506,7 @@ function Dashboard() {
 
       <NextBestActionCard
         action={nextBestAction}
+        plan={personalResearchPlan}
         loading={
           assessmentLoading ||
           learningLoading
@@ -2336,48 +2358,175 @@ function buildNextBestAction(
   };
 }
 
+function buildPersonalResearchPlan(
+  assessment: ResearchAssessmentRow | null,
+  guidance: PersonalizedGuidance,
+  learningCompleted: number,
+): PersonalResearchPlan {
+  if (!assessment) {
+    return {
+      title: "برنامه شخصی ۳ قدمی",
+      description:
+        "این برنامه با شناخت بیشتر هاب‌ژن از پروژه شما به‌صورت زنده تغییر می‌کند.",
+      steps: [
+        {
+          state:
+            learningCompleted > 0
+              ? "done"
+              : "next",
+          title:
+            learningCompleted > 0
+              ? "یادگیری RNA-seq را شروع کرده‌اید"
+              : "آشنایی با مسیر RNA-seq",
+          description:
+            learningCompleted > 0
+              ? `${new Intl.NumberFormat("fa-IR").format(learningCompleted)} مرحله از مسیر یادگیری را تا اینجا طی کرده‌اید.`
+              : "برای ساختن نقشه ذهنی اولیه می‌توانید مسیر تعاملی RNA-seq را شروع کنید.",
+          href:
+            learningCompleted > 0
+              ? undefined
+              : "/learn/rna-seq/navigator",
+          actionLabel:
+            learningCompleted > 0
+              ? undefined
+              : "شروع یادگیری",
+        },
+        {
+          state: "current",
+          title: "پروژه RNA-seq خود را بررسی کنید",
+          description:
+            "پنج سؤال کوتاه کمک می‌کنند هدف تحلیل، وضعیت داده و محدودیت‌های پروژه مشخص شوند.",
+          href: "/learn/rna-seq/project",
+          actionLabel: "بررسی پروژه",
+        },
+        {
+          state: "next",
+          title: "مسیر پژوهشی اختصاصی دریافت کنید",
+          description:
+            "بعد از بررسی پروژه، هاب‌ژن مسیر یادگیری، طراحی یا بازبینی مناسب را بر اساس پاسخ‌های شما فعال می‌کند.",
+        },
+      ],
+    };
+  }
+
+  if (assessment.status !== "completed") {
+    return {
+      title: "برنامه شخصی ۳ قدمی",
+      description:
+        "پاسخ‌های فعلی شما ذخیره شده‌اند و برنامه با تکمیل بررسی دقیق‌تر می‌شود.",
+      steps: [
+        {
+          state: "done",
+          title: "بررسی پروژه را شروع کرده‌اید",
+          description:
+            "هاب‌ژن بخشی از اطلاعات پروژه شما را دریافت و در حساب پژوهشگر ذخیره کرده است.",
+        },
+        {
+          state: "current",
+          title: "بررسی پروژه را کامل کنید",
+          description:
+            "هدف تحلیل و وضعیت پروژه را کامل کنید تا مسیر علمی بعدی قابل تعیین باشد.",
+          href: "/learn/rna-seq/project",
+          actionLabel: "ادامه بررسی",
+        },
+        {
+          state: "next",
+          title: "پیشنهاد شخصی پروژه را دریافت کنید",
+          description:
+            "پس از تکمیل بررسی، Dashboard قدم بعدی را از روی پروژه واقعی شما تعیین می‌کند.",
+        },
+      ],
+    };
+  }
+
+  if (guidance.focusNodes.length > 0) {
+    const firstFocus = guidance.focusNodes[0];
+    const remaining = guidance.focusNodes.length - 1;
+
+    return {
+      title: "برنامه شخصی ۳ قدمی",
+      description:
+        `این برنامه برای هدف «${assessmentGoalLabel(assessment.analysis_goal)}» ساخته شده است.`,
+      steps: [
+        {
+          state: "done",
+          title: "بررسی پروژه تکمیل شد",
+          description:
+            `تمرکز فعلی پروژه شما «${assessmentGoalLabel(assessment.analysis_goal)}» تشخیص داده شده است.`,
+        },
+        {
+          state: "current",
+          title: `«${firstFocus}» را تقویت کنید`,
+          description:
+            remaining > 0
+              ? `این مفهوم و ${new Intl.NumberFormat("fa-IR").format(remaining)} بخش مرتبط دیگر برای هدف فعلی شما هنوز نیاز به تکمیل یا مرور دارند.`
+              : "این مفهوم برای هدف فعلی پروژه شما هنوز نیاز به تکمیل یا مرور دارد.",
+          href: guidance.actionHref,
+          actionLabel: guidance.actionLabel,
+        },
+        {
+          state: "next",
+          title: assessmentDestinationLabel(
+            assessment.recommendation_destination,
+          ),
+          description:
+            "بعد از پوشش پیش‌نیازهای فعلی، این مرحله به اقدام اصلی شما تبدیل می‌شود.",
+        },
+      ],
+    };
+  }
+
+  return {
+    title: "برنامه شخصی ۳ قدمی",
+    description:
+      `پیش‌نیازهای اصلی مرتبط با «${assessmentGoalLabel(assessment.analysis_goal)}» تا حد خوبی پوشش داده شده‌اند.`,
+    steps: [
+      {
+        state: "done",
+        title: "بررسی پروژه تکمیل شد",
+        description:
+          `هدف پروژه شما «${assessmentGoalLabel(assessment.analysis_goal)}» ثبت شده است.`,
+      },
+      {
+        state: "done",
+        title: "پیش‌نیازهای آموزشی اصلی پوشش داده شد",
+        description:
+          "مفاهیم کلیدی مرتبط با هدف فعلی در Navigator تکمیل شده‌اند یا نیاز فوری به مرور ندارند.",
+      },
+      {
+        state: "current",
+        title: guidance.title,
+        description: guidance.description,
+        href: guidance.actionHref,
+        actionLabel: guidance.actionLabel,
+      },
+    ],
+  };
+}
+
 function NextBestActionCard({
   action,
+  plan,
   loading,
 }: {
   action: NextBestAction;
+  plan: PersonalResearchPlan;
   loading: boolean;
 }) {
-  const stageIndex =
-    action.stage === "learn"
-      ? 0
-      : action.stage === "design"
-        ? 1
-        : 2;
-
-  const stages = [
-    {
-      id: "learn",
-      title: "یادگیری",
-      description: "فهم مفاهیم لازم",
-    },
-    {
-      id: "design",
-      title: "طراحی پروژه",
-      description: "اتصال دانش به پروژه واقعی",
-    },
-    {
-      id: "consult",
-      title: "بازبینی تخصصی",
-      description: "تصمیم‌های پروژه‌محور",
-    },
-  ];
+  const doneSteps = plan.steps.filter(
+    (step) => step.state === "done",
+  ).length;
 
   return (
     <section className="card-elevated mt-8 overflow-hidden border-primary/20">
-      <div className="grid lg:grid-cols-[1.25fr_0.75fr]">
+      <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
         <div className="p-5 sm:p-7">
           <div className="flex items-start gap-3">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-sm">
               <Sparkles className="size-5" />
             </span>
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-xs font-bold text-primary">
                 {action.eyebrow}
               </p>
@@ -2438,61 +2587,99 @@ function NextBestActionCard({
         </div>
 
         <div className="border-t border-border bg-secondary/20 p-5 sm:p-6 lg:border-r lg:border-t-0">
-          <p className="text-xs font-bold text-navy">
-            جایگاه فعلی شما
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold text-navy">
+                {plan.title}
+              </p>
 
-          <p className="mt-1 text-[11px] leading-6 text-muted-foreground">
-            این مسیر با تغییر رفتار و وضعیت پروژه شما به‌روزرسانی می‌شود.
-          </p>
+              <p className="mt-1 max-w-md text-[11px] leading-6 text-muted-foreground">
+                {plan.description}
+              </p>
+            </div>
+
+            <span className="rounded-full border border-border bg-background px-3 py-1 text-[10px] font-semibold text-muted-foreground">
+              {new Intl.NumberFormat("fa-IR").format(doneSteps)} از ۳ انجام شده
+            </span>
+          </div>
 
           <div className="mt-5 space-y-3">
-            {stages.map((stage, index) => {
-              const active = index === stageIndex;
-              const passed = index < stageIndex;
+            {plan.steps.map((step, index) => {
+              const done = step.state === "done";
+              const current = step.state === "current";
 
               return (
                 <div
-                  key={stage.id}
-                  className={`rounded-2xl border p-3 transition ${
-                    active
-                      ? "border-primary/30 bg-accent/50"
-                      : "border-border bg-background/70"
+                  key={`${step.title}-${index}`}
+                  className={`rounded-2xl border p-4 transition ${
+                    current
+                      ? "border-primary/30 bg-accent/50 shadow-sm"
+                      : done
+                        ? "border-primary/15 bg-background"
+                        : "border-border bg-background/70"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-start gap-3">
                     <span
-                      className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                        passed
+                      className={`flex size-8 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                        done
                           ? "bg-primary/10 text-primary"
-                          : active
+                          : current
                             ? "bg-primary text-primary-foreground"
                             : "bg-secondary text-muted-foreground"
                       }`}
                     >
-                      {passed ? "✓" : new Intl.NumberFormat("fa-IR").format(index + 1)}
+                      {done
+                        ? "✓"
+                        : new Intl.NumberFormat("fa-IR").format(
+                            index + 1,
+                          )}
                     </span>
 
-                    <div>
-                      <p
-                        className={`text-xs font-bold ${
-                          active
-                            ? "text-primary"
-                            : "text-navy"
-                        }`}
-                      >
-                        {stage.title}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p
+                          className={`text-xs font-bold leading-6 ${
+                            current
+                              ? "text-primary"
+                              : "text-navy"
+                          }`}
+                        >
+                          {step.title}
+                        </p>
+
+                        {current && (
+                          <span className="rounded-full bg-primary/10 px-2 py-1 text-[9px] font-bold text-primary">
+                            الان
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mt-1 text-[10px] leading-5 text-muted-foreground">
+                        {step.description}
                       </p>
 
-                      <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {stage.description}
-                      </p>
+                      {step.href &&
+                        step.actionLabel &&
+                        !done && (
+                          <a
+                            href={step.href}
+                            className="mt-3 inline-flex items-center rounded-lg border border-primary/20 bg-background px-3 py-1.5 text-[10px] font-bold text-primary transition hover:bg-accent"
+                          >
+                            {step.actionLabel}
+                            <span className="mr-1">←</span>
+                          </a>
+                        )}
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+
+          <p className="mt-4 text-[10px] leading-5 text-muted-foreground">
+            با تکمیل هر تعامل مهم، این سه قدم دوباره محاسبه می‌شوند.
+          </p>
         </div>
       </div>
     </section>
