@@ -1,10 +1,9 @@
 import type { ReactNode } from "react";
 
 type InteractiveLessonShellProps = {
-  code: string;
+  foundationIndex: number;
   total: number;
   title: string;
-  englishTitle: string;
   subtitle: string;
   currentScene: number;
   sceneCount: number;
@@ -13,18 +12,19 @@ type InteractiveLessonShellProps = {
 };
 
 export function InteractiveLessonShell({
-  code,
+  foundationIndex,
   total,
   title,
-  englishTitle,
   subtitle,
   currentScene,
   sceneCount,
   sceneLabel,
   children,
 }: InteractiveLessonShellProps) {
+  const faNumber = new Intl.NumberFormat("fa-IR");
+
   const foundationPercent = Math.round(
-    (Number(code.replace(/\D/g, "")) / total) * 100,
+    (foundationIndex / total) * 100,
   );
 
   const lessonPercent = Math.round(
@@ -55,7 +55,7 @@ export function InteractiveLessonShell({
             <span className="text-slate-300">/</span>
 
             <span className="font-semibold text-slate-900">
-              مبانی
+              مبانی ترنسکریپتومیکس
             </span>
           </div>
 
@@ -82,24 +82,14 @@ export function InteractiveLessonShell({
                   مبانی ترنسکریپتومیکس
                 </span>
 
-                <span
-                  dir="ltr"
-                  className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500"
-                >
-                  Transcriptomics Foundations
+                <span className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-500">
+                  درس {faNumber.format(foundationIndex)} از {faNumber.format(total)}
                 </span>
               </div>
 
               <h1 className="mt-5 text-3xl font-black leading-[1.45] text-slate-950 sm:text-5xl">
                 {title}
               </h1>
-
-              <p
-                dir="ltr"
-                className="mt-2 text-left text-sm font-semibold text-teal-700"
-              >
-                {englishTitle}
-              </p>
 
               <p className="mt-5 max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
                 {subtitle}
@@ -110,11 +100,11 @@ export function InteractiveLessonShell({
               <div className="flex items-end justify-between gap-4">
                 <div>
                   <p className="text-xs text-slate-400">
-                    جایگاه شما در Foundations
+                    پیشرفت در مبانی ترنسکریپتومیکس
                   </p>
 
                   <p className="mt-2 text-2xl font-black">
-                    {code} از {new Intl.NumberFormat("fa-IR").format(total)}
+                    {faNumber.format(foundationIndex)} از {faNumber.format(total)}
                   </p>
                 </div>
 
@@ -126,17 +116,13 @@ export function InteractiveLessonShell({
               <div className="mt-5">
                 <div className="mb-2 flex items-center justify-between text-[11px] text-slate-400">
                   <span>پیشرفت همین درس</span>
-                  <span>
-                    {new Intl.NumberFormat("fa-IR").format(lessonPercent)}٪
-                  </span>
+                  <span>{faNumber.format(lessonPercent)}٪</span>
                 </div>
 
                 <div className="h-2 overflow-hidden rounded-full bg-white/10">
                   <div
                     className="h-full rounded-full bg-teal-400 transition-all duration-500"
-                    style={{
-                      width: `${lessonPercent}%`,
-                    }}
+                    style={{ width: `${lessonPercent}%` }}
                   />
                 </div>
               </div>
@@ -147,17 +133,22 @@ export function InteractiveLessonShell({
                 </p>
 
                 <p className="mt-2 text-sm font-bold leading-7 text-white">
-                  Genome ≠ Transcriptome
+                  ژنوم ≠ ترنسکریپتوم
                 </p>
               </div>
 
-              <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-cyan-400/70"
-                  style={{
-                    width: `${foundationPercent}%`,
-                  }}
-                />
+              <div className="mt-4">
+                <div className="mb-2 flex items-center justify-between text-[11px] text-slate-400">
+                  <span>پیشرفت کل مبانی</span>
+                  <span>{faNumber.format(foundationPercent)}٪</span>
+                </div>
+
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-cyan-400/70"
+                    style={{ width: `${foundationPercent}%` }}
+                  />
+                </div>
               </div>
             </div>
           </div>
