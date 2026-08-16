@@ -25,6 +25,7 @@ import {
   Send,
   Sparkles,
   Target,
+  UserRound,
   Users2,
   XCircle,
 } from "lucide-react";
@@ -186,6 +187,68 @@ type ResearchAssessmentRow = {
   status: "active" | "completed" | "archived";
   created_at: string;
   updated_at: string;
+};
+
+type ResearchProfileRow = {
+  career_stage:
+    | "bachelor"
+    | "master"
+    | "phd"
+    | "postdoc"
+    | "faculty"
+    | "researcher"
+    | "other"
+    | null;
+  discipline: string | null;
+  bioinformatics_level:
+    | "new"
+    | "basic"
+    | "intermediate"
+    | "advanced"
+    | null;
+  programming_level:
+    | "none"
+    | "basic"
+    | "intermediate"
+    | "advanced"
+    | null;
+  primary_research_line:
+    | "rna-seq"
+    | "public-data"
+    | "network-biology"
+    | "single-cell"
+    | "microbiome"
+    | "unsure"
+    | null;
+  primary_goal:
+    | "learn"
+    | "design-project"
+    | "analyze-data"
+    | "solve-problem"
+    | "interpret-results"
+    | "publish-research"
+    | "consultation"
+    | "unsure"
+    | null;
+  preferred_support:
+    | "guided-learning"
+    | "project-design"
+    | "analysis-strategy"
+    | "problem-solving"
+    | "results-interpretation"
+    | "expert-review"
+    | "unsure"
+    | null;
+  interests: string[] | null;
+  notes: string | null;
+  updated_at: string;
+};
+
+type ResearcherContext = {
+  title: string;
+  summary: string;
+  strategyNote: string;
+  badges: string[];
 };
 
 type PersonalizedGuidance = {
@@ -440,6 +503,21 @@ function Dashboard() {
   const [
     assessmentError,
     setAssessmentError,
+  ] = useState<string | null>(null);
+
+  const [
+    researchProfile,
+    setResearchProfile,
+  ] = useState<ResearchProfileRow | null>(null);
+
+  const [
+    researchProfileLoading,
+    setResearchProfileLoading,
+  ] = useState(false);
+
+  const [
+    researchProfileError,
+    setResearchProfileError,
   ] = useState<string | null>(null);
 
   useEffect(() => {
@@ -730,9 +808,67 @@ function Dashboard() {
     void loadResearchAssessment();
   }, [user?.id]);
 
+  const loadResearchProfile =
+    async () => {
+      if (!user?.id) return;
+
+      setResearchProfileLoading(true);
+      setResearchProfileError(null);
+
+      const { data, error } =
+        await (supabase as any)
+          .from("research_profiles")
+          .select(
+            `
+              career_stage,
+              discipline,
+              bioinformatics_level,
+              programming_level,
+              primary_research_line,
+              primary_goal,
+              preferred_support,
+              interests,
+              notes,
+              updated_at
+            `,
+          )
+          .eq(
+            "user_id",
+            user.id,
+          )
+          .maybeSingle();
+
+      if (error) {
+        console.error(error);
+
+        setResearchProfile(null);
+        setResearchProfileError(
+          "دریافت پروفایل پژوهشی انجام نشد.",
+        );
+        setResearchProfileLoading(false);
+
+        return;
+      }
+
+      setResearchProfile(
+        data
+          ? (data as ResearchProfileRow)
+          : null,
+      );
+
+      setResearchProfileLoading(false);
+    };
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    void loadResearchProfile();
+  }, [user?.id]);
+
   const refreshResearchProfile =
     async () => {
       await Promise.all([
+        loadResearchProfile(),
         loadLearningProgress(),
         loadResearchAssessment(),
       ]);
@@ -793,7 +929,7 @@ function Dashboard() {
       learningProgress,
     );
 
-  const nextBestAction =
+  const baseNextBestAction =
     buildNextBestAction(
       researchAssessment,
       personalizedGuidance,
@@ -801,11 +937,37 @@ function Dashboard() {
       learningReviewCount,
     );
 
-  const personalResearchPlan =
+  const nextBestAction =
+    personalizeNextBestAction(
+      baseNextBestAction,
+      researchProfile,
+      researchAssessment,
+    );
+
+  const basePersonalResearchPlan =
     buildPersonalResearchPlan(
       researchAssessment,
       personalizedGuidance,
       completedLearningCount,
+    );
+
+  const personalResearchPlan =
+    personalizePersonalResearchPlan(
+      basePersonalResearchPlan,
+      researchProfile,
+      researchAssessment,
+      completedLearningCount,
+    );
+
+  const researcherContext =
+    buildResearcherContext(
+      researchProfile,
+      researchAssessment,
+    );
+
+  const researchProfilePercent =
+    calculateResearchProfileCompleteness(
+      researchProfile,
     );
 
   const currentConsultations =
@@ -1504,12 +1666,23 @@ function Dashboard() {
         </p>
       )}
 
+      <ResearchProfileCard
+        profile={researchProfile}
+        context={researcherContext}
+        completeness={researchProfilePercent}
+        loading={researchProfileLoading}
+        error={researchProfileError}
+        assessment={researchAssessment}
+        onRefresh={refreshResearchProfile}
+      />
+
       <NextBestActionCard
         action={nextBestAction}
         plan={personalResearchPlan}
         loading={
           assessmentLoading ||
-          learningLoading
+          learningLoading ||
+          researchProfileLoading
         }
       />
 
@@ -2258,6 +2431,677 @@ function Dashboard() {
       )}
     </div>
   );
+}
+
+
+function ResearchProfileCard({
+  profile,
+  context,
+  completeness,
+  loading,
+  error,
+  assessment,
+  onRefresh,
+}: {
+  profile: ResearchProfileRow | null;
+  context: ResearcherContext;
+  completeness: number;
+  loading: boolean;
+  error: string | null;
+  assessment: ResearchAssessmentRow | null;
+  onRefresh: () => Promise<void>;
+}) {
+  return (
+    <section className="card-elevated mt-8 overflow-hidden">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border bg-gradient-to-l from-primary/5 via-background to-background p-5 sm:p-6">
+        <div className="flex items-start gap-3">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <UserRound className="size-5" />
+          </span>
+
+          <div>
+            <p className="text-xs font-semibold text-primary">
+              پروفایل پژوهشی من
+            </p>
+
+            <h2 className="mt-1 text-lg font-bold text-navy">
+              تصویر پژوهشی شما
+            </h2>
+
+            <p
+              dir="ltr"
+              className="mt-0.5 text-left text-[11px] font-semibold text-muted-foreground"
+            >
+              Research Profile
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={() => {
+            void onRefresh();
+          }}
+          className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-xs text-muted-foreground transition hover:bg-secondary disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`size-4 ${
+              loading
+                ? "animate-spin"
+                : ""
+            }`}
+          />
+          بروزرسانی
+        </button>
+      </div>
+
+      <div className="p-5 sm:p-6">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+            <Loader2 className="size-4 animate-spin" />
+            در حال ساخت تصویر پژوهشی شما…
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-5">
+            <p className="text-sm font-bold text-navy">
+              پروفایل پژوهشی فعلاً دریافت نشد.
+            </p>
+
+            <p className="mt-2 text-xs leading-6 text-muted-foreground">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => {
+                void onRefresh();
+              }}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-semibold text-navy hover:bg-secondary"
+            >
+              <RefreshCw className="size-4 text-primary" />
+              تلاش دوباره
+            </button>
+          </div>
+        ) : !profile ? (
+          <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div>
+              <p className="text-base font-bold text-navy">
+                هنوز پروفایل پژوهشی خود را نساخته‌اید.
+              </p>
+
+              <p className="mt-2 max-w-3xl text-sm leading-7 text-muted-foreground">
+                با ثبت جایگاه پژوهشی، سطح بیوانفورماتیک، حوزه اصلی و
+                هدف فعلی، هاب‌ژن می‌تواند اقدام بعدی و توضیحات داشبورد
+                را متناسب‌تر با خود شما تنظیم کند.
+              </p>
+            </div>
+
+            <Button
+              asChild
+              variant="hero"
+            >
+              <a href="/research-profile">
+                ساخت پروفایل پژوهشی
+              </a>
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-5 lg:grid-cols-[1fr_290px]">
+            <div>
+              <div className="rounded-2xl border border-primary/20 bg-accent/25 p-5 sm:p-6">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-bold text-primary">
+                      هاب‌ژن شما را این‌طور می‌شناسد
+                    </p>
+
+                    <h3 className="mt-2 text-xl font-extrabold leading-8 text-navy">
+                      {context.title}
+                    </h3>
+                  </div>
+
+                  <span className="rounded-full border border-primary/20 bg-background px-3 py-1.5 text-[11px] font-bold text-primary">
+                    {new Intl.NumberFormat("fa-IR").format(
+                      completeness,
+                    )}
+                    ٪ تکمیل
+                  </span>
+                </div>
+
+                <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                  {context.summary}
+                </p>
+
+                {context.badges.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {context.badges.map((badge) => (
+                      <span
+                        key={badge}
+                        className="rounded-lg border border-border bg-background px-3 py-1.5 text-[11px] font-semibold text-navy"
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-cyan-200 bg-cyan-50/60 p-5">
+                <p className="text-xs font-bold text-cyan-900">
+                  این پروفایل چه تغییری در هاب‌ژن ایجاد می‌کند؟
+                </p>
+
+                <p className="mt-2 text-sm leading-7 text-cyan-900/80">
+                  {context.strategyNote}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <ResearchMetric
+                label="حوزه پایه"
+                value={researchLineLabel(
+                  profile.primary_research_line,
+                )}
+              />
+
+              <ResearchMetric
+                label="هدف فعلی"
+                value={primaryGoalLabel(
+                  profile.primary_goal,
+                )}
+              />
+
+              <ResearchMetric
+                label="نوع حمایت ترجیحی"
+                value={preferredSupportLabel(
+                  profile.preferred_support,
+                )}
+              />
+
+              <ResearchMetric
+                label="تمرکز پروژه فعلی"
+                value={
+                  assessment
+                    ? assessmentGoalLabel(
+                        assessment.analysis_goal,
+                      )
+                    : "هنوز پروژه‌ای ارزیابی نشده"
+                }
+              />
+
+              <Button
+                asChild
+                variant="outline"
+                className="w-full"
+              >
+                <a href="/research-profile">
+                  ویرایش پروفایل پژوهشی
+                </a>
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function calculateResearchProfileCompleteness(
+  profile: ResearchProfileRow | null,
+) {
+  if (!profile) return 0;
+
+  const values = [
+    profile.career_stage,
+    profile.discipline?.trim(),
+    profile.bioinformatics_level,
+    profile.programming_level,
+    profile.primary_research_line,
+    profile.primary_goal,
+    profile.preferred_support,
+  ];
+
+  const completed =
+    values.filter(Boolean).length;
+
+  return Math.round(
+    (completed / values.length) * 100,
+  );
+}
+
+function buildResearcherContext(
+  profile: ResearchProfileRow | null,
+  assessment: ResearchAssessmentRow | null,
+): ResearcherContext {
+  if (!profile) {
+    return {
+      title: "پروفایل پژوهشی هنوز ساخته نشده است",
+      summary:
+        "با تکمیل پروفایل، هاب‌ژن می‌تواند بین علاقه کلی شما، سطح تجربه و تمرکز پروژه فعلی تفاوت قائل شود.",
+      strategyNote:
+        "تا زمانی که پروفایل پژوهشی کامل نشده باشد، پیشنهادهای Dashboard بیشتر بر رفتار یادگیری و ارزیابی پروژه تکیه می‌کنند.",
+      badges: [],
+    };
+  }
+
+  const career =
+    careerStageLabel(
+      profile.career_stage,
+    );
+
+  const discipline =
+    profile.discipline?.trim();
+
+  const primaryLine =
+    researchLineLabel(
+      profile.primary_research_line,
+    );
+
+  const primaryGoal =
+    primaryGoalLabel(
+      profile.primary_goal,
+    );
+
+  const currentFocus =
+    assessment
+      ? assessmentGoalLabel(
+          assessment.analysis_goal,
+        )
+      : null;
+
+  const title =
+    discipline
+      ? `${career} در ${discipline}`
+      : career;
+
+  const summaryParts = [
+    `حوزه پایه شما «${primaryLine}» است.`,
+    `هدف فعلی ثبت‌شده در هاب‌ژن «${primaryGoal}» است.`,
+  ];
+
+  if (currentFocus) {
+    summaryParts.push(
+      `در پروژه فعلی، تمرکز شما روی «${currentFocus}» قرار گرفته است.`,
+    );
+  }
+
+  const lowBioinformatics =
+    profile.bioinformatics_level ===
+      "new" ||
+    profile.bioinformatics_level ===
+      "basic";
+
+  const lowProgramming =
+    profile.programming_level ===
+      "none" ||
+    profile.programming_level ===
+      "basic";
+
+  const advancedBioinformatics =
+    profile.bioinformatics_level ===
+      "advanced";
+
+  let strategyNote =
+    "هاب‌ژن از این اطلاعات برای اولویت‌بندی پیشنهادهای آموزشی، طراحی پروژه و نوع حمایت بعدی استفاده می‌کند.";
+
+  if (
+    lowBioinformatics ||
+    lowProgramming
+  ) {
+    strategyNote =
+      "با توجه به سطح فعلی ثبت‌شده، هاب‌ژن توضیح مفهومی، تصمیم‌گیری پژوهشی و مسیر مرحله‌به‌مرحله را قبل از جزئیات برنامه‌نویسی و ابزارها در اولویت می‌گذارد.";
+  } else if (
+    advancedBioinformatics
+  ) {
+    strategyNote =
+      "با توجه به سطح پیشرفته‌تر ثبت‌شده، هاب‌ژن می‌تواند سریع‌تر از مرور مفاهیم پایه عبور کند و روی طراحی تحلیل، محدودیت‌های روش و تصمیم‌های پروژه‌محور تمرکز بیشتری بگذارد.";
+  }
+
+  const badges = [
+    career,
+    profile.bioinformatics_level
+      ? `بیوانفورماتیک: ${experienceLevelLabel(
+          profile.bioinformatics_level,
+        )}`
+      : null,
+    profile.programming_level
+      ? `برنامه‌نویسی: ${experienceLevelLabel(
+          profile.programming_level,
+        )}`
+      : null,
+    profile.primary_research_line
+      ? primaryLine
+      : null,
+  ].filter(
+    (value): value is string =>
+      Boolean(value),
+  );
+
+  return {
+    title,
+    summary:
+      summaryParts.join(" "),
+    strategyNote,
+    badges,
+  };
+}
+
+function personalizeNextBestAction(
+  baseAction: NextBestAction,
+  profile: ResearchProfileRow | null,
+  assessment: ResearchAssessmentRow | null,
+): NextBestAction {
+  if (!profile) {
+    return baseAction;
+  }
+
+  if (
+    !assessment &&
+    profile.primary_research_line &&
+    profile.primary_research_line !==
+      "rna-seq" &&
+    profile.primary_research_line !==
+      "unsure"
+  ) {
+    return {
+      stage: "learn",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: `حوزه اصلی شما «${researchLineLabel(
+        profile.primary_research_line,
+      )}» ثبت شده است`,
+      description:
+        "این ترجیح در پروفایل شما حفظ شده است. در نسخه فعلی، مسیر تعاملی RNA-seq کامل‌تر است؛ از بخش آموزش می‌توانید مسیرهای موجود را ببینید و بدون تغییر حوزه اصلی خود، محتوای مناسب را انتخاب کنید.",
+      reason:
+        "هاب‌ژن بین «حوزه پایه پژوهشگر» و «پروژه فعلی» تفاوت قائل می‌شود و شما را صرفاً به دلیل فعال بودن یک ابزار به مسیر نامرتبط هدایت نمی‌کند.",
+      actionHref: "/learn",
+      actionLabel: "مشاهده مسیرهای آموزشی",
+      secondaryHref: "/research-profile",
+      secondaryLabel: "ویرایش پروفایل پژوهشی",
+    };
+  }
+
+  if (
+    !assessment &&
+    profile.primary_goal === "learn"
+  ) {
+    return {
+      stage: "learn",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: "مسیر RNA-seq را متناسب با سطح فعلی‌تان ادامه دهید",
+      description:
+        "چون هدف فعلی شما در پروفایل «یادگیری مفاهیم» ثبت شده، فعلاً یادگیری هدایت‌شده بر ورود مستقیم به طراحی پروژه اولویت دارد.",
+      reason:
+        profile.bioinformatics_level ===
+          "new" ||
+        profile.bioinformatics_level ===
+          "basic"
+          ? "سطح بیوانفورماتیک شما تازه‌کار یا مقدماتی ثبت شده است؛ بنابراین هاب‌ژن ابتدا نقشه ذهنی و تصمیم‌های پایه را تقویت می‌کند."
+          : "هدف صریح شما یادگیری است؛ هاب‌ژن این ترجیح را از اقدام‌های پروژه‌محور جدا نگه می‌دارد.",
+      actionHref: "/learn/rna-seq/navigator",
+      actionLabel: "ادامه مسیر یادگیری",
+      secondaryHref: "/learn/rna-seq/project",
+      secondaryLabel: "بررسی پروژه واقعی",
+    };
+  }
+
+  if (
+    !assessment &&
+    profile.primary_goal ===
+      "consultation"
+  ) {
+    return {
+      stage: "consult",
+      eyebrow: "اقدام بعدی پیشنهادی",
+      title: "نیاز پژوهشی خود را برای مشاوره ثبت کنید",
+      description:
+        "در پروفایل شما «دریافت مشاوره تخصصی» به‌عنوان هدف فعلی ثبت شده است. می‌توانید موضوع و مسئله اصلی را مستقیماً برای بازبینی تخصصی ارسال کنید.",
+      reason:
+        "این اقدام مستقیماً از هدفی که خودتان در پروفایل پژوهشی انتخاب کرده‌اید گرفته شده است.",
+      actionHref: "/consultation",
+      actionLabel: "ثبت درخواست مشاوره",
+      secondaryHref: "/learn/rna-seq/project",
+      secondaryLabel: "ابتدا پروژه را ارزیابی کنم",
+    };
+  }
+
+  let reason =
+    baseAction.reason;
+
+  const lowBioinformatics =
+    profile.bioinformatics_level ===
+      "new" ||
+    profile.bioinformatics_level ===
+      "basic";
+
+  const lowProgramming =
+    profile.programming_level ===
+      "none" ||
+    profile.programming_level ===
+      "basic";
+
+  if (
+    baseAction.stage === "learn" &&
+    (lowBioinformatics ||
+      lowProgramming)
+  ) {
+    reason +=
+      " همچنین سطح فعلی شما در پروفایل نشان می‌دهد که توضیح مفهومی و مسیر مرحله‌به‌مرحله باید قبل از جزئیات برنامه‌نویسی در اولویت بماند.";
+  } else if (
+    baseAction.stage ===
+      "consult" &&
+    profile.preferred_support ===
+      "expert-review"
+  ) {
+    reason +=
+      " این مرحله با ترجیح ثبت‌شده شما برای «بازبینی متخصص» نیز هم‌راستا است.";
+  } else if (
+    baseAction.stage ===
+      "design" &&
+    profile.primary_goal ===
+      "design-project"
+  ) {
+    reason +=
+      " این مرحله با هدف فعلی شما برای «طراحی پروژه پژوهشی» هم‌راستا است.";
+  }
+
+  return {
+    ...baseAction,
+    reason,
+  };
+}
+
+function personalizePersonalResearchPlan(
+  basePlan: PersonalResearchPlan,
+  profile: ResearchProfileRow | null,
+  assessment: ResearchAssessmentRow | null,
+  learningCompleted: number,
+): PersonalResearchPlan {
+  if (!profile) {
+    return basePlan;
+  }
+
+  if (
+    !assessment &&
+    profile.primary_goal === "learn"
+  ) {
+    return {
+      title: "برنامه شخصی ۳ قدمی",
+      description:
+        "این برنامه از هدف «یادگیری مفاهیم» در پروفایل شما شروع می‌شود و بعد به پروژه واقعی متصل خواهد شد.",
+      steps: [
+        {
+          state: "current",
+          title:
+            learningCompleted > 0
+              ? "مسیر یادگیری RNA-seq را ادامه دهید"
+              : "نقشه ذهنی RNA-seq را بسازید",
+          description:
+            learningCompleted > 0
+              ? `${new Intl.NumberFormat(
+                  "fa-IR",
+                ).format(
+                  learningCompleted,
+                )} مرحله را تا اینجا مرور کرده‌اید؛ قدم فعلی ادامه همان مسیر است.`
+              : "قبل از طراحی پروژه، ساختار کلی مسیر تحلیل را به‌صورت تعاملی مرور کنید.",
+          href: "/learn/rna-seq/navigator",
+          actionLabel:
+            learningCompleted > 0
+              ? "ادامه یادگیری"
+              : "شروع یادگیری",
+        },
+        {
+          state: "next",
+          title: "دانش را به پروژه واقعی متصل کنید",
+          description:
+            "وقتی نقشه ذهنی اولیه شکل گرفت، Project Mode وضعیت پروژه واقعی شما را بررسی می‌کند.",
+          href: "/learn/rna-seq/project",
+          actionLabel: "بررسی پروژه",
+        },
+        {
+          state: "next",
+          title: "مسیر پژوهشی اختصاصی دریافت کنید",
+          description:
+            "Dashboard هدف پروژه، یادگیری و پروفایل شما را کنار هم قرار می‌دهد و قدم بعدی را دوباره محاسبه می‌کند.",
+        },
+      ],
+    };
+  }
+
+  if (
+    !assessment &&
+    profile.primary_goal ===
+      "consultation"
+  ) {
+    return {
+      title: "برنامه شخصی ۳ قدمی",
+      description:
+        "این برنامه از هدف فعلی شما برای دریافت مشاوره تخصصی ساخته شده است.",
+      steps: [
+        {
+          state: "current",
+          title: "موضوع مشاوره را ثبت کنید",
+          description:
+            "مسئله اصلی، سؤال یا تصمیمی را که نیاز به بازبینی تخصصی دارد مشخص کنید.",
+          href: "/consultation",
+          actionLabel: "ثبت درخواست",
+        },
+        {
+          state: "next",
+          title: "در صورت نیاز، پروژه را ساختاربندی کنید",
+          description:
+            "اگر مسئله شما به یک پروژه RNA-seq مربوط باشد، Project Mode می‌تواند داده و هدف تحلیل را دقیق‌تر مشخص کند.",
+          href: "/learn/rna-seq/project",
+          actionLabel: "بررسی پروژه",
+        },
+        {
+          state: "next",
+          title: "پیشنهادهای بعدی با نتیجه بازبینی هماهنگ می‌شوند",
+          description:
+            "پس از ثبت اطلاعات بیشتر، Dashboard دوباره مسیر پژوهشی و اقدام بعدی را محاسبه می‌کند.",
+        },
+      ],
+    };
+  }
+
+  return {
+    ...basePlan,
+    description:
+      `این برنامه با هدف «${primaryGoalLabel(
+        profile.primary_goal,
+      )}» در پروفایل و وضعیت واقعی پروژه شما هماهنگ شده است.`,
+  };
+}
+
+function careerStageLabel(
+  value: ResearchProfileRow["career_stage"],
+) {
+  const labels: Record<string, string> = {
+    bachelor: "دانشجوی کارشناسی",
+    master: "دانشجوی کارشناسی ارشد",
+    phd: "دانشجوی دکتری",
+    postdoc: "پژوهشگر پسادکتری",
+    faculty: "عضو هیئت علمی",
+    researcher: "پژوهشگر",
+    other: "پژوهشگر",
+  };
+
+  return value
+    ? labels[value] ?? "پژوهشگر"
+    : "پژوهشگر";
+}
+
+function experienceLevelLabel(
+  value:
+    | ResearchProfileRow["bioinformatics_level"]
+    | ResearchProfileRow["programming_level"],
+) {
+  const labels: Record<string, string> = {
+    none: "بدون تجربه",
+    new: "تازه‌کار",
+    basic: "مقدماتی",
+    intermediate: "متوسط",
+    advanced: "پیشرفته",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "مشخص نشده";
+}
+
+function researchLineLabel(
+  value: ResearchProfileRow["primary_research_line"],
+) {
+  const labels: Record<string, string> = {
+    "rna-seq": "ترنسکریپتومیکس و RNA-seq",
+    "public-data": "پژوهش با داده‌های عمومی",
+    "network-biology": "زیست‌شناسی شبکه‌ای و نشانگر زیستی",
+    "single-cell": "ترنسکریپتومیکس تک‌سلولی",
+    microbiome: "میکروبیوم و تحلیل 16S",
+    unsure: "هنوز مشخص نشده",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "هنوز مشخص نشده";
+}
+
+function primaryGoalLabel(
+  value: ResearchProfileRow["primary_goal"],
+) {
+  const labels: Record<string, string> = {
+    learn: "یادگیری مفاهیم",
+    "design-project": "طراحی پروژه پژوهشی",
+    "analyze-data": "تحلیل داده",
+    "solve-problem": "حل مشکل در تحلیل",
+    "interpret-results": "تفسیر نتایج",
+    "publish-research": "تقویت پروژه برای مقاله یا انتشار",
+    consultation: "دریافت مشاوره تخصصی",
+    unsure: "هنوز مشخص نشده",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "هنوز مشخص نشده";
+}
+
+function preferredSupportLabel(
+  value: ResearchProfileRow["preferred_support"],
+) {
+  const labels: Record<string, string> = {
+    "guided-learning": "آموزش هدایت‌شده",
+    "project-design": "طراحی پروژه",
+    "analysis-strategy": "راهبرد تحلیل",
+    "problem-solving": "حل مسئله",
+    "results-interpretation": "تفسیر نتایج",
+    "expert-review": "بازبینی متخصص",
+    unsure: "هنوز مشخص نشده",
+  };
+
+  return value
+    ? labels[value] ?? value
+    : "هنوز مشخص نشده";
 }
 
 function buildNextBestAction(
