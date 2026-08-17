@@ -875,13 +875,13 @@ export function RnaDiversityLesson() {
                   در درس چهارم بین لایه‌های DNA، RNA، پروتئین و فنوتیپ تفکیک می‌کنیم و یاد می‌گیریم از داده RNA چه ادعاهایی می‌توان کرد و چه ادعاهایی به شواهد بیشتری نیاز دارند.
                 </p>
 
-                <button
-                  type="button"
-                  disabled
-                  className="mt-5 rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500"
+                <a
+                  href="/learn/transcriptomics/foundations/what-transcriptomics-measures"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800"
                 >
-                  درس چهارم در مرحله بعد ساخته می‌شود
-                </button>
+                  ورود به درس چهارم
+                  <ArrowLeft className="size-4" />
+                </a>
               </div>
             </SceneCard>
           )}
