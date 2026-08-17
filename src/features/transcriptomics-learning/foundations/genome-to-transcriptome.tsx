@@ -845,13 +845,13 @@ export function GenomeToTranscriptomeLesson() {
                   در درس دوم از مدل ذهنی ژنوم و ترنسکریپتوم وارد مفهوم سطح بیان، تغییر بیان و تفاوت «وجود ژن» با «میزان بیان» می‌شویم.
                 </p>
 
-                <button
-                  type="button"
-                  disabled
-                  className="mt-5 rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500"
+                <a
+                  href="/learn/transcriptomics/foundations/gene-expression"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800"
                 >
-                  درس دوم در مرحله بعد ساخته می‌شود
-                </button>
+                  ورود به درس دوم
+                  <ArrowLeft className="size-4" />
+                </a>
               </div>
             </SceneCard>
           )}
