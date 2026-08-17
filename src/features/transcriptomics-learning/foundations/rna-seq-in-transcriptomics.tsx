@@ -359,7 +359,7 @@ export function RnaSeqInTranscriptomicsLesson() {
       foundationIndex={7}
       total={7}
       title="RNA-seq در نقشه ترنسکریپتومیکس کجاست؟"
-      subtitle="در این درس آخر Foundations، جای RNA-seq را در نقشه علمی ترنسکریپتومیکس مشخص می‌کنیم و مسیر نمونه زیستی تا FASTQ، کمی‌سازی، ماتریس بیان، تحلیل و تفسیر را به هم متصل می‌کنیم."
+      subtitle="در این درس آخر مبانی ترنسکریپتومیکس، جای RNA-seq را در نقشه علمی ترنسکریپتومیکس مشخص می‌کنیم و مسیر نمونه زیستی تا FASTQ، کمی‌سازی، ماتریس بیان، تحلیل و تفسیر را به هم متصل می‌کنیم."
       currentScene={scene}
       sceneCount={sceneTitles.length}
       sceneLabel={sceneTitles[scene]}
@@ -657,7 +657,7 @@ export function RnaSeqInTranscriptomicsLesson() {
             <SceneCard
               eyebrow="پروژه همراه شما"
               title="داروی X در سلول‌های سرطان پانکراس"
-              description="تمام هفت درس Foundations را حالا روی یک مسیر واقعی‌تر به هم وصل می‌کنیم."
+              description="تمام هفت درس مبانی ترنسکریپتومیکس را حالا روی یک مسیر واقعی‌تر به هم وصل می‌کنیم."
             >
               <div className="grid gap-3 md:grid-cols-3">
                 <CaseStep
@@ -726,7 +726,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                           ? "مسیر عمیق RNA-seq دقیقاً برای ساخت همین نقشه تحلیل طراحی شده است."
                           : reflection === "interpretation"
                             ? "در انتهای مسیر RNA-seq دوباره به تفسیر زیستی، محدودیت ادعا و اتصال نتیجه به سؤال پژوهشی برمی‌گردیم."
-                            : "اشکالی ندارد. Foundations برای همین ساخته شده بود که قبل از ابزار، نقشه کلی را بسازید."}
+                            : "اشکالی ندارد. مبانی ترنسکریپتومیکس برای همین ساخته شده بود که قبل از ابزار، نقشه کلی را بسازید."}
                   </InsightBox>
                 )}
               </div>
@@ -736,7 +736,7 @@ export function RnaSeqInTranscriptomicsLesson() {
           {scene === 6 && (
             <SceneCard
               eyebrow="ایستگاه تسلط"
-              title="نقشه Foundations کامل شد."
+              title="نقشه مبانی ترنسکریپتومیکس کامل شد."
               description="آخرین سؤال می‌سنجد آیا جای RNA-seq، FASTQ، ماتریس بیان و تحلیل را در یک زنجیره واحد می‌بینید."
             >
               <DecisionQuestion
@@ -785,7 +785,7 @@ export function RnaSeqInTranscriptomicsLesson() {
 
               <div className="mt-7 rounded-3xl bg-slate-950 p-6 text-white">
                 <p className="text-xs font-bold text-teal-300">
-                  لحظه فهم Foundations
+                  لحظه فهم مبانی ترنسکریپتومیکس
                 </p>
 
                 <p className="mt-3 text-lg font-bold leading-9">
@@ -849,7 +849,7 @@ export function RnaSeqInTranscriptomicsLesson() {
 
               <div className="mt-8 rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6">
                 <p className="text-xs font-bold text-teal-700">
-                  Foundations کامل شد
+                  مبانی ترنسکریپتومیکس کامل شد
                 </p>
 
                 <h3 className="mt-2 text-2xl font-black text-slate-950">
