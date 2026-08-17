@@ -351,7 +351,6 @@ export function BulkSingleCellSpatialLesson() {
               title="یک بافت ثابت، سه نوع وضوح متفاوت"
               description="همان بافت سرطان پانکراس را از سه سطح مشاهده ببینید."
             >
-              <TissueGrid />
 
               <div className="mt-6 grid gap-3 md:grid-cols-3">
                 <LevelButton
@@ -751,20 +750,6 @@ function ConceptCard({ title, text, emphasized = false }: { title: string; text:
     <div className={["rounded-3xl border p-5", emphasized ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"].join(" ")}>
       <p className="font-black text-slate-950">{title}</p>
       <p className="mt-3 text-sm leading-8 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function TissueGrid() {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-950 p-5 sm:p-6">
-      <div className="grid grid-cols-4 gap-3">
-        {tissueCells.map((type, index) => (
-          <div key={`${type}-${index}`} className="flex aspect-square items-center justify-center rounded-2xl border border-white/10 bg-white/5">
-            <span className={`h-8 w-8 rounded-full ${cellClass(type)}`} />
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
