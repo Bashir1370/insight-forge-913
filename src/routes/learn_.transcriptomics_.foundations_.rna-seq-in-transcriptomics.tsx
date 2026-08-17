@@ -7,13 +7,12 @@ export const Route = createFileRoute(
   head: () => ({
     meta: [
       {
-        title:
-          "RNA-seq و Microarray در نقشه ترنسکریپتومیکس | مبانی هاب‌ژن",
+        title: "نقشه فناوری‌های ترنسکریپتومیکس | مبانی هاب‌ژن",
       },
       {
         name: "description",
         content:
-          "یک درس تعاملی و بصری برای مقایسه RNA-seq و Microarray و فهم تفاوت حوزه ترنسکریپتومیکس، فناوری اندازه‌گیری، FASTQ و ماتریس بیان.",
+          "پایان مبانی ترنسکریپتومیکس و مقدمه ورود به فناوری‌های تخصصی؛ با نقشه RNA-seq، Microarray، scRNA-seq، Spatial، Long-read و small RNA-seq و مقایسه انیمیشنی RNA-seq و Microarray.",
       },
     ],
   }),
