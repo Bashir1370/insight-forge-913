@@ -1,21 +1,17 @@
 import {
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
 import {
-  ArrowDown,
   ArrowLeft,
   ArrowRight,
-  ArrowUp,
   CheckCircle2,
-  Database,
-  FileText,
-  FlaskConical,
   Lightbulb,
   Loader2,
+  Microscope,
   RotateCcw,
+  ScanLine,
   Sparkles,
 } from "lucide-react";
 
@@ -24,34 +20,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { InteractiveLessonShell } from "../components/InteractiveLessonShell";
 
 type Confidence = "unclear" | "developing" | "clear";
-
-type SaveState =
-  | "guest"
-  | "loading"
-  | "idle"
-  | "saving"
-  | "saved"
-  | "error";
-
-type WorkflowStep = {
-  id: string;
-  title: string;
-  description: string;
-};
-
-type ProjectReflection =
-  | "raw-data"
-  | "matrix"
-  | "analysis"
-  | "interpretation"
-  | "unsure";
+type SaveState = "guest" | "loading" | "idle" | "saving" | "saved" | "error";
+type Technology = "rna-seq" | "microarray";
+type ProjectReflection = "fastq" | "microarray" | "matrix" | "unsure";
 
 type LearningProgressRow = {
-  status:
-    | "not_started"
-    | "in_progress"
-    | "completed"
-    | "needs_review";
+  status: "not_started" | "in_progress" | "completed" | "needs_review";
   confidence: Confidence | null;
   selected_answer: number | null;
   is_correct: boolean | null;
@@ -62,81 +36,20 @@ const RESEARCH_LINE = "transcriptomics-foundations";
 const NODE_ID = "f7-rna-seq-in-transcriptomics";
 
 const sceneTitles = [
-  "جایگاه RNA-seq",
-  "مسیر نمونه تا داده",
-  "آزمایشگاه ساخت مسیر",
-  "FASTQ یا ماتریس بیان؟",
-  "توالی‌یابی پایان کار نیست",
-  "پروژه سرطان پانکراس",
-  "تسلط و ورود به مسیر بعدی",
-];
-
-const correctWorkflow: WorkflowStep[] = [
-  {
-    id: "sample",
-    title: "نمونه زیستی",
-    description: "سلول، بافت یا نمونه‌ای که سؤال پژوهشی روی آن تعریف شده است.",
-  },
-  {
-    id: "rna",
-    title: "استخراج RNA",
-    description: "RNA از نمونه استخراج می‌شود تا ماده اولیه مناسب برای آماده‌سازی کتابخانه فراهم شود.",
-  },
-  {
-    id: "library",
-    title: "آماده‌سازی کتابخانه",
-    description: "RNA به قالب مناسب برای توالی‌یابی تبدیل و برای هدف آزمایش آماده می‌شود.",
-  },
-  {
-    id: "sequencing",
-    title: "توالی‌یابی",
-    description: "دستگاه توالی‌یاب خوانش‌هایی از کتابخانه تولید می‌کند.",
-  },
-  {
-    id: "reads",
-    title: "خوانش‌ها و فایل FASTQ",
-    description: "یکی از خروجی‌های رایج مرحله توالی‌یابی فایل FASTQ است.",
-  },
-  {
-    id: "quantification",
-    title: "کمی‌سازی",
-    description: "خوانش‌ها پردازش می‌شوند تا مقدار RNA مربوط به ژن‌ها یا ترنسکریپت‌ها برآورد شود.",
-  },
-  {
-    id: "matrix",
-    title: "ماتریس بیان",
-    description: "مقادیر بیان برای ژن‌ها و نمونه‌ها در یک ساختار جدولی سازمان‌دهی می‌شوند.",
-  },
-  {
-    id: "analysis",
-    title: "تحلیل",
-    description: "ساختار نمونه‌ها، تفاوت بیان و سایر سؤال‌های آماری یا زیستی بررسی می‌شوند.",
-  },
-  {
-    id: "interpretation",
-    title: "تفسیر زیستی",
-    description: "نتیجه تحلیل به سؤال پژوهشی و شواهد زیستی برگردانده می‌شود.",
-  },
-];
-
-const shuffledWorkflow = [
-  correctWorkflow[4],
-  correctWorkflow[0],
-  correctWorkflow[6],
-  correctWorkflow[2],
-  correctWorkflow[8],
-  correctWorkflow[1],
-  correctWorkflow[7],
-  correctWorkflow[3],
-  correctWorkflow[5],
+  "حوزه و فناوری",
+  "دو مسیر اندازه‌گیری",
+  "مقایسه بصری",
+  "داده خام چه شکلی است؟",
+  "یک سؤال، دو فناوری",
+  "کلینیک اشتباه",
+  "تسلط و ورود به RNA-seq",
 ];
 
 const reflectionLabels: Record<ProjectReflection, string> = {
-  "raw-data": "بیشتر با داده خام و FASTQ درگیرم",
-  matrix: "ماتریس بیان دارم و نمی‌دانم از کجا ادامه بدهم",
-  analysis: "می‌خواهم مسیر تحلیل RNA-seq را بفهمم",
-  interpretation: "در تفسیر زیستی نتایج مشکل دارم",
-  unsure: "هنوز جای پروژه‌ام در این مسیر روشن نیست",
+  fastq: "FASTQ دارم",
+  microarray: "داده Microarray یا فایل‌های سیگنال دارم",
+  matrix: "فقط ماتریس بیان دارم",
+  unsure: "هنوز نوع داده‌ام را نمی‌دانم",
 };
 
 export function RnaSeqInTranscriptomicsLesson() {
@@ -145,27 +58,17 @@ export function RnaSeqInTranscriptomicsLesson() {
 
   const [scene, setScene] = useState(0);
   const [openingAnswer, setOpeningAnswer] = useState<number | null>(null);
-  const [workflowAnswer, setWorkflowAnswer] = useState<number | null>(null);
-
-  const [builderSteps, setBuilderSteps] =
-    useState<WorkflowStep[]>(shuffledWorkflow);
-
-  const [fastqAnswer, setFastqAnswer] = useState<number | null>(null);
-  const [matrixAnswer, setMatrixAnswer] = useState<number | null>(null);
-  const [sequencingAnswer, setSequencingAnswer] =
-    useState<number | null>(null);
-  const [microarrayAnswer, setMicroarrayAnswer] =
-    useState<number | null>(null);
-  const [caseAnswer, setCaseAnswer] = useState<number | null>(null);
-  const [reflection, setReflection] =
-    useState<ProjectReflection | null>(null);
-
+  const [pathAnswer, setPathAnswer] = useState<number | null>(null);
+  const [technology, setTechnology] = useState<Technology>("rna-seq");
+  const [rawDataAnswer, setRawDataAnswer] = useState<number | null>(null);
+  const [sameQuestionAnswer, setSameQuestionAnswer] = useState<number | null>(null);
+  const [mistakeAnswer, setMistakeAnswer] = useState<number | null>(null);
+  const [reflection, setReflection] = useState<ProjectReflection | null>(null);
   const [masteryAnswer, setMasteryAnswer] = useState<number | null>(null);
   const [confidence, setConfidence] = useState<Confidence | null>(null);
   const [saveState, setSaveState] = useState<SaveState>("guest");
   const [saveError, setSaveError] = useState("");
-  const [savedProgress, setSavedProgress] =
-    useState<LearningProgressRow | null>(null);
+  const [savedProgress, setSavedProgress] = useState<LearningProgressRow | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,9 +84,7 @@ export function RnaSeqInTranscriptomicsLesson() {
 
       const { data, error } = await (supabase as any)
         .from("learning_progress")
-        .select(
-          "status, confidence, selected_answer, is_correct, updated_at",
-        )
+        .select("status, confidence, selected_answer, is_correct, updated_at")
         .eq("user_id", userId)
         .eq("research_line", RESEARCH_LINE)
         .eq("node_id", NODE_ID)
@@ -201,15 +102,8 @@ export function RnaSeqInTranscriptomicsLesson() {
       if (data) {
         const row = data as LearningProgressRow;
         setSavedProgress(row);
-
-        if (row.selected_answer !== null) {
-          setMasteryAnswer(row.selected_answer);
-        }
-
-        if (row.confidence) {
-          setConfidence(row.confidence);
-        }
-
+        if (row.selected_answer !== null) setMasteryAnswer(row.selected_answer);
+        if (row.confidence) setConfidence(row.confidence);
         setSaveState("saved");
         return;
       }
@@ -218,48 +112,15 @@ export function RnaSeqInTranscriptomicsLesson() {
     }
 
     void loadProgress();
-
     return () => {
       cancelled = true;
     };
   }, [userId]);
 
-  const builderCorrect = useMemo(
-    () =>
-      builderSteps.every(
-        (step, index) => step.id === correctWorkflow[index].id,
-      ),
-    [builderSteps],
-  );
-
-  const canFinish =
-    masteryAnswer !== null && Boolean(confidence);
-
-  function moveStep(index: number, direction: "up" | "down") {
-    setBuilderSteps((previous) => {
-      const next = [...previous];
-      const target = direction === "up" ? index - 1 : index + 1;
-
-      if (target < 0 || target >= next.length) {
-        return previous;
-      }
-
-      [next[index], next[target]] = [next[target], next[index]];
-      return next;
-    });
-  }
-
-  function resetBuilder() {
-    setBuilderSteps(shuffledWorkflow);
-  }
-
-  function solveBuilder() {
-    setBuilderSteps(correctWorkflow);
-  }
+  const canFinish = masteryAnswer !== null && Boolean(confidence);
 
   function goToScene(nextScene: number) {
     setScene(nextScene);
-
     window.setTimeout(() => {
       document.getElementById("f7-scene")?.scrollIntoView({
         behavior: "smooth",
@@ -269,15 +130,11 @@ export function RnaSeqInTranscriptomicsLesson() {
   }
 
   function goNext() {
-    if (scene < sceneTitles.length - 1) {
-      goToScene(scene + 1);
-    }
+    if (scene < sceneTitles.length - 1) goToScene(scene + 1);
   }
 
   function goPrevious() {
-    if (scene > 0) {
-      goToScene(scene - 1);
-    }
+    if (scene > 0) goToScene(scene - 1);
   }
 
   async function saveMastery() {
@@ -287,11 +144,7 @@ export function RnaSeqInTranscriptomicsLesson() {
     }
 
     const isCorrect = masteryAnswer === 1;
-
-    const status =
-      confidence === "unclear" || !isCorrect
-        ? "needs_review"
-        : "completed";
+    const status = confidence === "unclear" || !isCorrect ? "needs_review" : "completed";
 
     setSaveState("saving");
     setSaveError("");
@@ -309,9 +162,7 @@ export function RnaSeqInTranscriptomicsLesson() {
           is_correct: isCorrect,
           updated_at: new Date().toISOString(),
         },
-        {
-          onConflict: "user_id,research_line,node_id",
-        },
+        { onConflict: "user_id,research_line,node_id" },
       );
 
     if (error) {
@@ -328,38 +179,29 @@ export function RnaSeqInTranscriptomicsLesson() {
       is_correct: isCorrect,
       updated_at: new Date().toISOString(),
     });
-
     setSaveState("saved");
   }
 
   function restartLesson() {
     setScene(0);
     setOpeningAnswer(null);
-    setWorkflowAnswer(null);
-    setBuilderSteps(shuffledWorkflow);
-    setFastqAnswer(null);
-    setMatrixAnswer(null);
-    setSequencingAnswer(null);
-    setMicroarrayAnswer(null);
-    setCaseAnswer(null);
+    setPathAnswer(null);
+    setTechnology("rna-seq");
+    setRawDataAnswer(null);
+    setSameQuestionAnswer(null);
+    setMistakeAnswer(null);
     setReflection(null);
     setMasteryAnswer(null);
     setConfidence(null);
-
-    window.setTimeout(() => {
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    }, 20);
+    window.setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 20);
   }
 
   return (
     <InteractiveLessonShell
       foundationIndex={7}
       total={7}
-      title="RNA-seq در نقشه ترنسکریپتومیکس کجاست؟"
-      subtitle="در این درس آخر مبانی ترنسکریپتومیکس، جای RNA-seq را در نقشه علمی ترنسکریپتومیکس مشخص می‌کنیم و مسیر نمونه زیستی تا FASTQ، کمی‌سازی، ماتریس بیان، تحلیل و تفسیر را به هم متصل می‌کنیم."
+      title="RNA-seq و Microarray در نقشه ترنسکریپتومیکس کجا هستند؟"
+      subtitle="در آخرین درس مبانی ترنسکریپتومیکس، دو فناوری مهم اندازه‌گیری را کنار هم می‌بینیم تا روشن شود ترنسکریپتومیکس یک حوزه است و هر داده ترنسکریپتومیکس الزاماً FASTQ ندارد."
       currentScene={scene}
       sceneCount={sceneTitles.length}
       sceneLabel={sceneTitles[scene]}
@@ -387,348 +229,271 @@ export function RnaSeqInTranscriptomicsLesson() {
               ))}
             </div>
 
-            <SaveIndicator
-              userId={userId}
-              state={saveState}
-              savedProgress={savedProgress}
-              error={saveError}
-            />
+            <SaveIndicator userId={userId} state={saveState} savedProgress={savedProgress} error={saveError} />
           </div>
 
           {scene === 0 && (
             <SceneCard
-              eyebrow="جایگاه RNA-seq"
-              title="RNA-seq خودِ ترنسکریپتومیکس نیست؛ یکی از روش‌های اندازه‌گیری درون آن است."
-              description="ترنسکریپتومیکس یک حوزه علمی است. RNA-seq یکی از روش‌هایی است که برای اندازه‌گیری RNA در این حوزه استفاده می‌شود."
+              eyebrow="نقشه علمی"
+              title="ترنسکریپتومیکس یک حوزه است؛ RNA-seq و Microarray دو فناوری اندازه‌گیری درون آن‌اند."
+              description="این تفکیک جلوی یکی از مهم‌ترین خطاهای ذهنی را می‌گیرد: برابر دانستن ترنسکریپتومیکس با RNA-seq."
             >
-              <div className="grid gap-4 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
-                <ConceptCard
-                  title="ترنسکریپتومیکس"
-                  text="حوزه‌ای برای مطالعه RNAها و الگوهای بیان در سلول، بافت یا نمونه."
-                  emphasized
-                />
-
-                <div className="hidden text-3xl text-teal-600 lg:block">
-                  ←
+              <div className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
+                <p className="text-xs font-bold text-teal-300">ترنسکریپتومیکس</p>
+                <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <TechnologySummary title="RNA-seq" subtitle="مبتنی بر توالی‌یابی" icon={<ScanLine className="size-5" />} />
+                  <TechnologySummary title="Microarray" subtitle="مبتنی بر پروب و شدت سیگنال" icon={<Microscope className="size-5" />} />
                 </div>
-
-                <ConceptCard
-                  title="RNA-seq"
-                  text="یک راه اندازه‌گیری مبتنی بر توالی‌یابی برای بررسی RNA و ساخت داده قابل تحلیل."
-                />
               </div>
 
               <DecisionQuestion
                 question="کدام جمله دقیق‌تر است؟"
                 options={[
                   "ترنسکریپتومیکس و RNA-seq دقیقاً یک مفهوم‌اند.",
-                  "RNA-seq یکی از روش‌های اندازه‌گیری در ترنسکریپتومیکس است.",
-                  "RNA-seq فقط نام دیگری برای ماتریس بیان است.",
+                  "RNA-seq و Microarray هر دو می‌توانند برای مطالعه ترنسکریپتوم استفاده شوند.",
+                  "اگر داده FASTQ نداشته باشد، ترنسکریپتومیکس نیست.",
                 ]}
                 selected={openingAnswer}
                 correctIndex={1}
                 onSelect={setOpeningAnswer}
                 correctFeedback="دقیقاً. حوزه علمی را از فناوری اندازه‌گیری جدا کردید."
-                incorrectFeedback="ترنسکریپتومیکس یک حوزه علمی گسترده‌تر است و RNA-seq یکی از روش‌های اندازه‌گیری در آن است."
+                incorrectFeedback="ترنسکریپتومیکس گسترده‌تر از یک فناوری واحد است و Microarray هم می‌تواند داده بیان ژن تولید کند."
               />
 
               <InsightBox>
-                اصل این درس: <strong>حوزه علمی ≠ فناوری ≠ فایل داده ≠ تحلیل.</strong>
+                اصل این درس: <strong>ترنسکریپتومیکس ≠ RNA-seq.</strong>
               </InsightBox>
             </SceneCard>
           )}
 
           {scene === 1 && (
             <SceneCard
-              eyebrow="مسیر نمونه تا نتیجه"
-              title="RNA-seq یک زنجیره است، نه یک دکمه."
-              description="قبل از تحلیل آماری، چند مرحله زیستی و فنی رخ می‌دهد. بعد از توالی‌یابی هم مسیر هنوز ادامه دارد."
+              eyebrow="دو مسیر اندازه‌گیری"
+              title="یک سؤال زیستی می‌تواند با دو مسیر فنی متفاوت بررسی شود."
+              description="هر دو مسیر می‌توانند در نهایت به یک ماتریس بیان برسند، اما داده خام و منطق اندازه‌گیری یکسان نیست."
             >
-              <div className="grid gap-3 md:grid-cols-3">
-                {correctWorkflow.map((step, index) => (
-                  <WorkflowCard
-                    key={step.id}
-                    index={index + 1}
-                    title={step.title}
-                    description={step.description}
-                  />
-                ))}
+              <div className="grid gap-5 lg:grid-cols-2">
+                <TechnologyPath
+                  title="مسیر RNA-seq"
+                  subtitle="توالی‌یابی"
+                  steps={["نمونه", "RNA", "کتابخانه", "توالی‌یابی", "FASTQ", "کمی‌سازی", "ماتریس بیان"]}
+                  emphasized
+                />
+                <TechnologyPath
+                  title="مسیر Microarray"
+                  subtitle="پروب و شدت سیگنال"
+                  steps={["نمونه", "RNA", "نمونه نشاندار", "هیبریداسیون روی چیپ", "شدت سیگنال", "نرمال‌سازی", "ماتریس بیان"]}
+                />
               </div>
 
               <DecisionQuestion
-                question="کدام ترتیب مفهومی مناسب‌تر است؟"
+                question="کدام نکته از این دو مسیر مهم‌تر است؟"
                 options={[
-                  "نمونه ← RNA ← کتابخانه ← توالی‌یابی ← FASTQ ← کمی‌سازی ← ماتریس بیان ← تحلیل ← تفسیر",
-                  "نمونه ← ماتریس بیان ← FASTQ ← RNA ← تفسیر",
-                  "FASTQ ← نمونه ← کتابخانه ← DNA ← ماتریس بیان",
+                  "هر دو فناوری باید FASTQ تولید کنند.",
+                  "مسیر فنی متفاوت است، اما هر دو می‌توانند به داده بیان قابل تحلیل برسند.",
+                  "Microarray چون توالی‌یابی ندارد، داده بیان تولید نمی‌کند.",
                 ]}
-                selected={workflowAnswer}
-                correctIndex={0}
-                onSelect={setWorkflowAnswer}
-                correctFeedback="درست است. حالا جای فایل خام، کمی‌سازی و تحلیل را در یک نقشه واحد می‌بینید."
-                incorrectFeedback="به مسیر زیستی و فنی فکر کنید: نمونه و RNA قبل از توالی‌یابی هستند؛ ماتریس بیان بعد از پردازش خوانش‌ها ساخته می‌شود."
+                selected={pathAnswer}
+                correctIndex={1}
+                onSelect={setPathAnswer}
+                correctFeedback="دقیقاً. خروجی تحلیلی می‌تواند شبیه باشد، اما منطق تولید داده متفاوت است."
+                incorrectFeedback="Microarray با توالی‌یابی کار نمی‌کند، اما می‌تواند با شدت سیگنال پروب‌ها داده بیان تولید کند."
               />
             </SceneCard>
           )}
 
           {scene === 2 && (
             <SceneCard
-              eyebrow="آزمایشگاه ساخت مسیر"
-              title="مراحل RNA-seq را خودتان مرتب کنید."
-              description="با فلش‌ها هر مرحله را بالا یا پایین ببرید تا زنجیره از نمونه زیستی تا تفسیر ساخته شود."
+              eyebrow="مقایسه بصری"
+              title="همان سؤال، دو فناوری"
+              description="بین RNA-seq و Microarray جابه‌جا شوید و ببینید داخل هر مسیر چه چیزی تغییر می‌کند."
             >
-              <div className="space-y-3">
-                {builderSteps.map((step, index) => (
-                  <div
-                    key={step.id}
-                    className={[
-                      "flex items-center gap-3 rounded-2xl border p-4 transition",
-                      builderCorrect
-                        ? "border-emerald-200 bg-emerald-50"
-                        : "border-slate-200 bg-white",
-                    ].join(" ")}
-                  >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-xs font-black text-white">
-                      {new Intl.NumberFormat("fa-IR").format(index + 1)}
-                    </span>
-
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-slate-950">{step.title}</p>
-                      <p className="mt-1 text-xs leading-6 text-slate-500">
-                        {step.description}
-                      </p>
-                    </div>
-
-                    <div className="flex shrink-0 gap-1">
-                      <button
-                        type="button"
-                        onClick={() => moveStep(index, "up")}
-                        disabled={index === 0}
-                        className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 disabled:opacity-30"
-                        aria-label={`بردن ${step.title} به بالا`}
-                      >
-                        <ArrowUp className="size-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => moveStep(index, "down")}
-                        disabled={index === builderSteps.length - 1}
-                        className="rounded-lg border border-slate-200 bg-white p-2 text-slate-600 disabled:opacity-30"
-                        aria-label={`بردن ${step.title} به پایین`}
-                      >
-                        <ArrowDown className="size-4" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <TechnologyButton active={technology === "rna-seq"} title="RNA-seq" subtitle="مبتنی بر توالی‌یابی" onClick={() => setTechnology("rna-seq")} />
+                <TechnologyButton active={technology === "microarray"} title="Microarray" subtitle="مبتنی بر پروب و شدت سیگنال" onClick={() => setTechnology("microarray")} />
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={resetBuilder}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700"
-                >
-                  شروع دوباره
-                </button>
-
-                <button
-                  type="button"
-                  onClick={solveBuilder}
-                  className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white"
-                >
-                  نمایش ترتیب درست
-                </button>
+              <div className="mt-6 rounded-3xl bg-slate-950 p-6 text-white">
+                {technology === "rna-seq" ? <RnaSeqVisual /> : <MicroarrayVisual />}
               </div>
 
-              {builderCorrect && (
-                <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                  <p className="font-bold text-emerald-900">
-                    مسیر کامل شد ✓
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-emerald-800">
-                    مهم‌ترین نکته این است که FASTQ هنوز «نتیجه تحلیل» نیست و ماتریس بیان هم قبل از کمی‌سازی ساخته نمی‌شود.
-                  </p>
-                </div>
-              )}
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                <ComparisonCard
+                  title="RNA-seq"
+                  items={[
+                    "خوانش توالی تولید می‌کند",
+                    "داده خام رایج: FASTQ",
+                    "به پروب از پیش طراحی‌شده وابسته نیست",
+                    "برای کشف ترنسکریپت‌های جدید انعطاف بیشتری دارد",
+                  ]}
+                  emphasized
+                />
+                <ComparisonCard
+                  title="Microarray"
+                  items={[
+                    "شدت اتصال به پروب‌ها را اندازه می‌گیرد",
+                    "FASTQ ندارد",
+                    "به پروب‌های از پیش طراحی‌شده وابسته است",
+                    "در بسیاری از مجموعه‌داده‌های عمومی قدیمی‌تر بسیار رایج است",
+                  ]}
+                />
+              </div>
             </SceneCard>
           )}
 
           {scene === 3 && (
             <SceneCard
-              eyebrow="FASTQ یا ماتریس بیان؟"
-              title="داده خام و داده کمی‌شده دو چیز متفاوت‌اند."
-              description="یکی از مهم‌ترین مرزهای ذهنی در RNA-seq همین‌جاست."
+              eyebrow="داده خام چه شکلی است؟"
+              title="FASTQ فقط یکی از شکل‌های داده خام در ترنسکریپتومیکس است."
+              description="این بخش برای جلوگیری از خطای رایج هنگام کار با GEO و داده‌های عمومی مهم است."
             >
-              <div className="grid gap-4 md:grid-cols-2">
-                <DataCard
-                  icon={<FileText className="size-5" />}
-                  title="FASTQ"
-                  description="فایلی شامل خوانش‌های توالی‌یابی و اطلاعات کیفیت آن‌ها؛ هنوز یک ماتریس بیان ژن نیست."
-                />
-
-                <DataCard
-                  icon={<Database className="size-5" />}
-                  title="ماتریس بیان"
-                  description="ساختاری جدولی که مقدارهای بیان برای ژن‌ها یا ترنسکریپت‌ها در نمونه‌ها را نگه می‌دارد."
+              <div className="grid gap-5 lg:grid-cols-2">
+                <RawDataCard
+                  title="نمونه داده خام RNA-seq"
+                  badge="FASTQ"
+                  content={["@read001", "ATCGTACGTTAC...", "+", "IIIIHHHHGGFF..."]}
                   emphasized
+                />
+                <RawDataCard
+                  title="نمای ساده‌شده Microarray"
+                  badge="شدت سیگنال"
+                  content={["Probe_001   8.21", "Probe_002   5.47", "Probe_003   10.02", "Probe_004   7.33"]}
                 />
               </div>
 
               <DecisionQuestion
-                question="اگر پژوهشگر فقط فایل FASTQ داشته باشد، آیا مستقیماً ماتریس بیان آماده دارد؟"
+                question="اگر یک مجموعه‌داده ترنسکریپتومیکس FASTQ نداشته باشد، بهترین واکنش چیست؟"
                 options={[
-                  "بله؛ FASTQ همان ماتریس بیان است.",
-                  "خیر؛ FASTQ باید پردازش و کمی‌سازی شود تا داده بیان ساخته شود.",
+                  "حتماً داده ناقص یا غیرترنسکریپتومیک است.",
+                  "اول بررسی کنیم فناوری تولید داده چه بوده؛ ممکن است Microarray باشد.",
+                  "بدون FASTQ هیچ ماتریس بیان معتبری وجود ندارد.",
                 ]}
-                selected={fastqAnswer}
+                selected={rawDataAnswer}
                 correctIndex={1}
-                onSelect={setFastqAnswer}
-                correctFeedback="دقیقاً. FASTQ داده خام خوانش‌هاست، نه جدول نهایی بیان ژن."
-                incorrectFeedback="بین خوانش خام و ماتریس بیان چند مرحله پردازش و کمی‌سازی وجود دارد."
-              />
-
-              <DecisionQuestion
-                question="کدام داده به‌طور مفهومی برای مقایسه مقدار بیان ژن‌ها بین نمونه‌ها نزدیک‌تر است؟"
-                options={[
-                  "ماتریس بیان",
-                  "فایل FASTQ خام بدون پردازش",
-                  "نام دستگاه توالی‌یابی",
-                ]}
-                selected={matrixAnswer}
-                correctIndex={0}
-                onSelect={setMatrixAnswer}
-                correctFeedback="درست است. تحلیل بیان روی داده کمی‌شده و ساختار مناسب برای مقایسه انجام می‌شود."
-                incorrectFeedback="FASTQ ورودی خام است؛ برای تحلیل بیان باید ابتدا اطلاعات خوانش‌ها به مقادیر قابل مقایسه تبدیل شوند."
+                onSelect={setRawDataAnswer}
+                correctFeedback="دقیقاً. نوع فناوری تعیین می‌کند چه فایل‌ها و خروجی‌هایی انتظار داریم."
+                incorrectFeedback="FASTQ مربوط به فناوری‌های مبتنی بر توالی‌یابی است؛ Microarray منطق و فایل‌های متفاوتی دارد."
               />
 
               <InsightBox>
-                <strong>FASTQ ≠ ماتریس بیان.</strong> این تفاوت پایه فهم تمام مسیر RNA-seq است.
+                <strong>هر داده ترنسکریپتومیکس الزاماً FASTQ ندارد.</strong>
               </InsightBox>
             </SceneCard>
           )}
 
           {scene === 4 && (
             <SceneCard
-              eyebrow="توالی‌یابی پایان کار نیست"
-              title="دستگاه توالی‌یاب پاسخ زیستی نهایی را تحویل نمی‌دهد."
-              description="توالی‌یابی فقط بخشی از زنجیره است. بعد از آن هنوز پردازش، کمی‌سازی، تحلیل آماری و تفسیر زیستی باقی مانده است."
+              eyebrow="یک سؤال، دو فناوری"
+              title="داروی X در سلول‌های سرطان پانکراس"
+              description="سؤال زیستی ثابت است؛ چیزی که عوض می‌شود مسیر فنی اندازه‌گیری است."
             >
-              <DecisionQuestion
-                question="کدام جمله دقیق‌تر است؟"
-                options={[
-                  "بعد از تولید FASTQ، تحلیل RNA-seq عملاً تمام شده است.",
-                  "بعد از توالی‌یابی هنوز پردازش، کمی‌سازی، ساخت داده بیان، تحلیل و تفسیر باقی مانده است.",
-                  "توالی‌یابی مستقیماً ژن‌های معنی‌دار زیستی را تعیین می‌کند.",
-                ]}
-                selected={sequencingAnswer}
-                correctIndex={1}
-                onSelect={setSequencingAnswer}
-                correctFeedback="دقیقاً. sequencing یک مرحله تولید داده است، نه پایان تحلیل."
-                incorrectFeedback="FASTQ فقط یکی از خروجی‌های اولیه است. تبدیل آن به نتیجه زیستی نیازمند چند مرحله دیگر است."
-              />
+              <div className="rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6">
+                <p className="font-black text-teal-950">سؤال پژوهشی</p>
+                <p className="mt-3 text-sm leading-8 text-slate-600">داروی X چه تغییری در الگوی بیان ژن سلول‌های سرطان پانکراس ایجاد می‌کند؟</p>
+              </div>
 
-              <div className="mt-7 rounded-3xl border border-cyan-200 bg-cyan-50 p-6">
-                <p className="font-black text-cyan-950">
-                  RNA-seq تنها روش ترنسکریپتومیکس نیست
-                </p>
-                <p className="mt-3 text-sm leading-8 text-cyan-900/80">
-                  روش‌هایی مانند Microarray هم برای مطالعه بیان RNA استفاده شده‌اند و در برخی زمینه‌ها همچنان در داده‌های عمومی یا مطالعات قدیمی‌تر دیده می‌شوند. این درس فقط جای RNA-seq را در نقشه مشخص می‌کند.
-                </p>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <CaseTechnologyCard
+                  title="اگر RNA-seq انتخاب شود"
+                  lines={[
+                    "کتابخانه ساخته می‌شود",
+                    "توالی‌یابی انجام می‌شود",
+                    "FASTQ تولید می‌شود",
+                    "بعد به کمی‌سازی و ماتریس بیان می‌رسیم",
+                  ]}
+                  emphasized
+                />
+                <CaseTechnologyCard
+                  title="اگر Microarray انتخاب شود"
+                  lines={[
+                    "RNA روی پروب‌های از پیش تعریف‌شده سنجیده می‌شود",
+                    "شدت سیگنال اندازه‌گیری می‌شود",
+                    "FASTQ وجود ندارد",
+                    "بعد از پردازش و نرمال‌سازی به ماتریس بیان می‌رسیم",
+                  ]}
+                />
               </div>
 
               <DecisionQuestion
-                question="پس آیا «ترنسکریپتومیکس» مترادف کامل «RNA-seq» است؟"
+                question="کدام جمله دقیق‌تر است؟"
                 options={[
-                  "بله، هر مطالعه ترنسکریپتومیکس الزاماً RNA-seq است.",
-                  "خیر، RNA-seq یکی از روش‌های مطالعه ترنسکریپتوم است.",
+                  "چون سؤال یکسان است، داده خام دو فناوری هم باید یکسان باشد.",
+                  "سؤال زیستی می‌تواند یکسان باشد، اما نوع داده خام و مسیر پردازش به فناوری بستگی دارد.",
+                  "Microarray فقط برای سؤال‌های DNA استفاده می‌شود.",
                 ]}
-                selected={microarrayAnswer}
+                selected={sameQuestionAnswer}
                 correctIndex={1}
-                onSelect={setMicroarrayAnswer}
-                correctFeedback="درست است. حوزه علمی را نباید با یک فناوری خاص یکی دانست."
-                incorrectFeedback="ترنسکریپتومیکس گسترده‌تر از یک فناوری واحد است."
+                onSelect={setSameQuestionAnswer}
+                correctFeedback="درست است. سؤال، فناوری و مسیر پردازش سه چیز متفاوت‌اند."
+                incorrectFeedback="دو فناوری می‌توانند یک سؤال بیان ژن را بررسی کنند، اما داده خام و مسیر پردازش آن‌ها متفاوت است."
               />
+
+              <div className="mt-8 border-t border-slate-100 pt-7">
+                <p className="font-bold text-slate-950">شما الان چه نوع داده‌ای دارید؟</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {(Object.keys(reflectionLabels) as ProjectReflection[]).map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setReflection(item)}
+                      className={[
+                        "rounded-2xl border p-4 text-right text-sm font-semibold leading-7 transition",
+                        reflection === item
+                          ? "border-teal-500 bg-teal-50 text-teal-900"
+                          : "border-slate-200 bg-white text-slate-700 hover:border-teal-300",
+                      ].join(" ")}
+                    >
+                      {reflectionLabels[item]}
+                    </button>
+                  ))}
+                </div>
+
+                {reflection && (
+                  <InsightBox>
+                    {reflection === "fastq"
+                      ? "احتمالاً با یک مسیر مبتنی بر توالی‌یابی مانند RNA-seq روبه‌رو هستید."
+                      : reflection === "microarray"
+                        ? "باید اطلاعات پلتفرم، نوع پروب، فایل‌های خام یا ماتریس پردازش‌شده را بررسی کنید."
+                        : reflection === "matrix"
+                          ? "فقط از روی ماتریس همیشه نمی‌توان فناوری را قطعی تشخیص داد؛ Metadata مطالعه مهم است."
+                          : "اول Metadata و بخش روش‌های مقاله یا صفحه مجموعه‌داده را بررسی کنید."}
+                  </InsightBox>
+                )}
+              </div>
             </SceneCard>
           )}
 
           {scene === 5 && (
             <SceneCard
-              eyebrow="پروژه همراه شما"
-              title="داروی X در سلول‌های سرطان پانکراس"
-              description="تمام هفت درس مبانی ترنسکریپتومیکس را حالا روی یک مسیر واقعی‌تر به هم وصل می‌کنیم."
+              eyebrow="کلینیک اشتباه"
+              title="«هر مطالعه ترنسکریپتومیکس باید FASTQ داشته باشد.»"
+              description="این یکی از خطاهایی است که مخصوصاً هنگام کار با داده‌های عمومی باعث سردرگمی می‌شود."
             >
-              <div className="grid gap-3 md:grid-cols-3">
-                <CaseStep
-                  number={1}
-                  title="سؤال"
-                  text="داروی X چه تغییری در الگوی RNA ایجاد می‌کند؟"
-                />
-                <CaseStep
-                  number={2}
-                  title="اندازه‌گیری"
-                  text="RNA-seq برای اندازه‌گیری RNA در این سؤال انتخاب می‌شود."
-                />
-                <CaseStep
-                  number={3}
-                  title="تحلیل"
-                  text="از FASTQ به کمی‌سازی، ماتریس بیان و مقایسه آماری می‌رسیم."
-                />
+              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+                <p className="font-black leading-8 text-amber-950">
+                  پژوهشگر وارد GEO می‌شود، FASTQ پیدا نمی‌کند و نتیجه می‌گیرد مطالعه ترنسکریپتومیکس نیست.
+                </p>
               </div>
 
               <DecisionQuestion
-                question="اگر کاربر فایل FASTQ پروژه داروی X را داشته باشد، قدم مفهومی بعدی چیست؟"
+                question="بهترین اصلاح این برداشت چیست؟"
                 options={[
-                  "مستقیماً نتیجه‌گیری زیستی نهایی.",
-                  "کنترل کیفیت و پردازش داده برای رسیدن به کمی‌سازی و ماتریس بیان.",
-                  "فرض کنیم ژن‌های متفاوت از قبل مشخص‌اند.",
+                  "درست است؛ بدون FASTQ هیچ مطالعه ترنسکریپتومیکس وجود ندارد.",
+                  "اول باید فناوری را بررسی کنیم؛ Microarray معمولاً FASTQ ندارد و می‌تواند همچنان یک مطالعه ترنسکریپتومیکس باشد.",
+                  "هر مجموعه‌داده بدون FASTQ حتماً داده پروتئومیکس است.",
                 ]}
-                selected={caseAnswer}
+                selected={mistakeAnswer}
                 correctIndex={1}
-                onSelect={setCaseAnswer}
-                correctFeedback="دقیقاً. فایل خام باید وارد مسیر کنترل کیفیت و پردازش شود تا داده قابل تحلیل ساخته شود."
-                incorrectFeedback="FASTQ هنوز نتیجه زیستی نیست؛ باید ابتدا کیفیت، پردازش و کمی‌سازی انجام شود."
+                onSelect={setMistakeAnswer}
+                correctFeedback="دقیقاً. فایل مورد انتظار باید با فناوری تولید داده سازگار باشد."
+                incorrectFeedback="Microarray یک مثال مهم از داده ترنسکریپتومیکس بدون FASTQ است."
               />
 
-              <div className="mt-8 border-t border-slate-100 pt-7">
-                <p className="font-bold text-slate-950">
-                  پروژه شما الان بیشتر در کدام نقطه این مسیر قرار دارد؟
+              <div className="mt-7 rounded-3xl border border-cyan-200 bg-cyan-50 p-6">
+                <p className="font-black text-cyan-950">حالا چرا مسیر عمیق بعدی RNA-seq است؟</p>
+                <p className="mt-3 text-sm leading-8 text-cyan-900/80">
+                  چون در هاب‌ژن فعلاً مسیر عمیق بعدی را برای RNA-seq توده‌ای ساخته‌ایم. این انتخاب به معنی برابر بودن RNA-seq با کل ترنسکریپتومیکس نیست. Microarray بعداً مسیر آموزشی مستقل خودش را خواهد داشت.
                 </p>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {(Object.keys(reflectionLabels) as ProjectReflection[]).map(
-                    (item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => setReflection(item)}
-                        className={[
-                          "rounded-2xl border p-4 text-right text-sm font-semibold leading-7 transition",
-                          reflection === item
-                            ? "border-teal-500 bg-teal-50 text-teal-900"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-teal-300",
-                        ].join(" ")}
-                      >
-                        {reflectionLabels[item]}
-                      </button>
-                    ),
-                  )}
-                </div>
-
-                {reflection && (
-                  <InsightBox>
-                    {reflection === "raw-data"
-                      ? "در مسیر عمیق RNA-seq، کنترل کیفیت و تبدیل داده خام به مقادیر بیان را مرحله‌به‌مرحله می‌بینید."
-                      : reflection === "matrix"
-                        ? "اگر ماتریس بیان دارید، احتمالاً وارد بخش‌های نرمال‌سازی، بررسی ساختار نمونه‌ها و تحلیل آماری می‌شوید."
-                        : reflection === "analysis"
-                          ? "مسیر عمیق RNA-seq دقیقاً برای ساخت همین نقشه تحلیل طراحی شده است."
-                          : reflection === "interpretation"
-                            ? "در انتهای مسیر RNA-seq دوباره به تفسیر زیستی، محدودیت ادعا و اتصال نتیجه به سؤال پژوهشی برمی‌گردیم."
-                            : "اشکالی ندارد. مبانی ترنسکریپتومیکس برای همین ساخته شده بود که قبل از ابزار، نقشه کلی را بسازید."}
-                  </InsightBox>
-                )}
               </div>
             </SceneCard>
           )}
@@ -737,59 +502,36 @@ export function RnaSeqInTranscriptomicsLesson() {
             <SceneCard
               eyebrow="ایستگاه تسلط"
               title="نقشه مبانی ترنسکریپتومیکس کامل شد."
-              description="آخرین سؤال می‌سنجد آیا جای RNA-seq، FASTQ، ماتریس بیان و تحلیل را در یک زنجیره واحد می‌بینید."
+              description="آخرین سؤال بررسی می‌کند آیا حوزه، سطح مشاهده، فناوری و نوع داده را از هم جدا می‌کنید."
             >
               <DecisionQuestion
-                question="کدام جمله بهترین تصویر از RNA-seq در ترنسکریپتومیکس است؟"
+                question="کدام جمله دقیق‌ترین تصویر را می‌دهد؟"
                 options={[
-                  "RNA-seq همان ترنسکریپتومیکس است و FASTQ همان ماتریس بیان محسوب می‌شود.",
-                  "RNA-seq یک روش اندازه‌گیری در ترنسکریپتومیکس است؛ FASTQ داده خام خوانش‌هاست و پس از پردازش و کمی‌سازی می‌توان به ماتریس بیان و سپس تحلیل رسید.",
-                  "بعد از توالی‌یابی نیازی به پردازش یا تحلیل آماری نیست.",
-                  "هر فایل RNA-seq بدون توجه به سؤال پژوهشی برای هر نوع تحلیل مناسب است.",
+                  "ترنسکریپتومیکس همان RNA-seq است و هر داده ترنسکریپتومیکس باید FASTQ داشته باشد.",
+                  "ترنسکریپتومیکس یک حوزه است؛ RNA-seq و Microarray دو فناوری اندازه‌گیری‌اند و نوع داده خام و مسیر پردازش آن‌ها متفاوت است.",
+                  "Microarray فقط برای DNA است و به بیان ژن ارتباطی ندارد.",
+                  "توده‌ای، RNA-seq و Microarray سه واژه هم‌معنی هستند.",
                 ]}
                 selected={masteryAnswer}
                 correctIndex={1}
                 onSelect={setMasteryAnswer}
-                correctFeedback="عالی. شما اکنون جای حوزه، فناوری، فایل خام، ماتریس بیان و تحلیل را از هم تفکیک می‌کنید."
-                incorrectFeedback="به چهار مرز برگردید: ترنسکریپتومیکس ≠ RNA-seq، FASTQ ≠ ماتریس بیان، توالی‌یابی ≠ پایان تحلیل، و روش باید با سؤال سازگار باشد."
+                correctFeedback="عالی. شما اکنون حوزه، سطح مشاهده، فناوری و داده خام را از هم تفکیک می‌کنید."
+                incorrectFeedback="به چهار مفهوم برگردید: حوزه علمی، سطح مشاهده، فناوری اندازه‌گیری و نوع داده."
               />
 
               <div className="mt-8">
-                <p className="font-bold text-slate-950">
-                  این نقشه کلی چقدر برایتان روشن است؟
-                </p>
-
+                <p className="font-bold text-slate-950">این نقشه چقدر برایتان روشن است؟</p>
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
-                  <ConfidenceButton
-                    active={confidence === "unclear"}
-                    title="هنوز مبهم است"
-                    description="بعضی مراحل مسیر هنوز برایم قاطی می‌شوند."
-                    onClick={() => setConfidence("unclear")}
-                  />
-
-                  <ConfidenceButton
-                    active={confidence === "developing"}
-                    title="تقریباً متوجه شدم"
-                    description="مسیر کلی را می‌فهمم ولی جزئیات تحلیل هنوز نیاز به یادگیری دارد."
-                    onClick={() => setConfidence("developing")}
-                  />
-
-                  <ConfidenceButton
-                    active={confidence === "clear"}
-                    title="کاملاً روشن است"
-                    description="می‌توانم مسیر نمونه تا FASTQ، ماتریس بیان، تحلیل و تفسیر را توضیح بدهم."
-                    onClick={() => setConfidence("clear")}
-                  />
+                  <ConfidenceButton active={confidence === "unclear"} title="هنوز مبهم است" description="هنوز فناوری و نوع داده برایم قاطی می‌شوند." onClick={() => setConfidence("unclear")} />
+                  <ConfidenceButton active={confidence === "developing"} title="تقریباً متوجه شدم" description="نقشه کلی را می‌فهمم ولی در مجموعه‌داده‌های واقعی هنوز تمرین لازم دارم." onClick={() => setConfidence("developing")} />
+                  <ConfidenceButton active={confidence === "clear"} title="کاملاً روشن است" description="می‌توانم RNA-seq، Microarray، FASTQ و ماتریس بیان را در جای درست قرار دهم." onClick={() => setConfidence("clear")} />
                 </div>
               </div>
 
               <div className="mt-7 rounded-3xl bg-slate-950 p-6 text-white">
-                <p className="text-xs font-bold text-teal-300">
-                  لحظه فهم مبانی ترنسکریپتومیکس
-                </p>
-
+                <p className="text-xs font-bold text-teal-300">لحظه فهم مبانی ترنسکریپتومیکس</p>
                 <p className="mt-3 text-lg font-bold leading-9">
-                  حالا می‌دانم RNA-seq کجای ترنسکریپتومیکس قرار می‌گیرد، داده خام چه تفاوتی با ماتریس بیان دارد و چرا تحلیل از سؤال پژوهشی شروع می‌شود، نه از ابزار.
+                  حالا می‌دانم ترنسکریپتومیکس یک حوزه است، سطح مشاهده با فناوری فرق دارد، و RNA-seq و Microarray مسیرهای متفاوتی برای رسیدن به داده بیان هستند.
                 </p>
               </div>
 
@@ -800,15 +542,8 @@ export function RnaSeqInTranscriptomicsLesson() {
                   onClick={() => void saveMastery()}
                   className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  {saveState === "saving" ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="size-4" />
-                  )}
-
-                  {userId
-                    ? "ثبت تسلط درس هفتم"
-                    : "پایان درس هفتم در حالت مهمان"}
+                  {saveState === "saving" ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}
+                  {userId ? "ثبت تسلط درس هفتم" : "پایان درس هفتم در حالت مهمان"}
                 </button>
 
                 <button
@@ -822,21 +557,14 @@ export function RnaSeqInTranscriptomicsLesson() {
               </div>
 
               {saveState === "error" && saveError && (
-                <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm leading-7 text-rose-800">
-                  {saveError}
-                </p>
+                <p className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm leading-7 text-rose-800">{saveError}</p>
               )}
 
               {saveState === "saved" && savedProgress && (
                 <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
-                  <p className="font-bold text-emerald-900">
-                    وضعیت درس هفتم در حساب شما ذخیره شد.
-                  </p>
-
+                  <p className="font-bold text-emerald-900">وضعیت درس هفتم در حساب شما ذخیره شد.</p>
                   <p className="mt-2 text-sm leading-7 text-emerald-800">
-                    {savedProgress.status === "needs_review"
-                      ? "این درس برای مرور دوباره علامت خورده است."
-                      : "درس هفتم با موفقیت تکمیل شده است."}
+                    {savedProgress.status === "needs_review" ? "این درس برای مرور دوباره علامت خورده است." : "درس هفتم با موفقیت تکمیل شده است."}
                   </p>
                 </div>
               )}
@@ -848,18 +576,11 @@ export function RnaSeqInTranscriptomicsLesson() {
               )}
 
               <div className="mt-8 rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6">
-                <p className="text-xs font-bold text-teal-700">
-                  مبانی ترنسکریپتومیکس کامل شد
-                </p>
-
-                <h3 className="mt-2 text-2xl font-black text-slate-950">
-                  حالا وارد مسیر عمیق RNA-seq توده‌ای شوید
-                </h3>
-
+                <p className="text-xs font-bold text-teal-700">مسیر عمیق بعدی</p>
+                <h3 className="mt-2 text-2xl font-black text-slate-950">RNA-seq توده‌ای</h3>
                 <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600">
-                  مسیر بعدی از سؤال پژوهشی و طراحی مطالعه شروع می‌شود و تا FASTQ، کنترل کیفیت، کمی‌سازی، ماتریس بیان، نرمال‌سازی، بررسی ساختار نمونه‌ها، تحلیل بیان افتراقی، تحلیل عملکردی و تفسیر زیستی ادامه پیدا می‌کند.
+                  از اینجا وارد مسیر عمیق RNA-seq می‌شویم؛ از سؤال پژوهشی و طراحی مطالعه تا FASTQ، کنترل کیفیت، کمی‌سازی، ماتریس بیان، نرمال‌سازی، تحلیل بیان افتراقی و تفسیر زیستی.
                 </p>
-
                 <a
                   href="/learn/rna-seq"
                   className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-800"
@@ -899,216 +620,198 @@ export function RnaSeqInTranscriptomicsLesson() {
   );
 }
 
-function SceneCard({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
+function SceneCard({ eyebrow, title, description, children }: { eyebrow: string; title: string; description: string; children: ReactNode }) {
   return (
     <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
       <div className="border-b border-slate-200 bg-gradient-to-l from-teal-50 via-white to-white p-6 sm:p-8">
         <p className="text-xs font-bold text-teal-700">{eyebrow}</p>
-        <h2 className="mt-2 text-2xl font-black leading-10 text-slate-950 sm:text-3xl">
-          {title}
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600">
-          {description}
-        </p>
+        <h2 className="mt-2 text-2xl font-black leading-10 text-slate-950 sm:text-3xl">{title}</h2>
+        <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600">{description}</p>
       </div>
-
       <div className="p-6 sm:p-8">{children}</div>
     </article>
   );
 }
 
-function ConceptCard({
-  title,
-  text,
-  emphasized = false,
-}: {
-  title: string;
-  text: string;
-  emphasized?: boolean;
-}) {
+function TechnologySummary({ title, subtitle, icon }: { title: string; subtitle: string; icon: ReactNode }) {
   return (
-    <div
-      className={[
-        "rounded-3xl border p-6",
-        emphasized
-          ? "border-teal-300 bg-teal-50"
-          : "border-slate-200 bg-slate-50",
-      ].join(" ")}
-    >
-      <p className="text-xl font-black text-slate-950">{title}</p>
-      <p className="mt-4 text-sm leading-8 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function WorkflowCard({
-  index,
-  title,
-  description,
-}: {
-  index: number;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-teal-700 text-xs font-black text-white">
-        {new Intl.NumberFormat("fa-IR").format(index)}
-      </span>
-      <p className="mt-4 font-black text-slate-950">{title}</p>
-      <p className="mt-2 text-xs leading-6 text-slate-500">{description}</p>
-    </div>
-  );
-}
-
-function DataCard({
-  icon,
-  title,
-  description,
-  emphasized = false,
-}: {
-  icon: ReactNode;
-  title: string;
-  description: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-3xl border p-6",
-        emphasized
-          ? "border-teal-300 bg-teal-50"
-          : "border-slate-200 bg-slate-50",
-      ].join(" ")}
-    >
+    <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-teal-700">
-          {icon}
-        </span>
-        <p className="text-xl font-black text-slate-950">{title}</p>
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-400/10 text-teal-300">{icon}</span>
+        <div>
+          <p className="font-black">{title}</p>
+          <p className="mt-1 text-xs text-slate-400">{subtitle}</p>
+        </div>
       </div>
-      <p className="mt-4 text-sm leading-8 text-slate-600">{description}</p>
     </div>
   );
 }
 
-function CaseStep({
-  number,
-  title,
-  text,
-}: {
-  number: number;
-  title: string;
-  text: string;
-}) {
+function TechnologyPath({ title, subtitle, steps, emphasized = false }: { title: string; subtitle: string; steps: string[]; emphasized?: boolean }) {
   return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-950 text-xs font-black text-white">
-        {new Intl.NumberFormat("fa-IR").format(number)}
-      </span>
-      <p className="mt-4 font-black text-slate-950">{title}</p>
-      <p className="mt-2 text-sm leading-7 text-slate-600">{text}</p>
+    <div className={["rounded-3xl border p-5", emphasized ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"].join(" ")}>
+      <p className="font-black text-slate-950">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+      <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-bold text-slate-700">
+        {steps.map((step, index) => (
+          <div key={`${step}-${index}`} className="flex items-center gap-2">
+            <span className="rounded-xl bg-white px-3 py-2">{step}</span>
+            {index < steps.length - 1 && <span className="text-teal-700">←</span>}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
-function DecisionQuestion({
-  question,
-  options,
-  selected,
-  correctIndex,
-  onSelect,
-  correctFeedback,
-  incorrectFeedback,
-}: {
-  question: string;
-  options: string[];
-  selected: number | null;
-  correctIndex: number;
-  onSelect: (index: number) => void;
-  correctFeedback: string;
-  incorrectFeedback: string;
-}) {
+function TechnologyButton({ active, title, subtitle, onClick }: { active: boolean; title: string; subtitle: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "rounded-2xl border p-4 text-right transition",
+        active ? "border-teal-500 bg-teal-50 shadow-sm" : "border-slate-200 bg-white",
+      ].join(" ")}
+    >
+      <p className="font-black text-slate-950">{title}</p>
+      <p className="mt-1 text-xs text-slate-500">{subtitle}</p>
+    </button>
+  );
+}
+
+function RnaSeqVisual() {
+  return (
+    <div>
+      <p className="text-xs font-bold text-teal-300">RNA-seq چگونه «می‌بیند»؟</p>
+      <div className="mt-6 grid gap-4 md:grid-cols-4">
+        <VisualBox title="RNA" symbol="≈≈≈" />
+        <VisualBox title="کتابخانه" symbol="≋ ≋ ≋" />
+        <VisualBox title="خوانش‌ها" symbol="▰ ▰ ▰" />
+        <VisualBox title="FASTQ" symbol="@ A T C G" />
+      </div>
+      <p className="mt-6 text-sm leading-8 text-slate-300">منطق اصلی مبتنی بر تولید خوانش‌های توالی و سپس کمی‌سازی آن‌هاست.</p>
+    </div>
+  );
+}
+
+function MicroarrayVisual() {
+  const spots = [0.25, 0.7, 0.45, 0.9, 0.4, 0.2, 0.8, 0.55, 0.75, 0.35, 0.6, 0.18, 0.5, 0.82, 0.3, 0.68];
+
+  return (
+    <div>
+      <p className="text-xs font-bold text-teal-300">Microarray چگونه «می‌بیند»؟</p>
+      <div className="mt-6 grid gap-6 md:grid-cols-[0.85fr_1.15fr] md:items-center">
+        <div className="space-y-3">
+          <VisualBox title="RNA" symbol="≈≈≈" />
+          <VisualBox title="نمونه نشاندار" symbol="✦ RNA ✦" />
+          <VisualBox title="هیبریداسیون" symbol="RNA ↔ Probe" />
+        </div>
+
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+          <p className="text-xs text-slate-400">نمای مفهومی Chip</p>
+          <div className="mt-4 grid grid-cols-4 gap-3">
+            {spots.map((opacity, index) => (
+              <div key={index} className="aspect-square rounded-xl bg-teal-300" style={{ opacity }} />
+            ))}
+          </div>
+          <p className="mt-4 text-xs leading-6 text-slate-400">روشنایی بیشتر یعنی سیگنال بیشتر؛ این فقط یک شبیه‌سازی آموزشی است.</p>
+        </div>
+      </div>
+      <p className="mt-6 text-sm leading-8 text-slate-300">منطق اصلی مبتنی بر اتصال به پروب‌های از پیش طراحی‌شده و اندازه‌گیری شدت سیگنال است.</p>
+    </div>
+  );
+}
+
+function VisualBox({ title, symbol }: { title: string; symbol: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center">
+      <p className="text-2xl font-black text-teal-300">{symbol}</p>
+      <p className="mt-3 text-xs font-bold text-slate-200">{title}</p>
+    </div>
+  );
+}
+
+function ComparisonCard({ title, items, emphasized = false }: { title: string; items: string[]; emphasized?: boolean }) {
+  return (
+    <div className={["rounded-3xl border p-5", emphasized ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"].join(" ")}>
+      <p className="font-black text-slate-950">{title}</p>
+      <ul className="mt-4 space-y-3">
+        {items.map((item) => (
+          <li key={item} className="flex items-start gap-2 text-sm leading-7 text-slate-600">
+            <CheckCircle2 className="mt-1 size-4 shrink-0 text-teal-700" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RawDataCard({ title, badge, content, emphasized = false }: { title: string; badge: string; content: string[]; emphasized?: boolean }) {
+  return (
+    <div className={["rounded-3xl border p-5", emphasized ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"].join(" ")}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="font-black text-slate-950">{title}</p>
+        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-600">{badge}</span>
+      </div>
+      <pre dir="ltr" className="mt-5 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-left text-xs leading-7 text-slate-200">{content.join("\n")}</pre>
+    </div>
+  );
+}
+
+function CaseTechnologyCard({ title, lines, emphasized = false }: { title: string; lines: string[]; emphasized?: boolean }) {
+  return (
+    <div className={["rounded-3xl border p-5", emphasized ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-slate-50"].join(" ")}>
+      <p className="font-black text-slate-950">{title}</p>
+      <div className="mt-4 space-y-3">
+        {lines.map((line) => (
+          <div key={line} className="flex items-start gap-2 text-sm leading-7 text-slate-600">
+            <CheckCircle2 className="mt-1 size-4 shrink-0 text-teal-700" />
+            <span>{line}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DecisionQuestion({ question, options, selected, correctIndex, onSelect, correctFeedback, incorrectFeedback }: { question: string; options: string[]; selected: number | null; correctIndex: number; onSelect: (index: number) => void; correctFeedback: string; incorrectFeedback: string }) {
   const answered = selected !== null;
   const correct = selected === correctIndex;
 
   return (
     <section className="mt-7 rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
       <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white">
-          ؟
-        </span>
-
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white">؟</span>
         <p className="font-bold leading-8 text-slate-950">{question}</p>
       </div>
-
       <div className="mt-5 grid gap-3">
         {options.map((option, index) => {
           const active = selected === index;
-
           const className = active
             ? index === correctIndex
               ? "border-emerald-500 bg-emerald-50"
               : "border-amber-400 bg-amber-50"
             : "border-slate-200 bg-white hover:border-teal-300";
-
           return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onSelect(index)}
-              className={`rounded-2xl border p-4 text-right text-sm font-medium leading-7 text-slate-700 transition ${className}`}
-            >
+            <button key={option} type="button" onClick={() => onSelect(index)} className={`rounded-2xl border p-4 text-right text-sm font-medium leading-7 text-slate-700 transition ${className}`}>
               {option}
             </button>
           );
         })}
       </div>
-
       {answered && (
-        <div
-          className={[
-            "mt-4 rounded-2xl border p-4",
-            correct
-              ? "border-emerald-200 bg-emerald-50"
-              : "border-amber-200 bg-amber-50",
-          ].join(" ")}
-        >
-          <p
-            className={[
-              "text-sm font-bold",
-              correct ? "text-emerald-900" : "text-amber-950",
-            ].join(" ")}
-          >
-            {correct
-              ? "مسیر فکری درست ✓"
-              : "بیایید این برداشت را دوباره بررسی کنیم"}
-          </p>
-
-          <p className="mt-2 text-sm leading-7 text-slate-700">
-            {correct ? correctFeedback : incorrectFeedback}
-          </p>
+        <div className={["mt-4 rounded-2xl border p-4", correct ? "border-emerald-200 bg-emerald-50" : "border-amber-200 bg-amber-50"].join(" ")}>
+          <p className={correct ? "text-sm font-bold text-emerald-900" : "text-sm font-bold text-amber-950"}>{correct ? "مسیر فکری درست ✓" : "بیایید این برداشت را دوباره بررسی کنیم"}</p>
+          <p className="mt-2 text-sm leading-7 text-slate-700">{correct ? correctFeedback : incorrectFeedback}</p>
         </div>
       )}
     </section>
   );
 }
 
-function InsightBox({
-  children,
-}: {
-  children: ReactNode;
-}) {
+function InsightBox({ children }: { children: ReactNode }) {
   return (
     <div className="mt-6 flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-5">
       <Lightbulb className="mt-1 size-5 shrink-0 text-teal-700" />
@@ -1117,86 +820,27 @@ function InsightBox({
   );
 }
 
-function ConfidenceButton({
-  active,
-  title,
-  description,
-  onClick,
-}: {
-  active: boolean;
-  title: string;
-  description: string;
-  onClick: () => void;
-}) {
+function ConfidenceButton({ active, title, description, onClick }: { active: boolean; title: string; description: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "rounded-2xl border p-4 text-right transition",
-        active
-          ? "border-teal-500 bg-teal-50 shadow-sm"
-          : "border-slate-200 bg-white hover:border-teal-300",
-      ].join(" ")}
-    >
+    <button type="button" onClick={onClick} className={["rounded-2xl border p-4 text-right transition", active ? "border-teal-500 bg-teal-50 shadow-sm" : "border-slate-200 bg-white hover:border-teal-300"].join(" ")}>
       <p className="font-bold text-slate-950">{title}</p>
       <p className="mt-2 text-xs leading-6 text-slate-500">{description}</p>
     </button>
   );
 }
 
-function SaveIndicator({
-  userId,
-  state,
-  savedProgress,
-  error,
-}: {
-  userId: string | null;
-  state: SaveState;
-  savedProgress: LearningProgressRow | null;
-  error: string;
-}) {
+function SaveIndicator({ userId, state, savedProgress, error }: { userId: string | null; state: SaveState; savedProgress: LearningProgressRow | null; error: string }) {
   if (!userId) {
-    return (
-      <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800">
-        حالت مهمان
-      </span>
-    );
+    return <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[11px] font-semibold text-amber-800">حالت مهمان</span>;
   }
-
   if (state === "loading" || state === "saving") {
-    return (
-      <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-[11px] font-semibold text-cyan-800">
-        <Loader2 className="size-3 animate-spin" />
-        در حال همگام‌سازی
-      </span>
-    );
+    return <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1.5 text-[11px] font-semibold text-cyan-800"><Loader2 className="size-3 animate-spin" />در حال همگام‌سازی</span>;
   }
-
   if (state === "error") {
-    return (
-      <span
-        title={error}
-        className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-800"
-      >
-        مشکل در همگام‌سازی
-      </span>
-    );
+    return <span title={error} className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-[11px] font-semibold text-rose-800">مشکل در همگام‌سازی</span>;
   }
-
   if (savedProgress) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-800">
-        <CheckCircle2 className="size-3" />
-        درس هفتم ذخیره شده
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-800"><CheckCircle2 className="size-3" />درس هفتم ذخیره شده</span>;
   }
-
-  return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-500">
-      <Sparkles className="size-3" />
-      آماده یادگیری
-    </span>
-  );
+  return <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-500"><Sparkles className="size-3" />آماده یادگیری</span>;
 }
