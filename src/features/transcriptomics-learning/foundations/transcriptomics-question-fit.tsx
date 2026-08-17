@@ -839,13 +839,13 @@ export function TranscriptomicsQuestionFitLesson() {
                   در درس ششم یک بافت ناهمگن را از سه زاویه می‌بینیم و یاد می‌گیریم چرا وضوح بیشتر همیشه به معنی انتخاب بهتر نیست.
                 </p>
 
-                <button
-                  type="button"
-                  disabled
-                  className="mt-5 rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500"
+                <a
+                  href="/learn/transcriptomics/foundations/bulk-single-cell-spatial"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800"
                 >
-                  درس ششم در مرحله بعد ساخته می‌شود
-                </button>
+                  ورود به درس ششم
+                  <ArrowLeft className="size-4" />
+                </a>
               </div>
             </SceneCard>
           )}
