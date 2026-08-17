@@ -632,13 +632,13 @@ export function GenomeToTranscriptomeLesson() {
           {scene === 5 && (
             <SceneCard
               eyebrow="مطالعه موردی"
-              title="پروژه همراه شما: داروی X در سلول‌های سرطان پستان"
+              title="پروژه همراه شما: داروی X در سلول‌های سرطان پانکراس"
               description="از اینجا این پروژه در مبانی و بعداً در مسیر RNA-seq همراه ما خواهد بود."
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <ConditionCard
                   title="گروه کنترل"
-                  description="سلول‌های سرطان پستان بدون دریافت داروی X"
+                  description="سلول‌های سرطان پانکراس بدون دریافت داروی X"
                 />
 
                 <ConditionCard
