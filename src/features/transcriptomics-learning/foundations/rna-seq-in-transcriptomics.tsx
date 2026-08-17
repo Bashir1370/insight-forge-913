@@ -458,9 +458,9 @@ export function RnaSeqInTranscriptomicsLesson() {
               <DecisionQuestion
                 question="کدام ترتیب مفهومی مناسب‌تر است؟"
                 options={[
-                  "نمونه → RNA → کتابخانه → توالی‌یابی → FASTQ → کمی‌سازی → ماتریس بیان → تحلیل → تفسیر",
-                  "نمونه → ماتریس بیان → FASTQ → RNA → تفسیر",
-                  "FASTQ → نمونه → کتابخانه → DNA → ماتریس بیان",
+                  "نمونه ← RNA ← کتابخانه ← توالی‌یابی ← FASTQ ← کمی‌سازی ← ماتریس بیان ← تحلیل ← تفسیر",
+                  "نمونه ← ماتریس بیان ← FASTQ ← RNA ← تفسیر",
+                  "FASTQ ← نمونه ← کتابخانه ← DNA ← ماتریس بیان",
                 ]}
                 selected={workflowAnswer}
                 correctIndex={0}
