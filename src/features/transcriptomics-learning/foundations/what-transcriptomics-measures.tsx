@@ -791,13 +791,13 @@ export function WhatTranscriptomicsMeasuresLesson() {
                   در درس پنجم چند سؤال واقعی را مقایسه می‌کنیم و یاد می‌گیریم چه زمانی ترنسکریپتومیکس انتخاب مناسبی است و چه زمانی باید سراغ لایه یا روش دیگری رفت.
                 </p>
 
-                <button
-                  type="button"
-                  disabled
-                  className="mt-5 rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-bold text-slate-500"
+                <a
+                  href="/learn/transcriptomics/foundations/transcriptomics-question-fit"
+                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800"
                 >
-                  درس پنجم در مرحله بعد ساخته می‌شود
-                </button>
+                  ورود به درس پنجم
+                  <ArrowLeft className="size-4" />
+                </a>
               </div>
             </SceneCard>
           )}
