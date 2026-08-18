@@ -8,6 +8,7 @@ export function RnaSeqWorkflowFigure() {
         <p className="text-xs font-bold text-teal-700">
           نمای کلی فناوری
         </p>
+
         <h3 className="mt-1 text-xl font-black text-slate-950">
           مسیر کلی RNA-seq
         </h3>
@@ -16,9 +17,9 @@ export function RnaSeqWorkflowFigure() {
       <div className="bg-white p-3 sm:p-5">
         <div className="overflow-x-auto">
           <img
-            src="/images/learning/rna-seq-workflow.webp"
+            src="/images/learning/RNA-seq%20workflow.png"
             alt="نمای شماتیک مراحل RNA-seq از نمونه زیستی تا تحلیل بیوانفورماتیکی"
-            className="mx-auto h-auto w-full min-w-[900px] object-contain md:min-w-0"
+            className="mx-auto block h-auto w-full min-w-[920px] object-contain md:min-w-0"
             loading="eager"
             decoding="async"
           />
