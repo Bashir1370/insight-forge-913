@@ -233,10 +233,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "biological-interpretation",
     title: "تفسیر زیستی",
     summary:
-      "از فهرست ژن‌ها به مسیرهای زیستی، غنی‌سازی و یک نتیجه قابل دفاع برسید.",
+      "از فهرست ژن‌ها به مجموعه‌های ژنی، ORA، GSEA، جهت اثر و یک فرضیه زیستی قابل دفاع برسید.",
     principle:
-      "معنی‌داری آماری به‌تنهایی معادل اهمیت زیستی نیست.",
-    status: "planned",
+      "غنی‌سازی برای ساختن فرضیه است؛ نه اثبات خودکار مکانیزم یا علیت.",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/biological-interpretation",
   },
   {
     index: 11,
