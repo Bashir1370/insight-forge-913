@@ -81,7 +81,7 @@ const missions: Mission[] = [
     ],
     correctIndex: 0,
     correctFeedback:
-      "بیمار واحد مستقل زیستی است و توزیع گروه‌ها میان دسته‌ها مانع درهم‌آمیختگی کامل condition و batch می‌شود.",
+      "بیمار واحد مستقل زیستی است و توزیع گروه‌ها میان دسته‌ها مانع درهم‌آمیختگی کامل شرایط زیستی و دسته آزمایشی می‌شود.",
     incorrectFeedback:
       "تکرار فنی جای تکرار زیستی را نمی‌گیرد و جداکردن کامل گروه‌ها بین دسته‌ها اثر زیستی و فنی را غیرقابل تفکیک می‌کند.",
     deliverable: "۶ در برابر ۶ تکرار زیستی؛ دسته‌های A/B در هر دو گروه حضور دارند.",
@@ -94,7 +94,7 @@ const missions: Mission[] = [
       "نمونه‌ها بافت توموری آرشیوی منجمد هستند، یکپارچگی RNA بین نمونه‌ها یکسان نیست و سؤال پروژه فقط به mRNAهای دارای poly(A) محدود نشده است.",
     options: [
       "برای هر گروه یک روش آماده‌سازی کتابخانه متفاوت انتخاب کنیم تا بهترین خروجی هر گروه را بگیریم.",
-      "یک راهبرد حذف rRNA سازگار با نمونه‌ها را برای همه اجرا کنیم و نمونه‌های کم‌کیفیت‌تر را با شاخص‌های QC در زمینه همان پروتکل ارزیابی کنیم.",
+      "یک راهبرد حذف rRNA سازگار با نمونه‌ها را برای همه اجرا کنیم و نمونه‌های کم‌کیفیت‌تر را با شاخص‌های کنترل کیفیت در زمینه همان پروتکل ارزیابی کنیم.",
       "هر نمونه با RIN پایین‌تر از یک عدد ثابت را بدون توجه به پروتکل حذف کنیم.",
     ],
     correctIndex: 1,
@@ -102,7 +102,7 @@ const missions: Mission[] = [
       "در این سناریوی آموزشی، حذف rRNA با دامنه کیفیت نمونه و سؤال گسترده‌تر RNA سازگار است؛ مهم‌تر از نام روش، یکسان‌بودن راهبرد بین گروه‌ها و ارزیابی زمینه‌ای کیفیت است.",
     incorrectFeedback:
       "تفاوت سیستماتیک روش کتابخانه بین گروه‌ها می‌تواند اثر فنی را با زیست‌شناسی مخلوط کند و یک آستانه RIN هم قانون جهانی نیست.",
-    deliverable: "یک راهبرد ثابت حذف rRNA برای همه نمونه‌ها؛ QC نمونه‌محور، نه حذف با یک عدد جهانی.",
+    deliverable: "یک راهبرد ثابت حذف rRNA برای همه نمونه‌ها؛ کنترل کیفیت نمونه‌محور، نه حذف با یک عدد جهانی.",
   },
   {
     title: "تحویل FASTQ را ممیزی کنید",
@@ -112,33 +112,33 @@ const missions: Mission[] = [
       "توالی‌یابی در این مثال به‌صورت جفت‌انتها 2×100 bp انجام شده و برای سادگی هر نمونه یک جفت فایل تحویل گرفته است.",
     options: [
       "۲۴ فایل یعنی ۲۴ بیمار مستقل داریم.",
-      "۱۲ نمونه داریم که هرکدام یک Read 1 و یک Read 2 دارند؛ باید شناسه و جفت‌بودن فایل‌ها با فراداده تطبیق داده شود.",
+      "۱۲ نمونه داریم که هرکدام یک خوانش ۱ و یک خوانش ۲ دارند؛ باید شناسه و جفت‌بودن فایل‌ها با فراداده تطبیق داده شود.",
       "R1 و R2 دو تکرار زیستی از یک بیمار هستند.",
     ],
     correctIndex: 1,
     correctFeedback:
       "تعداد فایل با تعداد واحد زیستی یکی نیست. هویت نمونه از طراحی و فراداده می‌آید و R1/R2 دو سوی همان کتابخانه جفت‌انتها هستند.",
     incorrectFeedback:
-      "فایل و نمونه زیستی دو سطح متفاوت‌اند. در paired-end معمولاً دو فایل مرتبط برای یک کتابخانه داریم.",
+      "فایل و نمونه زیستی دو سطح متفاوت‌اند. در توالی‌یابی جفت‌انتها معمولاً دو فایل مرتبط برای یک کتابخانه داریم.",
     deliverable: "۱۲ جفت FASTQ با شناسه‌های تأییدشده و تطابق کامل با جدول نمونه‌ها.",
   },
   {
-    title: "QC داده خام را به تصمیم تبدیل کنید",
+    title: "کنترل کیفیت داده خام را به تصمیم تبدیل کنید",
     lessonRef: "درس ۵: کنترل کیفیت داده خام",
     prompt: "نمونه C4 آداپتور و افت کیفیت انتهای خوانش دارد. قدم بعدی چیست؟",
     context:
-      "C4 در انتهای Read 2 حدود ۱۸٪ سیگنال آداپتور نشان می‌دهد و کیفیت انتهای خوانش افت می‌کند؛ بقیه نمونه‌ها این شدت را ندارند.",
+      "C4 در انتهای خوانش ۲ حدود ۱۸٪ سیگنال آداپتور نشان می‌دهد و کیفیت انتهای خوانش افت می‌کند؛ بقیه نمونه‌ها این شدت را ندارند.",
     options: [
       "C4 را فوراً از مطالعه حذف کنیم.",
-      "پیرایش هدفمند آداپتور/بخش نامناسب را انجام دهیم، QC را دوباره اجرا کنیم و سپس شواهد مرحله‌های بعد را هم ببینیم.",
-      "هشدار را نادیده بگیریم چون هر Warning بی‌اهمیت است.",
+      "پیرایش هدفمند آداپتور/بخش نامناسب را انجام دهیم، کنترل کیفیت را دوباره اجرا کنیم و سپس شواهد مرحله‌های بعد را هم ببینیم.",
+      "هشدار را نادیده بگیریم چون هر هشدار بی‌اهمیت است.",
     ],
     correctIndex: 1,
     correctFeedback:
-      "QC برای هدایت اقدام است. یک مشکل قابل اصلاح را اول اصلاح و دوباره ارزیابی می‌کنیم؛ حذف نمونه نیاز به شواهد مستقل بیشتری دارد.",
+      "کنترل کیفیت برای هدایت اقدام است. یک مشکل قابل اصلاح را اول اصلاح و دوباره ارزیابی می‌کنیم؛ حذف نمونه نیاز به شواهد مستقل بیشتری دارد.",
     incorrectFeedback:
       "نه هر هشدار مجوز حذف است و نه هر هشدار بی‌اهمیت. باید علت، اصلاح ممکن و نتیجه پس از اصلاح را ببینیم.",
-    deliverable: "C4 پیرایش و دوباره QC شد؛ تصمیم خروج هنوز باز است.",
+    deliverable: "C4 پیرایش و دوباره کنترل کیفیت شد؛ تصمیم خروج هنوز باز است.",
   },
   {
     title: "مرجع و کمی‌سازی را یکپارچه کنید",
@@ -163,7 +163,7 @@ const missions: Mission[] = [
     lessonRef: "درس ۷: ماتریس شمارش",
     prompt: "قبل از تحلیل آماری، مهم‌ترین ممیزی جدول ژن × نمونه چیست؟",
     context:
-      "ماتریس شمارش ساخته شده است. ستون‌ها C1 تا T6 هستند و یک فایل فراداده جداگانه group، batch و اطلاعات پاتولوژی را نگه می‌دارد.",
+      "ماتریس شمارش ساخته شده است. ستون‌ها C1 تا T6 هستند و یک فایل فراداده جداگانه گروه، دسته آزمایشی و اطلاعات پاتولوژی را نگه می‌دارد.",
     options: [
       "فقط تعداد ژن‌ها را بررسی کنیم؛ نام ستون‌ها مهم نیست.",
       "شناسه و ترتیب ستون‌های ماتریس را با فراداده تطبیق دهیم و هر عدم تطابق را قبل از مدل‌سازی حل کنیم.",
@@ -199,15 +199,15 @@ const missions: Mission[] = [
     lessonRef: "درس ۹: نرمال‌سازی و بیان افتراقی",
     prompt: "بعد از خروج C4، کدام طرح تحلیل به سؤال اصلی نزدیک‌تر است؟",
     context:
-      "هر دو گروه هنوز در هر دو دسته A/B نماینده دارند. ورودی شمارشی خام/مناسب برای DESeq2 در دسترس است و سؤال اصلی اثر condition است.",
+      "هر دو گروه هنوز در هر دو دسته A/B نماینده دارند. ورودی شمارشی مناسب برای DESeq2 در دسترس است و سؤال اصلی اثر شرایط زیستی است.",
     options: [
       "داده را از قبل به TPM تبدیل کنیم و بعد همان را به‌عنوان شمارش خام وارد DESeq2 کنیم.",
       "مدل ~ batch + condition را روی شمارش مناسب اجرا کنیم، ضریب مقیاس و پراکندگی را در مدل برآورد کنیم و مقایسه درمان X در برابر مرجع را استخراج کنیم.",
-      "batch را حذف کنیم چون در PCA خیلی بزرگ به نظر نمی‌رسید.",
+      "دسته آزمایشی را حذف کنیم چون در PCA خیلی بزرگ به نظر نمی‌رسید.",
     ],
     correctIndex: 1,
     correctFeedback:
-      "مدل به طراحی واقعی برمی‌گردد: condition سؤال اصلی است و batch یک عامل فنی اندازه‌گیری‌شده و قابل تفکیک است.",
+      "مدل به طراحی واقعی برمی‌گردد: شرایط زیستی سؤال اصلی است و دسته آزمایشی یک عامل فنی اندازه‌گیری‌شده و قابل تفکیک است.",
     incorrectFeedback:
       "ورودی و طراحی مدل باید با فرض‌های روش و طراحی مطالعه سازگار باشند؛ تبدیل‌های نمایشی یا نادیده‌گرفتن عامل فنی جای مدل‌سازی درست را نمی‌گیرند.",
     deliverable: "مدل اصلی: ~ batch + condition؛ خروجی شامل اندازه اثر، مقدار p و مقدار p تعدیل‌شده.",
@@ -217,7 +217,7 @@ const missions: Mission[] = [
     lessonRef: "درس ۱۰: تفسیر زیستی",
     prompt: "کدام جمع‌بندی علمی از خروجی پروژه دفاع‌پذیرتر است؟",
     context:
-      "ژن‌های چرخه سلولی مثل MKI67/TOP2A کاهش و برخی ژن‌های ایمنی مثل CXCL9/HLA-B افزایش نشان می‌دهند. تحلیل رتبه‌محور نیز کاهش تم چرخه سلولی و افزایش تم ایمنی را نشان می‌دهد. این داده bulk RNA-seq بافت تومور است.",
+      "ژن‌های چرخه سلولی مثل MKI67/TOP2A کاهش و برخی ژن‌های ایمنی مثل CXCL9/HLA-B افزایش نشان می‌دهند. تحلیل رتبه‌محور نیز کاهش تم چرخه سلولی و افزایش تم ایمنی را نشان می‌دهد. این داده RNA-seq توده‌ای بافت تومور است.",
     options: [
       "درمان X قطعاً سلول‌های سرطانی را متوقف و مسیر ایمنی را در همان سلول‌ها فعال کرده است.",
       "داده با کاهش سیگنال‌های رونویسی مرتبط با چرخه سلولی و افزایش سیگنال‌های مرتبط با پاسخ ایمنی در بافت تومور سازگار است؛ منشأ سلولی و رابطه علّی به بررسی تکمیلی نیاز دارد.",
@@ -225,10 +225,10 @@ const missions: Mission[] = [
     ],
     correctIndex: 1,
     correctFeedback:
-      "ادعا هم جهت شواهد را بیان می‌کند و هم مرز آن را: bulk RNA-seq ترکیب بافت را هم می‌بیند و علیت را به‌تنهایی اثبات نمی‌کند.",
+      "ادعا هم جهت شواهد را بیان می‌کند و هم مرز آن را: RNA-seq توده‌ای ترکیب بافت را هم می‌بیند و علیت را به‌تنهایی اثبات نمی‌کند.",
     incorrectFeedback:
       "تفسیر باید با سطح داده هم‌تراز باشد. معنی‌داری آماری یا غنی‌سازی به‌تنهایی مکانیزم، نوع سلول یا علیت را ثابت نمی‌کند.",
-    deliverable: "فرضیه زیستی محتاطانه با اشاره صریح به زمینه bulk و نیاز به اعتبارسنجی.",
+    deliverable: "فرضیه زیستی محتاطانه با اشاره صریح به زمینه توده‌ای و نیاز به اعتبارسنجی.",
   },
   {
     title: "پروژه را قابل بازتولید تحویل دهید",
@@ -238,7 +238,7 @@ const missions: Mission[] = [
       "تحلیل تمام شده است. حالا یک همکار باید بتواند بفهمد چه داده‌ای وارد شد، چه تصمیم‌هایی گرفته شد و خروجی چگونه تولید شد.",
     options: [
       "فقط شکل نهایی و فهرست ژن‌های برتر را بفرستیم.",
-      "سؤال و طراحی، جدول نمونه، معیارها و تصمیم‌های QC، نمونه خارج‌شده و دلیل آن، نسخه مرجع/حاشیه‌نویسی، نسخه ابزارها و پارامترها، کد/فرمان‌ها، مدل آماری، خروجی کامل، منبع مجموعه‌های ژنی و محدودیت‌ها را ثبت کنیم.",
+      "سؤال و طراحی، جدول نمونه، معیارها و تصمیم‌های کنترل کیفیت، نمونه خارج‌شده و دلیل آن، نسخه مرجع/حاشیه‌نویسی، نسخه ابزارها و پارامترها، کد/فرمان‌ها، مدل آماری، خروجی کامل، منبع مجموعه‌های ژنی و محدودیت‌ها را ثبت کنیم.",
       "فقط نام ابزارها را بنویسیم؛ نسخه و پارامترها مهم نیستند.",
     ],
     correctIndex: 1,
@@ -275,14 +275,22 @@ export function RnaSeqIntegratedProjectLesson() {
   function answer(optionIndex: number) {
     setAnswers((current) => ({ ...current, [missionIndex]: optionIndex }));
     if (optionIndex === mission.correctIndex) {
-      setMaxUnlocked((current) => Math.max(current, Math.min(missionIndex + 1, missions.length - 1)));
+      setMaxUnlocked((current) =>
+        Math.max(current, Math.min(missionIndex + 1, missions.length - 1)),
+      );
     }
   }
 
   function goTo(index: number) {
     if (index < 0 || index >= missions.length || index > maxUnlocked) return;
     setMissionIndex(index);
-    window.setTimeout(() => document.getElementById("integrated-project")?.scrollIntoView({ behavior: "smooth", block: "start" }), 20);
+    window.setTimeout(
+      () =>
+        document
+          .getElementById("integrated-project")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      20,
+    );
   }
 
   function resetProject() {
@@ -319,23 +327,45 @@ export function RnaSeqIntegratedProjectLesson() {
                 <header className="border-b border-slate-200 bg-gradient-to-l from-teal-50 via-white to-white p-6 sm:p-8">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <p className="text-xs font-black text-teal-700">ماموریت {(missionIndex + 1).toLocaleString("fa-IR")} از {missions.length.toLocaleString("fa-IR")}</p>
-                      <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">{mission.title}</h2>
+                      <p className="text-xs font-black text-teal-700">
+                        ماموریت {(missionIndex + 1).toLocaleString("fa-IR")} از {missions.length.toLocaleString("fa-IR")}
+                      </p>
+                      <h2 className="mt-2 text-2xl font-black text-slate-950 sm:text-3xl">
+                        {mission.title}
+                      </h2>
                     </div>
-                    <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-800">{mission.lessonRef}</span>
+                    <span className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-black text-sky-800">
+                      {mission.lessonRef}
+                    </span>
                   </div>
-                  <p className="mt-4 max-w-4xl text-sm leading-8 text-slate-600">{mission.context}</p>
+                  <p className="mt-4 max-w-4xl text-sm leading-8 text-slate-600">
+                    {mission.context}
+                  </p>
                 </header>
 
                 <div className="p-6 sm:p-8">
                   <MissionLab missionIndex={missionIndex} />
 
-                  <DecisionPanel mission={mission} selected={selected} onSelect={answer} />
+                  <DecisionPanel
+                    mission={mission}
+                    selected={selected}
+                    onSelect={answer}
+                  />
 
                   {selected !== undefined && (
-                    <div className={`mt-5 rounded-2xl border p-4 text-sm leading-7 ${solved ? "border-emerald-200 bg-emerald-50 text-emerald-950" : "border-rose-200 bg-rose-50 text-rose-950"}`}>
+                    <div
+                      className={`mt-5 rounded-2xl border p-4 text-sm leading-7 ${
+                        solved
+                          ? "border-emerald-200 bg-emerald-50 text-emerald-950"
+                          : "border-rose-200 bg-rose-50 text-rose-950"
+                      }`}
+                    >
                       <div className="flex items-start gap-3">
-                        {solved ? <CheckCircle2 className="mt-1 size-5 shrink-0 text-emerald-700" /> : <ShieldCheck className="mt-1 size-5 shrink-0 text-rose-700" />}
+                        {solved ? (
+                          <CheckCircle2 className="mt-1 size-5 shrink-0 text-emerald-700" />
+                        ) : (
+                          <ShieldCheck className="mt-1 size-5 shrink-0 text-rose-700" />
+                        )}
                         <p>{solved ? mission.correctFeedback : mission.incorrectFeedback}</p>
                       </div>
                     </div>
@@ -344,29 +374,47 @@ export function RnaSeqIntegratedProjectLesson() {
                   {solved && (
                     <div className="mt-5 rounded-2xl border border-violet-200 bg-violet-50 p-4">
                       <p className="text-xs font-black text-violet-700">ثبت در دفترچه تصمیم‌ها</p>
-                      <p className="mt-2 text-sm leading-7 text-violet-950">{mission.deliverable}</p>
+                      <p className="mt-2 text-sm leading-7 text-violet-950">
+                        {mission.deliverable}
+                      </p>
                     </div>
                   )}
                 </div>
               </article>
 
               <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <button type="button" disabled={missionIndex === 0} onClick={() => goTo(missionIndex - 1)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-40">
+                <button
+                  type="button"
+                  disabled={missionIndex === 0}
+                  onClick={() => goTo(missionIndex - 1)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 disabled:opacity-40"
+                >
                   <ArrowRight className="size-4" /> ماموریت قبل
                 </button>
                 {missionIndex < missions.length - 1 && (
-                  <button type="button" disabled={!solved} onClick={() => goTo(missionIndex + 1)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300">
+                  <button
+                    type="button"
+                    disabled={!solved}
+                    onClick={() => goTo(missionIndex + 1)}
+                    className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
                     {solved ? "ثبت تصمیم و ادامه پروژه" : "اول تصمیم قابل دفاع را پیدا کنید"}
                     <ArrowLeft className="size-4" />
                   </button>
                 )}
               </div>
 
-              {completed === missions.length && <FinalProjectReport decisionLog={decisionLog} />}
+              {completed === missions.length && (
+                <FinalProjectReport decisionLog={decisionLog} />
+              )}
             </main>
 
             <aside className="xl:sticky xl:top-6 xl:self-start">
-              <ProjectDossier open={dossierOpen} onToggle={() => setDossierOpen((current) => !current)} decisionLog={decisionLog} />
+              <ProjectDossier
+                open={dossierOpen}
+                onToggle={() => setDossierOpen((current) => !current)}
+                decisionLog={decisionLog}
+              />
             </aside>
           </div>
         </div>
@@ -375,35 +423,99 @@ export function RnaSeqIntegratedProjectLesson() {
   );
 }
 
-function ProjectHeader({ score, completed, onReset }: { score: number; completed: number; onReset: () => void }) {
+function ProjectHeader({
+  score,
+  completed,
+  onReset,
+}: {
+  score: number;
+  completed: number;
+  onReset: () => void;
+}) {
   return (
     <section className="rounded-[2rem] border border-slate-200 bg-slate-950 p-6 text-white sm:p-8">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="flex items-center gap-2 text-teal-300"><FlaskConical className="size-5" /><span className="text-xs font-black">شبیه‌ساز پروژه RNA-seq</span></div>
-          <h1 className="mt-3 text-2xl font-black sm:text-3xl">پرونده آموزشی: درمان X در سرطان پانکراس</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-300">هدف این درس گرفتن «بیشترین امتیاز» نیست؛ هدف ساختن زنجیره‌ای است که یک پژوهشگر دیگر بتواند منطق هر تصمیم را دنبال کند.</p>
+          <div className="flex items-center gap-2 text-teal-300">
+            <FlaskConical className="size-5" />
+            <span className="text-xs font-black">شبیه‌ساز پروژه RNA-seq</span>
+          </div>
+          <h1 className="mt-3 text-2xl font-black sm:text-3xl">
+            پرونده آموزشی: درمان X در سرطان پانکراس
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-300">
+            هدف این درس گرفتن «بیشترین امتیاز» نیست؛ هدف ساختن زنجیره‌ای است که یک پژوهشگر دیگر بتواند منطق هر تصمیم را دنبال کند.
+          </p>
         </div>
         <div className="flex items-center gap-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center"><p className="text-xs text-slate-400">دفاع‌پذیری پروژه</p><p className="mt-1 text-2xl font-black text-teal-300">{score.toLocaleString("fa-IR")}٪</p></div>
-          <button type="button" onClick={onReset} className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 hover:bg-white/10"><RotateCcw className="size-4" />شروع دوباره</button>
+          <div className="rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-center">
+            <p className="text-xs text-slate-400">دفاع‌پذیری پروژه</p>
+            <p className="mt-1 text-2xl font-black text-teal-300">
+              {score.toLocaleString("fa-IR")}٪
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onReset}
+            className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-xs font-bold text-slate-200 hover:bg-white/10"
+          >
+            <RotateCcw className="size-4" /> شروع دوباره
+          </button>
         </div>
       </div>
-      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-teal-400 transition-all" style={{ width: `${score}%` }} /></div>
-      <p className="mt-2 text-xs text-slate-400">{completed.toLocaleString("fa-IR")} تصمیم از {missions.length.toLocaleString("fa-IR")} تصمیم ثبت شده است.</p>
+      <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/10">
+        <div
+          className="h-full rounded-full bg-teal-400 transition-all"
+          style={{ width: `${score}%` }}
+        />
+      </div>
+      <p className="mt-2 text-xs text-slate-400">
+        {completed.toLocaleString("fa-IR")} تصمیم از {missions.length.toLocaleString("fa-IR")} تصمیم ثبت شده است.
+      </p>
     </section>
   );
 }
 
-function MissionNavigator({ current, maxUnlocked, answers, onSelect }: { current: number; maxUnlocked: number; answers: Record<number, number>; onSelect: (index: number) => void }) {
+function MissionNavigator({
+  current,
+  maxUnlocked,
+  answers,
+  onSelect,
+}: {
+  current: number;
+  maxUnlocked: number;
+  answers: Record<number, number>;
+  onSelect: (index: number) => void;
+}) {
   return (
     <div className="mb-5 flex gap-2 overflow-x-auto pb-2">
       {missions.map((mission, index) => {
         const locked = index > maxUnlocked;
         const complete = answers[index] === mission.correctIndex;
         return (
-          <button key={mission.title} type="button" disabled={locked} onClick={() => onSelect(index)} className={`shrink-0 rounded-full border px-3 py-2 text-xs font-bold ${index === current ? "border-teal-600 bg-teal-600 text-white" : complete ? "border-emerald-200 bg-emerald-50 text-emerald-800" : locked ? "border-slate-200 bg-slate-50 text-slate-400" : "border-slate-200 bg-white text-slate-600"}`}>
-            <span className="inline-flex items-center gap-1.5">{locked ? <LockKeyhole className="size-3.5" /> : complete ? <CheckCircle2 className="size-3.5" /> : null}{(index + 1).toLocaleString("fa-IR")}. {mission.title}</span>
+          <button
+            key={mission.title}
+            type="button"
+            disabled={locked}
+            onClick={() => onSelect(index)}
+            className={`shrink-0 rounded-full border px-3 py-2 text-xs font-bold ${
+              index === current
+                ? "border-teal-600 bg-teal-600 text-white"
+                : complete
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  : locked
+                    ? "border-slate-200 bg-slate-50 text-slate-400"
+                    : "border-slate-200 bg-white text-slate-600"
+            }`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              {locked ? (
+                <LockKeyhole className="size-3.5" />
+              ) : complete ? (
+                <CheckCircle2 className="size-3.5" />
+              ) : null}
+              {(index + 1).toLocaleString("fa-IR")}. {mission.title}
+            </span>
           </button>
         );
       })}
@@ -411,15 +523,37 @@ function MissionNavigator({ current, maxUnlocked, answers, onSelect }: { current
   );
 }
 
-function DecisionPanel({ mission, selected, onSelect }: { mission: Mission; selected: number | undefined; onSelect: (index: number) => void }) {
+function DecisionPanel({
+  mission,
+  selected,
+  onSelect,
+}: {
+  mission: Mission;
+  selected: number | undefined;
+  onSelect: (index: number) => void;
+}) {
   return (
     <section className="mt-7 rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
       <p className="text-xs font-black text-slate-500">ایستگاه تصمیم</p>
-      <h3 className="mt-2 text-lg font-black leading-8 text-slate-950">{mission.prompt}</h3>
+      <h3 className="mt-2 text-lg font-black leading-8 text-slate-950">
+        {mission.prompt}
+      </h3>
       <div className="mt-4 grid gap-3">
         {mission.options.map((option, index) => (
-          <button key={option} type="button" onClick={() => onSelect(index)} className={`rounded-2xl border p-4 text-right text-sm font-semibold leading-7 transition ${selected === index ? "border-teal-500 bg-teal-50 text-teal-950" : "border-slate-200 bg-white text-slate-700 hover:border-teal-300"}`}>
-            <span className="ml-2 inline-flex size-7 items-center justify-center rounded-full bg-slate-100 text-xs font-black">{(index + 1).toLocaleString("fa-IR")}</span>{option}
+          <button
+            key={option}
+            type="button"
+            onClick={() => onSelect(index)}
+            className={`rounded-2xl border p-4 text-right text-sm font-semibold leading-7 transition ${
+              selected === index
+                ? "border-teal-500 bg-teal-50 text-teal-950"
+                : "border-slate-200 bg-white text-slate-700 hover:border-teal-300"
+            }`}
+          >
+            <span className="ml-2 inline-flex size-7 items-center justify-center rounded-full bg-slate-100 text-xs font-black">
+              {(index + 1).toLocaleString("fa-IR")}
+            </span>
+            {option}
           </button>
         ))}
       </div>
@@ -455,7 +589,16 @@ function MissionLab({ missionIndex }: { missionIndex: number }) {
 }
 
 function ResearchQuestionLab() {
-  return <LabFrame title="سؤال را به اجزای قابل آزمون بشکنید"><div className="grid gap-3 sm:grid-cols-4"><Metric label="بیماری" value="سرطان پانکراس" /><Metric label="مقایسه" value="درمان X / مرجع" /><Metric label="واحد زیستی" value="بیمار" /><Metric label="خروجی" value="بیان RNA" /></div></LabFrame>;
+  return (
+    <LabFrame title="سؤال را به اجزای قابل آزمون بشکنید">
+      <div className="grid gap-3 sm:grid-cols-4">
+        <Metric label="بیماری" value="سرطان پانکراس" />
+        <Metric label="مقایسه" value="درمان X / مرجع" />
+        <Metric label="واحد زیستی" value="بیمار" />
+        <Metric label="خروجی" value="بیان RNA" />
+      </div>
+    </LabFrame>
+  );
 }
 
 function StudyDesignLab() {
@@ -463,7 +606,28 @@ function StudyDesignLab() {
     <LabFrame title="تعادل گروه و دسته آزمایشی را ببینید">
       <div className="grid gap-3 md:grid-cols-2">
         {["A", "B"].map((batch) => (
-          <div key={batch} className="rounded-2xl border border-slate-200 bg-white p-4"><p className="font-black">دسته {batch}</p><div className="mt-3 flex flex-wrap gap-2">{sampleRows.filter((s) => s.batch === batch).map((s) => <span key={s.id} className={`rounded-full px-3 py-1 text-xs font-bold ${s.group === "مرجع" ? "bg-sky-50 text-sky-800" : "bg-amber-50 text-amber-800"}`}>{s.id} · {s.group}</span>)}</div></div>
+          <div
+            key={batch}
+            className="rounded-2xl border border-slate-200 bg-white p-4"
+          >
+            <p className="font-black">دسته {batch}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {sampleRows
+                .filter((sample) => sample.batch === batch)
+                .map((sample) => (
+                  <span
+                    key={sample.id}
+                    className={`rounded-full px-3 py-1 text-xs font-bold ${
+                      sample.group === "مرجع"
+                        ? "bg-sky-50 text-sky-800"
+                        : "bg-amber-50 text-amber-800"
+                    }`}
+                  >
+                    {sample.id} · {sample.group}
+                  </span>
+                ))}
+            </div>
+          </div>
         ))}
       </div>
     </LabFrame>
@@ -472,11 +636,37 @@ function StudyDesignLab() {
 
 function SampleLibraryLab() {
   const [sort, setSort] = useState<"id" | "rin">("id");
-  const rows = useMemo(() => [...sampleRows].sort((a, b) => sort === "rin" ? a.rin - b.rin : a.id.localeCompare(b.id)), [sort]);
+  const rows = useMemo(
+    () =>
+      [...sampleRows].sort((a, b) =>
+        sort === "rin" ? a.rin - b.rin : a.id.localeCompare(b.id),
+      ),
+    [sort],
+  );
+
   return (
     <LabFrame title="RIN را ببینید، اما به یک آستانه جهانی تبدیلش نکنید">
-      <div className="flex gap-2"><ChoiceButton active={sort === "id"} onClick={() => setSort("id")}>ترتیب نمونه</ChoiceButton><ChoiceButton active={sort === "rin"} onClick={() => setSort("rin")}>مرتب‌سازی بر اساس RIN</ChoiceButton></div>
-      <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-4">{rows.map((row) => <div key={row.id} className="rounded-xl border border-slate-200 bg-white p-3"><div className="flex items-center justify-between"><b>{row.id}</b><span className="text-xs text-slate-500">{row.group}</span></div><p className="mt-2 text-sm">RIN: <b>{row.rin}</b></p></div>)}</div>
+      <div className="flex gap-2">
+        <ChoiceButton active={sort === "id"} onClick={() => setSort("id")}>
+          ترتیب نمونه
+        </ChoiceButton>
+        <ChoiceButton active={sort === "rin"} onClick={() => setSort("rin")}>
+          مرتب‌سازی بر اساس RIN
+        </ChoiceButton>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        {rows.map((row) => (
+          <div key={row.id} className="rounded-xl border border-slate-200 bg-white p-3">
+            <div className="flex items-center justify-between">
+              <b>{row.id}</b>
+              <span className="text-xs text-slate-500">{row.group}</span>
+            </div>
+            <p className="mt-2 text-sm">
+              RIN: <b>{row.rin}</b>
+            </p>
+          </div>
+        ))}
+      </div>
     </LabFrame>
   );
 }
@@ -485,9 +675,20 @@ function FastqAuditLab() {
   const [sample, setSample] = useState("C1");
   return (
     <LabFrame title="یک نمونه را انتخاب کنید و جفت فایلش را پیدا کنید">
-      <div className="flex flex-wrap gap-2">{["C1", "C4", "T2", "T6"].map((id) => <ChoiceButton key={id} active={sample === id} onClick={() => setSample(id)}>{id}</ChoiceButton>)}</div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2" dir="ltr"><FilePill>{sample}_R1.fastq.gz</FilePill><FilePill>{sample}_R2.fastq.gz</FilePill></div>
-      <p className="mt-3 text-xs leading-6 text-slate-500">این نام‌گذاری یک مثال است، نه قانون جهانی نام فایل.</p>
+      <div className="flex flex-wrap gap-2">
+        {["C1", "C4", "T2", "T6"].map((id) => (
+          <ChoiceButton key={id} active={sample === id} onClick={() => setSample(id)}>
+            {id}
+          </ChoiceButton>
+        ))}
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2" dir="ltr">
+        <FilePill>{sample}_R1.fastq.gz</FilePill>
+        <FilePill>{sample}_R2.fastq.gz</FilePill>
+      </div>
+      <p className="mt-3 text-xs leading-6 text-slate-500">
+        این نام‌گذاری یک مثال است، نه قانون جهانی نام فایل.
+      </p>
     </LabFrame>
   );
 }
@@ -496,9 +697,22 @@ function RawQcLab() {
   const [after, setAfter] = useState(false);
   return (
     <LabFrame title="C4 را قبل و بعد از پیرایش مقایسه کنید">
-      <div className="flex gap-2"><ChoiceButton active={!after} onClick={() => setAfter(false)}>قبل از پیرایش</ChoiceButton><ChoiceButton active={after} onClick={() => setAfter(true)}>بعد از پیرایش</ChoiceButton></div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3"><Metric label="آداپتور انتهای R2" value={after ? "۲٪" : "۱۸٪"} /><Metric label="کیفیت انتهای R2" value={after ? "بهبود یافته" : "افت محسوس"} /><Metric label="وضعیت" value={after ? "نیازمند مرحله بعد" : "قابل اصلاح"} /></div>
-      <p className="mt-3 text-sm leading-7 text-slate-600">بهبود QC خام مشکل آداپتور را حل می‌کند، اما هنوز نمی‌دانیم C4 از نظر نگاشت و رفتار کل نمونه چگونه است.</p>
+      <div className="flex gap-2">
+        <ChoiceButton active={!after} onClick={() => setAfter(false)}>
+          قبل از پیرایش
+        </ChoiceButton>
+        <ChoiceButton active={after} onClick={() => setAfter(true)}>
+          بعد از پیرایش
+        </ChoiceButton>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <Metric label="آداپتور انتهای خوانش ۲" value={after ? "۲٪" : "۱۸٪"} />
+        <Metric label="کیفیت انتهای خوانش ۲" value={after ? "بهبود یافته" : "افت محسوس"} />
+        <Metric label="وضعیت" value={after ? "نیازمند مرحله بعد" : "قابل اصلاح"} />
+      </div>
+      <p className="mt-3 text-sm leading-7 text-slate-600">
+        بهبود کنترل کیفیت داده خام مشکل آداپتور را حل می‌کند، اما هنوز نمی‌دانیم C4 از نظر نگاشت و رفتار کل نمونه چگونه است.
+      </p>
     </LabFrame>
   );
 }
@@ -506,34 +720,91 @@ function RawQcLab() {
 function QuantificationLab() {
   const [sample, setSample] = useState<"typical" | "c4">("typical");
   return (
-    <LabFrame title="بعد از QC خام، شواهد نگاشت را هم ببینید">
-      <div className="flex gap-2"><ChoiceButton active={sample === "typical"} onClick={() => setSample("typical")}>نمونه معمولی</ChoiceButton><ChoiceButton active={sample === "c4"} onClick={() => setSample("c4")}>C4</ChoiceButton></div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-3"><Metric label="نگاشت به مرجع" value={sample === "c4" ? "۳۱٪" : "۸۷٪"} /><Metric label="انتساب به ژن" value={sample === "c4" ? "۱۸٪" : "۷۴٪"} /><Metric label="مرجع/حاشیه‌نویسی" value="یکسان" /></div>
+    <LabFrame title="بعد از کنترل کیفیت داده خام، شواهد نگاشت را هم ببینید">
+      <div className="flex gap-2">
+        <ChoiceButton
+          active={sample === "typical"}
+          onClick={() => setSample("typical")}
+        >
+          نمونه معمولی
+        </ChoiceButton>
+        <ChoiceButton active={sample === "c4"} onClick={() => setSample("c4")}>
+          C4
+        </ChoiceButton>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+        <Metric label="نگاشت به مرجع" value={sample === "c4" ? "۳۱٪" : "۸۷٪"} />
+        <Metric label="انتساب به ژن" value={sample === "c4" ? "۱۸٪" : "۷۴٪"} />
+        <Metric label="مرجع/حاشیه‌نویسی" value="یکسان" />
+      </div>
     </LabFrame>
   );
 }
 
 function MatrixMetadataLab() {
   const [aligned, setAligned] = useState(false);
-  const matrix = aligned ? ["C1", "C2", "C3", "C4", "C5", "C6", "T1", "T2", "T3", "T4", "T5", "T6"] : ["C1", "C2", "T1", "C3", "C4", "T2", "C5", "T3", "C6", "T4", "T5", "T6"];
+  const matrix = aligned
+    ? ["C1", "C2", "C3", "C4", "C5", "C6", "T1", "T2", "T3", "T4", "T5", "T6"]
+    : ["C1", "C2", "T1", "C3", "C4", "T2", "C5", "T3", "C6", "T4", "T5", "T6"];
   return (
     <LabFrame title="ترتیب ستون‌های ماتریس و فراداده را ممیزی کنید">
-      <ChoiceButton active={aligned} onClick={() => setAligned((current) => !current)}>{aligned ? "نمایش ترتیب اولیه" : "تطبیق با فراداده"}</ChoiceButton>
-      <div className="mt-4 overflow-x-auto"><div className="flex min-w-max gap-2" dir="ltr">{matrix.map((id) => <span key={id} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black">{id}</span>)}</div></div>
-      <p className="mt-3 text-sm leading-7 text-slate-600">نرم‌افزار ممکن است جدول را بدون خطا بخواند؛ اما این پژوهشگر است که باید هویت ستون‌ها را با فراداده تأیید کند.</p>
+      <ChoiceButton active={aligned} onClick={() => setAligned((current) => !current)}>
+        {aligned ? "نمایش ترتیب اولیه" : "تطبیق با فراداده"}
+      </ChoiceButton>
+      <div className="mt-4 overflow-x-auto">
+        <div className="flex min-w-max gap-2" dir="ltr">
+          {matrix.map((id) => (
+            <span
+              key={id}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-black"
+            >
+              {id}
+            </span>
+          ))}
+        </div>
+      </div>
+      <p className="mt-3 text-sm leading-7 text-slate-600">
+        نرم‌افزار ممکن است جدول را بدون خطا بخواند؛ اما این پژوهشگر است که باید هویت ستون‌ها را با فراداده تأیید کند.
+      </p>
     </LabFrame>
   );
 }
 
 function SampleQcLab() {
   const [sample, setSample] = useState<"C4" | "T6">("C4");
-  const data = sample === "C4"
-    ? { mapping: "۳۱٪", assigned: "۱۸٪", pca: "بسیار دور", lab: "افت غلظت/پیچیدگی", tissue: "استروما ۳۶٪" }
-    : { mapping: "۸۶٪", assigned: "۷۲٪", pca: "در محدوده درمان", lab: "بدون هشدار فنی عمده", tissue: "استروما ۷۲٪" };
+  const data =
+    sample === "C4"
+      ? {
+          mapping: "۳۱٪",
+          assigned: "۱۸٪",
+          pca: "بسیار دور",
+          lab: "افت غلظت/پیچیدگی",
+          tissue: "استروما ۳۶٪",
+        }
+      : {
+          mapping: "۸۶٪",
+          assigned: "۷۲٪",
+          pca: "در محدوده درمان",
+          lab: "بدون هشدار فنی عمده",
+          tissue: "استروما ۷۲٪",
+        };
   return (
     <LabFrame title="پرونده شواهد را برای دو نمونه باز کنید">
-      <div className="flex gap-2"><ChoiceButton active={sample === "C4"} onClick={() => setSample("C4")}>C4</ChoiceButton><ChoiceButton active={sample === "T6"} onClick={() => setSample("T6")}>T6</ChoiceButton></div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><Metric label="نگاشت" value={data.mapping} /><Metric label="انتساب" value={data.assigned} /><Metric label="PCA" value={data.pca} /><Metric label="دفتر آزمایش" value={data.lab} /><Metric label="پاتولوژی" value={data.tissue} /></div>
+      <div className="flex gap-2">
+        <ChoiceButton active={sample === "C4"} onClick={() => setSample("C4")}>
+          C4
+        </ChoiceButton>
+        <ChoiceButton active={sample === "T6"} onClick={() => setSample("T6")}>
+          T6
+        </ChoiceButton>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <Metric label="نگاشت" value={data.mapping} />
+        <Metric label="انتساب" value={data.assigned} />
+        <Metric label="PCA" value={data.pca} />
+        <Metric label="دفتر آزمایش" value={data.lab} />
+        <Metric label="پاتولوژی" value={data.tissue} />
+      </div>
     </LabFrame>
   );
 }
@@ -542,8 +813,22 @@ function DifferentialExpressionLab() {
   const [view, setView] = useState<"design" | "results">("design");
   return (
     <LabFrame title="از طراحی به نتیجه بروید">
-      <div className="flex gap-2"><ChoiceButton active={view === "design"} onClick={() => setView("design")}>مدل</ChoiceButton><ChoiceButton active={view === "results"} onClick={() => setView("results")}>نتایج نمونه</ChoiceButton></div>
-      {view === "design" ? <pre className="mt-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-left text-xs leading-7 text-slate-200" dir="ltr">{`design = ~ batch + condition\ncontrast = treatment_X vs reference`}</pre> : <ResultsTable />}
+      <div className="flex gap-2">
+        <ChoiceButton active={view === "design"} onClick={() => setView("design")}>
+          مدل
+        </ChoiceButton>
+        <ChoiceButton active={view === "results"} onClick={() => setView("results")}>
+          نتایج نمونه
+        </ChoiceButton>
+      </div>
+      {view === "design" ? (
+        <pre
+          className="mt-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-left text-xs leading-7 text-slate-200"
+          dir="ltr"
+        >{`design = ~ batch + condition\ncontrast = treatment_X vs reference`}</pre>
+      ) : (
+        <ResultsTable />
+      )}
     </LabFrame>
   );
 }
@@ -558,67 +843,282 @@ function InterpretationLab() {
   const row = map[theme];
   return (
     <LabFrame title="تم زیستی را به ژن و محدودیتش وصل کنید">
-      <div className="flex flex-wrap gap-2"><ChoiceButton active={theme === "cycle"} onClick={() => setTheme("cycle")}>چرخه سلولی</ChoiceButton><ChoiceButton active={theme === "immune"} onClick={() => setTheme("immune")}>ایمنی</ChoiceButton><ChoiceButton active={theme === "stroma"} onClick={() => setTheme("stroma")}>استروما</ChoiceButton></div>
-      <div className="mt-4 grid gap-3 sm:grid-cols-4"><Metric label="تم" value={row[0]} /><Metric label="جهت" value={row[1]} /><Metric label="ژن‌های محرک" value={row[2]} /><Metric label="برداشت" value={row[3]} /></div>
+      <div className="flex flex-wrap gap-2">
+        <ChoiceButton active={theme === "cycle"} onClick={() => setTheme("cycle")}>
+          چرخه سلولی
+        </ChoiceButton>
+        <ChoiceButton active={theme === "immune"} onClick={() => setTheme("immune")}>
+          ایمنی
+        </ChoiceButton>
+        <ChoiceButton active={theme === "stroma"} onClick={() => setTheme("stroma")}>
+          استروما
+        </ChoiceButton>
+      </div>
+      <div className="mt-4 grid gap-3 sm:grid-cols-4">
+        <Metric label="تم" value={row[0]} />
+        <Metric label="جهت" value={row[1]} />
+        <Metric label="ژن‌های محرک" value={row[2]} />
+        <Metric label="برداشت" value={row[3]} />
+      </div>
     </LabFrame>
   );
 }
 
 function ReproducibilityLab() {
   const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const items = ["جدول نمونه و فراداده", "تصمیم‌ها و معیارهای QC", "نسخه مرجع و حاشیه‌نویسی", "نسخه ابزارها و پارامترها", "کد/فرمان‌های اجرا", "مدل آماری و مقایسه", "خروجی کامل و نه فقط ژن‌های منتخب", "منبع/نسخه مجموعه‌های ژنی", "محدودیت‌ها و تصمیم خروج C4"];
+  const items = [
+    "جدول نمونه و فراداده",
+    "تصمیم‌ها و معیارهای کنترل کیفیت",
+    "نسخه مرجع و حاشیه‌نویسی",
+    "نسخه ابزارها و پارامترها",
+    "کد/فرمان‌های اجرا",
+    "مدل آماری و مقایسه",
+    "خروجی کامل و نه فقط ژن‌های منتخب",
+    "منبع/نسخه مجموعه‌های ژنی",
+    "محدودیت‌ها و تصمیم خروج C4",
+  ];
   const count = Object.values(checked).filter(Boolean).length;
   return (
     <LabFrame title="بسته تحویل پروژه را کامل کنید">
-      <div className="mb-4 flex items-center justify-between"><p className="text-sm font-bold text-slate-700">{count.toLocaleString("fa-IR")} از {items.length.toLocaleString("fa-IR")} جزء آماده</p><span className="text-xs text-teal-700">هر مورد بخشی از قابلیت بازتولید است</span></div>
-      <div className="grid gap-2 sm:grid-cols-2">{items.map((item) => <button key={item} type="button" onClick={() => setChecked((current) => ({ ...current, [item]: !current[item] }))} className={`flex items-center gap-3 rounded-xl border p-3 text-right text-sm font-bold ${checked[item] ? "border-emerald-200 bg-emerald-50 text-emerald-900" : "border-slate-200 bg-white text-slate-700"}`}><span className={`inline-flex size-6 items-center justify-center rounded-full ${checked[item] ? "bg-emerald-600 text-white" : "bg-slate-100"}`}>{checked[item] ? "✓" : ""}</span>{item}</button>)}</div>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm font-bold text-slate-700">
+          {count.toLocaleString("fa-IR")} از {items.length.toLocaleString("fa-IR")} جزء آماده
+        </p>
+        <span className="text-xs text-teal-700">هر مورد بخشی از قابلیت بازتولید است</span>
+      </div>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {items.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() =>
+              setChecked((current) => ({ ...current, [item]: !current[item] }))
+            }
+            className={`flex items-center gap-3 rounded-xl border p-3 text-right text-sm font-bold ${
+              checked[item]
+                ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                : "border-slate-200 bg-white text-slate-700"
+            }`}
+          >
+            <span
+              className={`inline-flex size-6 items-center justify-center rounded-full ${
+                checked[item] ? "bg-emerald-600 text-white" : "bg-slate-100"
+              }`}
+            >
+              {checked[item] ? "✓" : ""}
+            </span>
+            {item}
+          </button>
+        ))}
+      </div>
     </LabFrame>
   );
 }
 
 function ResultsTable() {
   return (
-    <div className="mt-4 overflow-x-auto"><table className="w-full min-w-[620px] text-sm"><thead><tr className="text-slate-500"><th className="p-2 text-right">ژن</th><th className="p-2 text-right">log2FC</th><th className="p-2 text-right">padj</th><th className="p-2 text-right">تم</th></tr></thead><tbody>{deRows.map((row) => <tr key={row.gene} className="border-t border-slate-200"><td className="p-2 font-black" dir="ltr">{row.gene}</td><td className="p-2" dir="ltr">{row.log2fc > 0 ? "+" : ""}{row.log2fc}</td><td className="p-2" dir="ltr">{row.padj}</td><td className="p-2">{row.theme}</td></tr>)}</tbody></table><p className="mt-2 text-xs text-slate-500">اعداد این جدول برای سناریوی آموزشی شبیه‌سازی شده‌اند و نتیجه یک مجموعه‌داده واقعی نیستند.</p></div>
+    <div className="mt-4 overflow-x-auto">
+      <table className="w-full min-w-[680px] text-sm">
+        <thead>
+          <tr className="text-slate-500">
+            <th className="p-2 text-right">ژن</th>
+            <th className="p-2 text-right">تغییر چندبرابری (log2)</th>
+            <th className="p-2 text-right">مقدار p تعدیل‌شده</th>
+            <th className="p-2 text-right">تم</th>
+          </tr>
+        </thead>
+        <tbody>
+          {deRows.map((row) => (
+            <tr key={row.gene} className="border-t border-slate-200">
+              <td className="p-2 font-black" dir="ltr">
+                {row.gene}
+              </td>
+              <td className="p-2" dir="ltr">
+                {row.log2fc > 0 ? "+" : ""}
+                {row.log2fc}
+              </td>
+              <td className="p-2" dir="ltr">
+                {row.padj}
+              </td>
+              <td className="p-2">{row.theme}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-2 text-xs text-slate-500">
+        اعداد این جدول برای سناریوی آموزشی شبیه‌سازی شده‌اند و نتیجه یک مجموعه‌داده واقعی نیستند.
+      </p>
+    </div>
   );
 }
 
-function ProjectDossier({ open, onToggle, decisionLog }: { open: boolean; onToggle: () => void; decisionLog: { item: Mission; index: number; solved: boolean }[] }) {
+function ProjectDossier({
+  open,
+  onToggle,
+  decisionLog,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  decisionLog: { item: Mission; index: number; solved: boolean }[];
+}) {
   return (
     <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/50">
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between p-5 text-right"><div><p className="text-xs font-black text-teal-700">پرونده پروژه</p><p className="mt-1 font-black text-slate-950">شواهد و تصمیم‌های ثبت‌شده</p></div><ClipboardCheck className="size-5 text-teal-700" /></button>
-      {open && <div className="border-t border-slate-200 p-5"><div className="grid gap-2 text-sm"><InfoRow label="بیماری" value="سرطان پانکراس" /><InfoRow label="نمونه اولیه" value="۱۲ بیمار مستقل" /><InfoRow label="مقایسه" value="درمان X / مرجع" /><InfoRow label="دسته‌ها" value="A و B" /><InfoRow label="نوع داده" value="bulk RNA-seq" /></div><div className="mt-5 border-t border-slate-100 pt-5"><p className="text-xs font-black text-slate-500">دفترچه تصمیم‌ها</p><div className="mt-3 space-y-3">{decisionLog.length === 0 ? <p className="text-xs leading-6 text-slate-400">هنوز تصمیمی ثبت نشده است.</p> : decisionLog.map(({ item, index }) => <div key={item.title} className="rounded-xl bg-slate-50 p-3"><p className="text-xs font-black text-slate-700">{(index + 1).toLocaleString("fa-IR")}. {item.title}</p><p className="mt-1 text-xs leading-6 text-slate-500">{item.deliverable}</p></div>)}</div></div></div>}
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-5 text-right"
+      >
+        <div>
+          <p className="text-xs font-black text-teal-700">پرونده پروژه</p>
+          <p className="mt-1 font-black text-slate-950">شواهد و تصمیم‌های ثبت‌شده</p>
+        </div>
+        <ClipboardCheck className="size-5 text-teal-700" />
+      </button>
+      {open && (
+        <div className="border-t border-slate-200 p-5">
+          <div className="grid gap-2 text-sm">
+            <InfoRow label="بیماری" value="سرطان پانکراس" />
+            <InfoRow label="نمونه اولیه" value="۱۲ بیمار مستقل" />
+            <InfoRow label="مقایسه" value="درمان X / مرجع" />
+            <InfoRow label="دسته‌ها" value="A و B" />
+            <InfoRow label="نوع داده" value="RNA-seq توده‌ای" />
+          </div>
+          <div className="mt-5 border-t border-slate-100 pt-5">
+            <p className="text-xs font-black text-slate-500">دفترچه تصمیم‌ها</p>
+            <div className="mt-3 space-y-3">
+              {decisionLog.length === 0 ? (
+                <p className="text-xs leading-6 text-slate-400">هنوز تصمیمی ثبت نشده است.</p>
+              ) : (
+                decisionLog.map(({ item, index }) => (
+                  <div key={item.title} className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs font-black text-slate-700">
+                      {(index + 1).toLocaleString("fa-IR")}. {item.title}
+                    </p>
+                    <p className="mt-1 text-xs leading-6 text-slate-500">
+                      {item.deliverable}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
 
-function FinalProjectReport({ decisionLog }: { decisionLog: { item: Mission; index: number; solved: boolean }[] }) {
+function FinalProjectReport({
+  decisionLog,
+}: {
+  decisionLog: { item: Mission; index: number; solved: boolean }[];
+}) {
   return (
     <section className="mt-8 overflow-hidden rounded-[2rem] border border-emerald-200 bg-emerald-50 shadow-lg shadow-emerald-100/70">
       <div className="p-6 sm:p-8">
-        <div className="flex items-start gap-4"><div className="rounded-2xl bg-emerald-600 p-3 text-white"><FileCheck2 className="size-6" /></div><div><p className="text-xs font-black text-emerald-700">پروژه تکمیل شد</p><h2 className="mt-1 text-2xl font-black text-emerald-950">گزارش تصمیم‌محور شما آماده است</h2><p className="mt-2 text-sm leading-8 text-emerald-950/80">شما یک «جواب نهایی» حفظ نکردید؛ نشان دادید چگونه هر حلقه از سؤال تا تفسیر روی حلقه قبلی سوار می‌شود.</p></div></div>
-        <div className="mt-6 grid gap-3 md:grid-cols-2">{decisionLog.map(({ item, index }) => <div key={item.title} className="rounded-2xl border border-emerald-200 bg-white p-4"><p className="text-xs font-black text-emerald-700">تصمیم {(index + 1).toLocaleString("fa-IR")}</p><p className="mt-1 font-black text-slate-950">{item.title}</p><p className="mt-2 text-xs leading-6 text-slate-600">{item.deliverable}</p></div>)}</div>
-        <div className="mt-6 rounded-3xl bg-slate-950 p-6 text-white"><div className="flex items-center gap-2 text-teal-300"><Sparkles className="size-5" /><p className="text-xs font-black">جمع‌بندی پژوهشی</p></div><p className="mt-3 text-sm leading-8 text-slate-200">در این سناریوی آموزشی، پس از کنترل طراحی، کیفیت، هویت نمونه و مدل آماری، داده با کاهش سیگنال‌های مرتبط با چرخه سلولی و افزایش سیگنال‌های مرتبط با پاسخ ایمنی در بافت تومور گروه درمان سازگار بود. این نتیجه یک فرضیه قابل آزمون است؛ منشأ سلولی و علیت نیازمند شواهد تکمیلی‌اند.</p></div>
+        <div className="flex items-start gap-4">
+          <div className="rounded-2xl bg-emerald-600 p-3 text-white">
+            <FileCheck2 className="size-6" />
+          </div>
+          <div>
+            <p className="text-xs font-black text-emerald-700">پروژه تکمیل شد</p>
+            <h2 className="mt-1 text-2xl font-black text-emerald-950">
+              گزارش تصمیم‌محور شما آماده است
+            </h2>
+            <p className="mt-2 text-sm leading-8 text-emerald-950/80">
+              شما یک «جواب نهایی» حفظ نکردید؛ نشان دادید چگونه هر حلقه از سؤال تا تفسیر روی حلقه قبلی سوار می‌شود.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          {decisionLog.map(({ item, index }) => (
+            <div
+              key={item.title}
+              className="rounded-2xl border border-emerald-200 bg-white p-4"
+            >
+              <p className="text-xs font-black text-emerald-700">
+                تصمیم {(index + 1).toLocaleString("fa-IR")}
+              </p>
+              <p className="mt-1 font-black text-slate-950">{item.title}</p>
+              <p className="mt-2 text-xs leading-6 text-slate-600">
+                {item.deliverable}
+              </p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-6 rounded-3xl bg-slate-950 p-6 text-white">
+          <div className="flex items-center gap-2 text-teal-300">
+            <Sparkles className="size-5" />
+            <p className="text-xs font-black">جمع‌بندی پژوهشی</p>
+          </div>
+          <p className="mt-3 text-sm leading-8 text-slate-200">
+            در این سناریوی آموزشی، پس از کنترل طراحی، کیفیت، هویت نمونه و مدل آماری، داده با کاهش سیگنال‌های مرتبط با چرخه سلولی و افزایش سیگنال‌های مرتبط با پاسخ ایمنی در بافت تومور گروه درمان سازگار بود. این نتیجه یک فرضیه قابل آزمون است؛ منشأ سلولی و علیت نیازمند شواهد تکمیلی‌اند.
+          </p>
+        </div>
       </div>
     </section>
   );
 }
 
 function LabFrame({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="rounded-3xl border border-teal-200 bg-teal-50/60 p-5 sm:p-6"><div className="flex items-center gap-2"><Sparkles className="size-5 text-teal-700" /><p className="text-xs font-black text-teal-700">میز کار پروژه</p></div><h3 className="mt-2 font-black leading-8 text-teal-950">{title}</h3><div className="mt-4">{children}</div></section>;
+  return (
+    <section className="rounded-3xl border border-teal-200 bg-teal-50/60 p-5 sm:p-6">
+      <div className="flex items-center gap-2">
+        <Sparkles className="size-5 text-teal-700" />
+        <p className="text-xs font-black text-teal-700">میز کار پروژه</p>
+      </div>
+      <h3 className="mt-2 font-black leading-8 text-teal-950">{title}</h3>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
 }
 
-function ChoiceButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: ReactNode }) {
-  return <button type="button" onClick={onClick} className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${active ? "border-teal-600 bg-teal-600 text-white" : "border-slate-200 bg-white text-slate-700 hover:border-teal-300"}`}>{children}</button>;
+function ChoiceButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-xl border px-4 py-2 text-sm font-bold transition ${
+        active
+          ? "border-teal-600 bg-teal-600 text-white"
+          : "border-slate-200 bg-white text-slate-700 hover:border-teal-300"
+      }`}
+    >
+      {children}
+    </button>
+  );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
-  return <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center"><p className="text-xs text-slate-500">{label}</p><p className="mt-2 text-sm font-black leading-7 text-slate-950">{value}</p></div>;
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 text-center">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="mt-2 text-sm font-black leading-7 text-slate-950">{value}</p>
+    </div>
+  );
 }
 
 function FilePill({ children }: { children: ReactNode }) {
-  return <div className="rounded-2xl border border-slate-200 bg-slate-950 p-4 font-mono text-sm text-teal-300">{children}</div>;
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-950 p-4 font-mono text-sm text-teal-300">
+      {children}
+    </div>
+  );
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
-  return <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-2"><span className="text-xs text-slate-500">{label}</span><span className="text-xs font-black text-slate-800">{value}</span></div>;
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-2">
+      <span className="text-xs text-slate-500">{label}</span>
+      <span className="text-xs font-black text-slate-800">{value}</span>
+    </div>
+  );
 }
