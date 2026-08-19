@@ -62,7 +62,7 @@ const levelInfo: Record<
     description:
       "RNA تعداد زیادی سلول در یک نمونه به‌صورت ترکیبی دیده می‌شود. سؤال اصلی در سطح نمونه تعریف می‌شود، نه در سطح هر سلول منفرد.",
     technologyNote:
-      "این سطح مشاهده می‌تواند با فناوری‌هایی مانند RNA-seq یا Microarray ایجاد شود. بنابراین «توده‌ای» خودش نام یک فناوری واحد نیست.",
+      "این سطح مشاهده می‌تواند با فناوری‌هایی مانند RNA-seq یا میکروآرایه ایجاد شود. بنابراین «توده‌ای» خودش نام یک فناوری واحد نیست.",
   },
   "single-cell": {
     title: "ترنسکریپتومیکس تک‌سلولی",
@@ -70,7 +70,7 @@ const levelInfo: Record<
     description:
       "RNA در سطح سلول‌ها بررسی می‌شود تا ناهمگنی، زیرجمعیت‌ها و حالت‌های سلولی بهتر دیده شوند.",
     technologyNote:
-      "یکی از رایج‌ترین روش‌های امروزی برای این سطح مشاهده scRNA-seq است. «تک‌سلولی» سطح مشاهده است و scRNA-seq یک فناوری رایج برای رسیدن به آن.",
+      "یکی از رایج‌ترین فناوری‌های امروزی برای این سطح مشاهده، RNA-seq تک‌سلولی (scRNA-seq) است. «تک‌سلولی» سطح مشاهده است و RNA-seq تک‌سلولی یک فناوری رایج برای رسیدن به آن است.",
   },
   spatial: {
     title: "ترنسکریپتومیکس فضایی",
@@ -78,7 +78,7 @@ const levelInfo: Record<
     description:
       "اطلاعات RNA همراه با موقعیت در بافت حفظ می‌شود تا بتوان بیان را به معماری بافت و نواحی مختلف مرتبط کرد.",
     technologyNote:
-      "ترنسکریپتومیکس فضایی یک خانواده از فناوری‌هاست. همه پلتفرم‌ها وضوح، پوشش و منطق اندازه‌گیری یکسانی ندارند.",
+      "ترنسکریپتومیکس فضایی یک خانواده از فناوری‌هاست. همه پلتفرم‌ها تفکیک‌پذیری، پوشش و منطق اندازه‌گیری یکسانی ندارند.",
   },
 };
 
@@ -307,7 +307,7 @@ export function BulkSingleCellSpatialLesson() {
           {scene === 0 && (
             <SceneCard
               eyebrow="اول یک تفکیک مهم"
-              title="«توده‌ای» و «تک‌سلولی» بیشتر درباره سطح مشاهده‌اند؛ RNA-seq و Microarray درباره فناوری اندازه‌گیری."
+              title="«توده‌ای» و «تک‌سلولی» بیشتر درباره سطح مشاهده‌اند؛ RNA-seq و میکروآرایه درباره فناوری اندازه‌گیری."
               description="اگر این دو مفهوم را قاطی کنیم، ممکن است ناخواسته تصور کنیم ترنسکریپتومیکس فقط RNA-seq است."
             >
               <div className="grid gap-4 lg:grid-cols-2">
@@ -318,14 +318,14 @@ export function BulkSingleCellSpatialLesson() {
                 />
                 <ConceptCard
                   title="فناوری اندازه‌گیری"
-                  text="می‌گوید RNA با چه روش فنی اندازه‌گیری شده است؛ مانند RNA-seq، Microarray یا فناوری‌های فضایی مختلف."
+                  text="می‌گوید RNA با چه روش فنی اندازه‌گیری شده است؛ مانند RNA-seq، میکروآرایه یا فناوری‌های فضایی مختلف."
                 />
               </div>
 
               <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
                 <p className="text-xs font-bold text-teal-300">یک مثال مهم</p>
                 <p className="mt-3 text-lg font-black leading-9">
-                  ترنسکریپتومیکس توده‌ای می‌تواند با RNA-seq انجام شود یا با Microarray.
+                  ترنسکریپتومیکس توده‌ای می‌تواند با RNA-seq انجام شود یا با میکروآرایه.
                 </p>
               </div>
 
@@ -333,14 +333,14 @@ export function BulkSingleCellSpatialLesson() {
                 question="کدام جمله دقیق‌تر است؟"
                 options={[
                   "توده‌ای خودش یک فناوری واحد مثل RNA-seq است.",
-                  "توده‌ای یک سطح مشاهده است و می‌تواند با فناوری‌های مختلفی مانند RNA-seq یا Microarray ایجاد شود.",
+                  "توده‌ای یک سطح مشاهده است و می‌تواند با فناوری‌های مختلفی مانند RNA-seq یا میکروآرایه ایجاد شود.",
                   "هر مطالعه توده‌ای الزاماً FASTQ دارد.",
                 ]}
                 selected={openingAnswer}
                 correctIndex={1}
                 onSelect={setOpeningAnswer}
                 correctFeedback="دقیقاً. سطح مشاهده را از فناوری جدا کردید."
-                incorrectFeedback="«توده‌ای» درباره مقیاس مشاهده است؛ فناوری اندازه‌گیری می‌تواند RNA-seq، Microarray یا روش دیگری باشد."
+                incorrectFeedback="«توده‌ای» درباره مقیاس مشاهده است؛ فناوری اندازه‌گیری می‌تواند RNA-seq، میکروآرایه یا روش دیگری باشد."
               />
             </SceneCard>
           )}
@@ -348,7 +348,7 @@ export function BulkSingleCellSpatialLesson() {
           {scene === 1 && (
             <SceneCard
               eyebrow="آزمایشگاه سه نما"
-              title="یک بافت ثابت، سه نوع وضوح متفاوت"
+              title="یک بافت ثابت، سه سطح مشاهده متفاوت"
               description="همان بافت سرطان پانکراس را از سه سطح مشاهده ببینید."
             >
 
@@ -402,7 +402,7 @@ export function BulkSingleCellSpatialLesson() {
             <SceneCard
               eyebrow="سطح مشاهده یا فناوری؟"
               title="این دو لایه را آگاهانه از هم جدا نگه دارید."
-              description="این تفکیک کمک می‌کند در درس بعد جای RNA-seq و Microarray را دقیق‌تر بفهمیم."
+              description="این تفکیک کمک می‌کند در درس بعد جای RNA-seq و میکروآرایه را دقیق‌تر بفهمیم."
             >
               <div className="grid gap-5 lg:grid-cols-2">
                 <InfoList
@@ -418,19 +418,19 @@ export function BulkSingleCellSpatialLesson() {
                   title="فناوری اندازه‌گیری"
                   items={[
                     "RNA-seq: مبتنی بر توالی‌یابی",
-                    "Microarray: مبتنی بر پروب و شدت سیگنال",
-                    "فناوری‌های فضایی: خانواده‌ای با منطق‌ها و وضوح‌های مختلف",
+                    "میکروآرایه: مبتنی بر پروب و شدت سیگنال",
+                    "فناوری‌های فضایی: خانواده‌ای با منطق‌ها و تفکیک‌پذیری‌های مختلف",
                   ]}
                 />
               </div>
 
               <DecisionQuestion
-                question="یک مطالعه از RNA بافت کامل استفاده کرده و با Microarray بیان ژن را سنجیده است. این مطالعه از نظر سطح مشاهده در کدام دسته قرار می‌گیرد؟"
+                question="یک مطالعه از RNA بافت کامل استفاده کرده و با میکروآرایه بیان ژن را سنجیده است. این مطالعه از نظر سطح مشاهده در کدام دسته قرار می‌گیرد؟"
                 options={["توده‌ای", "تک‌سلولی", "فضایی"]}
                 selected={conceptAnswer}
                 correctIndex={0}
                 onSelect={setConceptAnswer}
-                correctFeedback="درست است. فناوری Microarray است، اما سطح مشاهده توده‌ای است."
+                correctFeedback="درست است. فناوری میکروآرایه است، اما سطح مشاهده توده‌ای است."
                 incorrectFeedback="چون RNA از کل نمونه بافت به‌صورت ترکیبی اندازه‌گیری شده، سطح مشاهده توده‌ای است."
               />
 
@@ -443,8 +443,8 @@ export function BulkSingleCellSpatialLesson() {
           {scene === 3 && (
             <SceneCard
               eyebrow="آزمایشگاه تصمیم"
-              title="سؤال پژوهشی تعیین می‌کند چه نوع وضوحی لازم دارید."
-              description="هدف انتخاب «مناسب‌تر» است، نه بیشترین جزئیات ممکن."
+              title="سؤال پژوهشی تعیین می‌کند به چه سطح مشاهده‌ای نیاز دارید."
+              description="هدف انتخاب سطح مشاهده مناسب برای سؤال پژوهشی است، نه صرفاً بیشترین جزئیات ممکن."
             >
               <DecisionQuestion
                 question="۱) می‌خواهم پاسخ کلی RNA یک بافت را بین کنترل و تیمار مقایسه کنم و ناهمگنی سلولی سؤال اصلی من نیست."
@@ -457,7 +457,7 @@ export function BulkSingleCellSpatialLesson() {
                 correctIndex={0}
                 onSelect={setQuestion1}
                 correctFeedback="درست است. اگر سؤال در سطح نمونه تعریف شده، نمای توده‌ای می‌تواند مناسب باشد."
-                incorrectFeedback="وضوح بیشتر همیشه ضروری نیست. سؤال در سطح نمونه می‌تواند با طراحی توده‌ای پاسخ داده شود."
+                incorrectFeedback="سطح مشاهده جزئی‌تر همیشه ضروری نیست. سؤال در سطح نمونه می‌تواند با طراحی توده‌ای پاسخ داده شود."
               />
 
               <DecisionQuestion
@@ -492,9 +492,9 @@ export function BulkSingleCellSpatialLesson() {
 
           {scene === 4 && (
             <SceneCard
-              eyebrow="یک Guardrail مهم"
+              eyebrow="یک نکته مهم"
               title="هزاران سلول، هزاران تکرار زیستی نیستند."
-              description="وضوح تک‌سلولی یک مسئله را حل می‌کند، اما مشکل کمبود نمونه مستقل را خودبه‌خود حل نمی‌کند."
+              description="سطح مشاهده تک‌سلولی یک مسئله را حل می‌کند، اما مشکل کمبود نمونه مستقل را خودبه‌خود حل نمی‌کند."
             >
               <div className="grid gap-4 md:grid-cols-2">
                 <ConceptCard
@@ -522,7 +522,7 @@ export function BulkSingleCellSpatialLesson() {
               />
 
               <InsightBox>
-                <strong>Sample ≠ Cell.</strong> وضوح بیشتر باید کنار طراحی زیستی مناسب قرار بگیرد.
+                <strong>نمونه ≠ سلول.</strong> سطح مشاهده جزئی‌تر باید کنار طراحی زیستی مناسب قرار بگیرد.
               </InsightBox>
             </SceneCard>
           )}
@@ -545,17 +545,17 @@ export function BulkSingleCellSpatialLesson() {
                 options={[
                   "یک اندازه‌گیری توده‌ای به‌تنهایی هویت سلول و موقعیت را مستقیم حفظ می‌کند.",
                   "به اطلاعات سلول‌محور و فضایی نیاز داریم؛ فناوری دقیق باید بر اساس طراحی، نمونه و بودجه انتخاب شود.",
-                  "فقط Microarray توده‌ای تمام این اطلاعات را مستقیم می‌دهد.",
+                  "فقط میکروآرایه در سطح توده‌ای تمام این اطلاعات را مستقیم می‌دهد.",
                 ]}
                 selected={caseAnswer}
                 correctIndex={1}
                 onSelect={setCaseAnswer}
-                correctFeedback="درست است. اول نوع وضوح را از سؤال استخراج می‌کنیم، بعد فناوری مناسب را انتخاب می‌کنیم."
+                correctFeedback="درست است. اول سطح مشاهده موردنیاز را از سؤال استخراج می‌کنیم، بعد فناوری مناسب را انتخاب می‌کنیم."
                 incorrectFeedback="نمای توده‌ای برای هویت سلول‌های منفرد و موقعیت آن‌ها کافی نیست."
               />
 
               <div className="mt-7 rounded-3xl border border-amber-200 bg-amber-50 p-6">
-                <p className="font-black text-amber-950">کلینیک اشتباه</p>
+                <p className="font-black text-amber-950">اشتباه رایج</p>
                 <p className="mt-3 text-sm leading-8 text-amber-900">
                   «تک‌سلولی همیشه از توده‌ای بهتر است، چون جزئیات بیشتری دارد.»
                 </p>
@@ -565,14 +565,14 @@ export function BulkSingleCellSpatialLesson() {
                 question="مشکل این جمله چیست؟"
                 options={[
                   "جزئیات بیشتر همیشه طراحی بهتر را تضمین می‌کند.",
-                  "روش مناسب به سؤال، طراحی، هزینه و نوع نتیجه موردنیاز بستگی دارد؛ وضوح بیشتر همیشه ضروری نیست.",
+                  "روش مناسب به سؤال، طراحی، هزینه و نوع نتیجه موردنیاز بستگی دارد؛ سطح مشاهده جزئی‌تر همیشه ضروری نیست.",
                   "ترنسکریپتومیکس توده‌ای هیچ کاربرد علمی مهمی ندارد.",
                 ]}
                 selected={mistakeAnswer}
                 correctIndex={1}
                 onSelect={setMistakeAnswer}
-                correctFeedback="دقیقاً. «پر جزئیات‌تر» مترادف «مناسب‌تر برای سؤال من» نیست."
-                incorrectFeedback="انتخاب باید از سؤال پژوهشی و طراحی بیاید، نه از بیشترین وضوح ممکن."
+                correctFeedback="دقیقاً. «جزئی‌تر» همیشه به معنی «مناسب‌تر برای سؤال من» نیست."
+                incorrectFeedback="انتخاب باید از سؤال پژوهشی و طراحی بیاید، نه از جزئی‌ترین سطح مشاهده ممکن."
               />
 
               <div className="mt-8 border-t border-slate-100 pt-7">
@@ -598,12 +598,12 @@ export function BulkSingleCellSpatialLesson() {
                 {reflection && (
                   <InsightBox>
                     {reflection === "average"
-                      ? "اگر سؤال شما در سطح نمونه تعریف شده باشد، طراحی توده‌ای می‌تواند کاملاً منطقی باشد؛ فناوری می‌تواند RNA-seq یا در برخی پروژه‌ها Microarray باشد."
+                      ? "اگر سؤال شما در سطح نمونه تعریف شده باشد، طراحی توده‌ای می‌تواند کاملاً منطقی باشد؛ فناوری می‌تواند RNA-seq یا در برخی پروژه‌ها میکروآرایه باشد."
                       : reflection === "cell-types"
                         ? "وقتی زیرجمعیت‌های سلولی سؤال اصلی‌اند، سطح تک‌سلولی اهمیت پیدا می‌کند."
                         : reflection === "location"
                           ? "اگر مکان در بافت بخشی از سؤال است، اطلاعات فضایی اهمیت پیدا می‌کند."
-                          : "اشکالی ندارد. اول نوع وضوح موردنیاز را روشن کنید؛ انتخاب فناوری مرحله بعد است."}
+                          : "اشکالی ندارد. اول سطح مشاهده موردنیاز را روشن کنید؛ انتخاب فناوری مرحله بعد است."}
                   </InsightBox>
                 )}
               </div>
@@ -617,12 +617,12 @@ export function BulkSingleCellSpatialLesson() {
               description="این مهارت پایه ورود به درس هفتم است."
             >
               <DecisionQuestion
-                question="یک مطالعه بیان ژن را از RNA کل بافت با Microarray اندازه‌گیری کرده است. کدام جمله دقیق‌تر است؟"
+                question="یک مطالعه بیان ژن را از RNA کل بافت با میکروآرایه اندازه‌گیری کرده است. کدام جمله دقیق‌تر است؟"
                 options={[
-                  "چون Microarray است، مطالعه دیگر توده‌ای نیست.",
-                  "سطح مشاهده توده‌ای است و فناوری اندازه‌گیری Microarray.",
+                  "چون میکروآرایه است، مطالعه دیگر توده‌ای نیست.",
+                  "سطح مشاهده توده‌ای است و فناوری اندازه‌گیری میکروآرایه.",
                   "هر مطالعه توده‌ای باید RNA-seq و FASTQ داشته باشد.",
-                  "Microarray فقط برای داده تک‌سلولی استفاده می‌شود.",
+                  "میکروآرایه فقط برای داده تک‌سلولی استفاده می‌شود.",
                 ]}
                 selected={masteryAnswer}
                 correctIndex={1}
@@ -643,7 +643,7 @@ export function BulkSingleCellSpatialLesson() {
               <div className="mt-7 rounded-3xl bg-slate-950 p-6 text-white">
                 <p className="text-xs font-bold text-teal-300">لحظه فهم این درس</p>
                 <p className="mt-3 text-lg font-bold leading-9">
-                  توده‌ای، تک‌سلولی و فضایی درباره نوع وضوح‌اند؛ RNA-seq و Microarray درباره فناوری اندازه‌گیری‌اند.
+                  توده‌ای، تک‌سلولی و فضایی درباره سطح مشاهده‌اند؛ RNA-seq و میکروآرایه درباره فناوری اندازه‌گیری‌اند.
                 </p>
               </div>
 
@@ -689,7 +689,7 @@ export function BulkSingleCellSpatialLesson() {
 
               <div className="mt-8 rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6">
                 <p className="text-xs font-bold text-teal-700">مرحله بعد</p>
-                <h3 className="mt-2 text-xl font-black text-slate-950">درس ۷ — RNA-seq و Microarray در نقشه ترنسکریپتومیکس</h3>
+                <h3 className="mt-2 text-xl font-black text-slate-950">درس ۷ — RNA-seq و میکروآرایه در نقشه ترنسکریپتومیکس</h3>
                 <p className="mt-2 text-sm leading-7 text-slate-600">
                   در درس هفتم دو مسیر اندازه‌گیری را کنار هم می‌بینیم و یاد می‌گیریم چرا هر داده ترنسکریپتومیکس الزاماً FASTQ ندارد.
                 </p>
@@ -794,7 +794,7 @@ function BulkView() {
           <MiniBar label="ژن ب" value={43} />
           <MiniBar label="ژن ج" value={58} />
         </div>
-        <p className="mt-5 text-xs leading-6 text-slate-400">این نمای توده‌ای می‌تواند از RNA-seq یا Microarray به دست آمده باشد.</p>
+        <p className="mt-5 text-xs leading-6 text-slate-400">این نمای توده‌ای می‌تواند از RNA-seq یا میکروآرایه به دست آمده باشد.</p>
       </div>
     </div>
   );
@@ -811,7 +811,7 @@ function SingleCellView() {
           </div>
         ))}
       </div>
-      <p className="mt-5 text-xs leading-7 text-slate-400">در این نمایش سلول‌ها جدا دیده می‌شوند. یکی از فناوری‌های رایج برای این سطح، scRNA-seq است.</p>
+      <p className="mt-5 text-xs leading-7 text-slate-400">در این نمایش سلول‌ها جدا دیده می‌شوند. یکی از فناوری‌های رایج برای این سطح، RNA-seq تک‌سلولی است.</p>
     </div>
   );
 }
@@ -827,7 +827,7 @@ function SpatialView() {
           </div>
         ))}
       </div>
-      <p className="mt-5 text-xs leading-7 text-slate-400">موقعیت در بافت حفظ شده است. وضوح واقعی و منطق اندازه‌گیری به فناوری فضایی مورد استفاده بستگی دارد.</p>
+      <p className="mt-5 text-xs leading-7 text-slate-400">موقعیت در بافت حفظ شده است. تفکیک‌پذیری واقعی و منطق اندازه‌گیری به فناوری فضایی مورد استفاده بستگی دارد.</p>
     </div>
   );
 }
