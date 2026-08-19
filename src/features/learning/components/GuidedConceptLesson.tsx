@@ -92,9 +92,7 @@ export function GuidedConceptLesson({
   );
 
   function goToSection(nextIndex: number) {
-    if (nextIndex < 0 || nextIndex >= sections.length) return;
-    if (nextIndex > maxUnlocked) return;
-
+    if (nextIndex < 0 || nextIndex >= sections.length || nextIndex > maxUnlocked) return;
     setSectionIndex(nextIndex);
     window.setTimeout(() => {
       document.getElementById(sectionId)?.scrollIntoView({
@@ -106,7 +104,6 @@ export function GuidedConceptLesson({
 
   function answerQuestion(optionIndex: number) {
     setAnswers((current) => ({ ...current, [sectionIndex]: optionIndex }));
-
     if (optionIndex === section.question.correctIndex) {
       setMaxUnlocked((current) =>
         Math.max(current, Math.min(sectionIndex + 1, sections.length - 1)),
@@ -130,16 +127,14 @@ export function GuidedConceptLesson({
           <div className="mb-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-teal-700">
-                  مسیر مفهومی این درس
-                </p>
+                <p className="text-xs font-bold text-teal-700">مسیر مفهومی این درس</p>
                 <p className="mt-1 text-sm font-semibold text-slate-700">
                   {completedCount.toLocaleString("fa-IR")} از {sections.length.toLocaleString("fa-IR")} ایستگاه مفهومی تکمیل شده
                 </p>
               </div>
-              <div className="text-left text-xs font-black text-slate-500">
+              <span className="text-xs font-black text-slate-500">
                 {progress.toLocaleString("fa-IR")}٪
-              </div>
+              </span>
             </div>
             <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
               <div
@@ -187,15 +182,13 @@ export function GuidedConceptLesson({
               <h2 className="mt-2 text-2xl font-black leading-10 text-slate-950 sm:text-3xl">
                 {section.headline}
               </h2>
-              <p className="mt-3 max-w-4xl text-sm leading-8 text-slate-600">
-                {section.lead}
-              </p>
+              <p className="mt-3 max-w-4xl text-sm leading-8 text-slate-600">{section.lead}</p>
 
               {section.connection && (
                 <div className="mt-5 flex items-start gap-3 rounded-2xl border border-sky-200 bg-sky-50 p-4">
                   <BookOpenCheck className="mt-1 size-5 shrink-0 text-sky-700" />
                   <div>
-                    <p className="text-xs font-black text-sky-800">اتصال به چیزی که همین حالا یاد گرفتید</p>
+                    <p className="text-xs font-black text-sky-800">اتصال به بخش قبل</p>
                     <p className="mt-1 text-sm leading-7 text-sky-950">{section.connection}</p>
                   </div>
                 </div>
@@ -205,7 +198,7 @@ export function GuidedConceptLesson({
             <div className="p-6 sm:p-8">
               {section.flow && <Flow items={section.flow} />}
 
-              {section.concepts && section.concepts.length > 0 && (
+              {section.concepts && (
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                   {section.concepts.map((concept) => (
                     <ConceptCard key={concept.title} {...concept} />
@@ -213,10 +206,7 @@ export function GuidedConceptLesson({
                 </div>
               )}
 
-              {section.terms && section.terms.length > 0 && (
-                <TermExplorer terms={section.terms} />
-              )}
-
+              {section.terms && section.terms.length > 0 && <TermExplorer terms={section.terms} />}
               {section.scenario && <ScenarioCard scenario={section.scenario} />}
 
               {section.insight && (
@@ -226,12 +216,7 @@ export function GuidedConceptLesson({
                 </div>
               )}
 
-              <DecisionQuestion
-                question={section.question}
-                selected={selected}
-                onSelect={answerQuestion}
-              />
-
+              <DecisionQuestion question={section.question} selected={selected} onSelect={answerQuestion} />
               <BridgeCard bridge={section.bridge} unlocked={isCorrect} />
             </div>
           </article>
@@ -305,7 +290,7 @@ function TermExplorer({ terms }: { terms: LearningTerm[] }) {
         <div>
           <p className="text-xs font-black text-violet-700">اصطلاح علمی؛ اول معنی، بعد نام</p>
           <p className="mt-1 text-sm leading-7 text-violet-950">
-            روی هر اصطلاح بزنید. اگر واژه فارسی جاافتاده داشته باشد از همان استفاده می‌کنیم؛ اگر نداشته باشد نام علمی را نگه می‌داریم و معنی‌اش را فارسی می‌کنیم.
+            اصطلاح‌های دارای معادل روشن با نوشتار فارسی نمایش داده می‌شوند؛ نام‌های علمی و اختصارهای بدون معادل جاافتاده همان شکل علمی خود را حفظ می‌کنند.
           </p>
         </div>
       </div>
@@ -321,14 +306,7 @@ function TermExplorer({ terms }: { terms: LearningTerm[] }) {
               className="rounded-2xl border border-violet-200 bg-white p-4 text-right transition hover:border-violet-300"
             >
               <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="font-black text-slate-950">{term.persianLabel ?? term.term}</p>
-                  {term.persianLabel && (
-                    <p className="mt-1 text-xs font-semibold text-violet-700" dir="ltr">
-                      {term.term}
-                    </p>
-                  )}
-                </div>
+                <p className="font-black text-slate-950">{term.persianLabel ?? term.term}</p>
                 <ChevronDown className={`size-4 text-violet-600 transition ${open ? "rotate-180" : ""}`} />
               </div>
               {open && (
