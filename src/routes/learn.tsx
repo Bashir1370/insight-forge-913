@@ -379,6 +379,119 @@ function HubGeneLearnPage() {
         </div>
       </section>
 
+
+      {/* TRANSCRIPTOMICS FOUNDATIONS */}
+      <section
+        id="transcriptomics-foundations"
+        className="border-y border-slate-200 bg-slate-950 text-white"
+      >
+        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-teal-400/10 px-3 py-1.5 text-xs font-bold text-teal-300">
+                  نقطه شروع پیشنهادی
+                </span>
+
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-semibold text-slate-300">
+                  ۷ درس تعاملی
+                </span>
+              </div>
+
+              <h2 className="mt-5 text-3xl font-black leading-tight sm:text-4xl">
+                مبانی ترنسکریپتومیکس
+              </h2>
+
+              <p className="mt-5 max-w-2xl leading-8 text-slate-300">
+                قبل از ورود به تحلیل تخصصی RNA-seq، یک نقشه ذهنی روشن از
+                ژنوم، ترنسکریپتوم، بیان ژن، طراحی نمونه، سطح مشاهده و
+                فناوری‌های اندازه‌گیری بسازید.
+              </p>
+
+              <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <a
+                  href="/learn/transcriptomics/foundations/genome-to-transcriptome"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl bg-teal-500 px-6 py-3 font-bold text-slate-950 transition hover:bg-teal-400"
+                >
+                  شروع از درس ۱
+                </a>
+
+                <a
+                  href="/learn/rna-seq"
+                  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 py-3 font-semibold text-white transition hover:bg-white/10"
+                >
+                  ورود به مسیر تخصصی RNA-seq
+                </a>
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 sm:p-7">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold text-teal-300">
+                    مسیر مبانی
+                  </p>
+
+                  <p className="mt-1 text-sm leading-7 text-slate-300">
+                    از مفهوم ترنسکریپتوم تا انتخاب سطح مشاهده و فناوری
+                  </p>
+                </div>
+
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300">
+                  F1 تا F7
+                </span>
+              </div>
+
+              <div className="mt-6 grid grid-cols-7 gap-2" dir="ltr">
+                {Array.from({ length: 7 }, (_, index) => (
+                  <div
+                    key={index}
+                    className={[
+                      "flex aspect-square items-center justify-center rounded-xl border text-xs font-black",
+                      index === 0
+                        ? "border-teal-300 bg-teal-400 text-slate-950"
+                        : "border-white/10 bg-white/5 text-slate-300",
+                    ].join(" ")}
+                  >
+                    F{index + 1}
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 rounded-2xl border border-white/10 bg-slate-900/70 p-5">
+                <p className="text-xs font-bold text-teal-300">
+                  این بخش چه چیزی را حل می‌کند؟
+                </p>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {[
+                    "ترنسکریپتومیکس دقیقاً چیست؟",
+                    "بیان RNA چه معنایی دارد؟",
+                    "نمونه و تکرار زیستی چه تفاوتی دارند؟",
+                    "توده‌ای، تک‌سلولی و فضایی چه تفاوتی دارند؟",
+                    "RNA-seq و میکروآرایه چه منطق متفاوتی دارند؟",
+                    "چه زمانی باید وارد مسیر تخصصی شویم؟",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-start gap-2 text-sm leading-7 text-slate-300"
+                    >
+                      <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-300" />
+                      <span>{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <p className="mt-5 text-xs leading-6 text-slate-400">
+                اگر تازه وارد ترنسکریپتومیکس هستید، پیشنهاد هاب‌ژن این است که
+                مسیر تخصصی RNA-seq را بعد از تکمیل این هفت درس شروع کنید.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* PATH FINDER */}
       <section
         id="path-finder"
