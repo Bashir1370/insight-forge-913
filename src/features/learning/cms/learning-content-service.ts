@@ -27,14 +27,7 @@ export function usePublishedLearningDocument<T>(pageKey: string) {
   const reload = useCallback(async () => {
     setLoading(true);
     try {
-      const table = (supabase as any).from("learning_content_published");
-      const { data, error } = await table
-        .select("content")
-        .eq("page_key", pageKey)
-        .maybeSingle();
-
-      if (error) throw error;
-      setDocument((data?.content as T | undefined) ?? null);
+      setDocument(await loadPublishedLearningDocument<T>(pageKey));
     } catch (error) {
       console.warn("[Learning CMS] Could not load published content", error);
       setDocument(null);
@@ -90,6 +83,19 @@ export function useLearningAdminAccess() {
   }, [authLoading, user]);
 
   return { isAdmin, loading, user };
+}
+
+export async function loadPublishedLearningDocument<T>(
+  pageKey: string,
+): Promise<T | null> {
+  const table = (supabase as any).from("learning_content_published");
+  const { data, error } = await table
+    .select("content")
+    .eq("page_key", pageKey)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data?.content as T | undefined) ?? null;
 }
 
 export async function loadLearningDraft<T>(pageKey: string): Promise<T | null> {
@@ -161,7 +167,7 @@ export async function publishLearningDocument<T>(pageKey: string, content: T) {
   }
 }
 
-export async function loadLearningRevisions<T>(pageKey: string) {
+export async function loadLearningRevisions<T = any>(pageKey: string) {
   const table = (supabase as any).from("learning_content_revisions");
   const { data, error } = await table
     .select("id, page_key, content, created_at, created_by")
