@@ -6,7 +6,7 @@ import {
   type LearningDomain,
 } from "@/features/learning/learning-catalog";
 
-export const Route = createFileRoute("/learn/fields")({
+export const Route = createFileRoute("/learn_/fields")({
   component: LearningFieldsPage,
 });
 

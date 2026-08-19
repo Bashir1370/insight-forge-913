@@ -10,7 +10,7 @@ import {
   transcriptomicsSpecialistTracks,
 } from "@/features/learning/learning-catalog";
 
-export const Route = createFileRoute("/learn/transcriptomics")({
+export const Route = createFileRoute("/learn_/transcriptomics")({
   component: TranscriptomicsLearningHub,
 });
 
