@@ -175,7 +175,7 @@ const sections: GuidedLessonSection[] = [
         term: "normalized enrichment score",
         persianLabel: "امتیاز غنی‌سازی نرمال‌شده",
         explanation:
-          "در GSEA، آماره‌ای برای بیان جهت و شدت نسبی غنی‌سازی پس از تعدیل اثر اندازه مجموعه ژنی. اختصار آن NES است.",
+          "در GSEA، آماره‌ای برای بیان جهت و شدت نسبی غنی‌سازی پس از نرمال‌سازی امتیاز غنی‌سازی با توجه به ویژگی‌های مجموعه ژنی. اختصار آن NES است.",
       },
       {
         term: "leading edge",
@@ -224,7 +224,7 @@ const sections: GuidedLessonSection[] = [
       options: [
         "نادیده بگیریم؛ چون ابزار بدون خطا اجرا شده است.",
         "علت نگاشت‌نشدن، نوع شناسه، گونه و نسخه را بررسی و نرخ نگاشت را گزارش کنیم.",
-        "نام ژن‌ها را دستی و بدون ثبت تغییر دهیم تا تعداد بیشتری match شوند.",
+        "نام ژن‌ها را دستی و بدون ثبت تغییر دهیم تا تعداد بیشتری نگاشت شوند.",
       ],
       correctIndex: 1,
       correctFeedback:
@@ -301,7 +301,7 @@ const sections: GuidedLessonSection[] = [
   {
     title: "سناریوی سرطان پانکراس",
     eyebrow: "تفسیر در زمینه زیستی",
-    headline: "یک تم ایمنی یا استرومایی در bulk RNA-seq می‌تواند درباره ترکیب بافت به اندازه تنظیم درون‌سلولی اطلاعات داشته باشد.",
+    headline: "یک تم ایمنی یا استرومایی در RNA-seq توده‌ای می‌تواند درباره ترکیب بافت به اندازه تنظیم درون‌سلولی اطلاعات داشته باشد.",
     lead:
       "در نمونه توده‌ای سرطان پانکراس، سلول‌های بدخیم، فیبروبلاست‌ها، سلول‌های ایمنی و سایر اجزا با هم اندازه‌گیری می‌شوند. بنابراین افزایش ژن‌های ماتریکس خارج‌سلولی یا ایمنی ممکن است از تغییر سهم این سلول‌ها، تغییر بیان درون همان سلول‌ها یا ترکیبی از هر دو ناشی شود.",
     connection:
@@ -329,7 +329,7 @@ const sections: GuidedLessonSection[] = [
       correctFeedback:
         "درست است. تفسیر زیستی یعنی اتصال نتیجه آماری به طراحی، نمونه و شواهد زمینه‌ای.",
       incorrectFeedback:
-        "در bulk RNA-seq، زمینه بافت و ترکیب سلولی می‌تواند بخش مهمی از علت الگوهای مسیر باشد.",
+        "در RNA-seq توده‌ای، زمینه بافت و ترکیب سلولی می‌تواند بخش مهمی از علت الگوهای مسیر باشد.",
     },
     bridge: {
       openQuestion: "حالا چطور تمام این شواهد را به یک ادعای کوتاه، دقیق و قابل بازتولید تبدیل کنیم؟",
@@ -391,7 +391,7 @@ function GeneListLab() {
           {pathwayGenes.map((item) => (
             <div key={item.gene} className="rounded-xl border border-slate-200 bg-white p-3">
               <p className="font-black text-slate-950" dir="ltr">{item.gene}</p>
-              <p className="mt-1 text-xs text-slate-500">log2FC = {item.score}</p>
+              <p className="mt-1 text-xs text-slate-500">تغییر در مقیاس log2 = {item.score}</p>
             </div>
           ))}
         </div>
@@ -518,7 +518,7 @@ function RedundancyLab() {
     <LabFrame title="از چهار ردیف جدول به یک تم منسجم برسید">
       <div className="flex gap-2"><ChoiceButton active={mode === "table"} onClick={() => setMode("table")}>جدول خام</ChoiceButton><ChoiceButton active={mode === "themes"} onClick={() => setMode("themes")}>خلاصه تم</ChoiceButton></div>
       {mode === "table" ? (
-        <div className="mt-4 grid gap-2">{rows.map((row) => <div key={row[0]} className="rounded-xl border border-slate-200 bg-white p-3"><p className="font-black">{row[0]}</p><p className="mt-1 text-xs text-slate-500" dir="ltr">{row[1]} · FDR {row[2]}</p></div>)}</div>
+        <div className="mt-4 grid gap-2">{rows.map((row) => <div key={row[0]} className="rounded-xl border border-slate-200 bg-white p-3"><p className="font-black">{row[0]}</p><p className="mt-1 text-xs text-slate-500" dir="ltr">{row[1]} · نرخ کشف کاذب {row[2]}</p></div>)}</div>
       ) : (
         <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-5"><p className="font-black text-teal-950">تم مشترک: پاسخ ایمنی / اینترفرون</p><p className="mt-2 text-sm leading-7 text-teal-900">چند مجموعه با ژن‌های مشترک یک سیگنال زیستی مرتبط را بازتاب می‌دهند؛ ردیف‌های جدول را نباید مستقل شمرد.</p></div>
       )}
@@ -541,7 +541,7 @@ function PancreaticStoryLab() {
   const [focus, setFocus] = useState<"immune" | "stroma" | "cycle">("immune");
   const map = {
     immune: ["پاسخ ایمنی", "CXCL9 / HLA", "بررسی نفوذ سلول‌های ایمنی و فراداده بافت"],
-    stroma: ["استروما / ECM", "COL1A1 / COL3A1", "بررسی درصد استروما و ترکیب سلولی"],
+    stroma: ["استروما / ماتریکس خارج‌سلولی", "COL1A1 / COL3A1", "بررسی درصد استروما و ترکیب سلولی"],
     cycle: ["چرخه سلولی", "MKI67 / TOP2A", "بررسی جهت اثر و سازگاری با تکثیر"],
   } as const;
   const current = map[focus];
@@ -559,7 +559,7 @@ function ClaimBuilderLab() {
     ["مشاهده", "ژن‌های مرتبط با پاسخ ایمنی در رتبه‌بندی درمانی تجمع دارند."],
     ["روش", "نتیجه با یک روش غنی‌سازی رتبه‌محور و مجموعه ژنی از پیش تعریف‌شده به دست آمده است."],
     ["محرک‌ها", "بخشی از سیگنال توسط ژن‌هایی مانند CXCL9 و HLA-B هدایت می‌شود."],
-    ["زمینه", "در bulk RNA-seq منشأ این سیگنال می‌تواند تغییر بیان درون‌سلولی، تغییر ترکیب سلولی یا هر دو باشد."],
+    ["زمینه", "در RNA-seq توده‌ای منشأ این سیگنال می‌تواند تغییر بیان درون‌سلولی، تغییر ترکیب سلولی یا هر دو باشد."],
     ["ادعا", "داده با افزایش سیگنال‌های مرتبط با پاسخ ایمنی سازگار است و یک فرضیه برای بررسی بیشتر ایجاد می‌کند."],
   ];
   return (
