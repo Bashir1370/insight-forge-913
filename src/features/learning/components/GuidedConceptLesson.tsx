@@ -14,9 +14,9 @@ import { SpecialistLessonShell } from "@/features/learning/components/Specialist
 import {
   GuidedLessonCmsAdmin,
   LearningMediaBlocks,
-  useGuidedLessonCms,
 } from "@/features/learning/cms/GuidedLessonCms";
 import type { LearningMedia } from "@/features/learning/cms/learning-content-service";
+import { useStableGuidedLessonCms } from "@/features/learning/cms/useStableGuidedLessonCms";
 import { normalizeLearningText } from "@/features/learning/learning-terminology";
 import { usePersistentLessonProgress } from "@/features/learning/usePersistentLessonProgress";
 
@@ -86,7 +86,7 @@ export function GuidedConceptLesson({
     [sections],
   );
 
-  const cms = useGuidedLessonCms({
+  const cms = useStableGuidedLessonCms({
     pageKey: `guided:${sectionId}`,
     title: normalizeLearningText(title),
     subtitle: normalizeLearningText(subtitle),
