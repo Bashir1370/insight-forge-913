@@ -12,6 +12,7 @@ import {
 
 import { SpecialistLessonShell } from "@/features/learning/components/SpecialistLessonShell";
 import { normalizeLearningText } from "@/features/learning/learning-terminology";
+import { usePersistentLessonProgress } from "@/features/learning/usePersistentLessonProgress";
 
 export type LearningTerm = {
   term: string;
@@ -73,14 +74,22 @@ export function GuidedConceptLesson({
   sectionId: string;
   sections: GuidedLessonSection[];
 }) {
-  const [sectionIndex, setSectionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [maxUnlocked, setMaxUnlocked] = useState(0);
-
   const normalizedSections = useMemo(
     () => sections.map(normalizeSection),
     [sections],
   );
+
+  const {
+    currentIndex: sectionIndex,
+    setCurrentIndex: setSectionIndex,
+    answers,
+    setAnswers,
+    maxUnlocked,
+    setMaxUnlocked,
+  } = usePersistentLessonProgress({
+    storageId: `guided:${sectionId}`,
+    itemCount: normalizedSections.length,
+  });
 
   const section = normalizedSections[sectionIndex];
   const selected = answers[sectionIndex];
@@ -261,9 +270,14 @@ function LessonProgress({
             {completedCount.toLocaleString("fa-IR")} از {total.toLocaleString("fa-IR")} ایستگاه مفهومی تکمیل شده
           </p>
         </div>
-        <span className="text-xs font-black text-slate-500">
-          {progress.toLocaleString("fa-IR")}٪
-        </span>
+        <div className="text-left">
+          <span className="text-xs font-black text-slate-500">
+            {progress.toLocaleString("fa-IR")}٪
+          </span>
+          <p className="mt-1 text-[11px] font-bold text-emerald-700">
+            پیشرفت این درس روی همین دستگاه ذخیره می‌شود
+          </p>
+        </div>
       </div>
       <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
         <div
