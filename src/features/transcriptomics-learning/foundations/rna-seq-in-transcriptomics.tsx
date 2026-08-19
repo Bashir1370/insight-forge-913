@@ -46,7 +46,7 @@ const NODE_ID = "f7-rna-seq-in-transcriptomics";
 const sceneTitles = [
   "از مبانی به فناوری‌ها",
   "نقشه فناوری‌ها",
-  "RNA-seq در برابر Microarray",
+  "RNA-seq در برابر میکروآرایه",
   "فناوری‌های دیگر کجا قرار می‌گیرند؟",
   "نوع داده چه سرنخی می‌دهد؟",
   "انتخاب فناوری بر اساس سؤال",
@@ -61,7 +61,7 @@ const technologies = [
     note: "مسیر تخصصی فعال هاب‌ژن",
   },
   {
-    title: "Microarray",
+    title: "میکروآرایه",
     description:
       "اندازه‌گیری بیان با پروب‌های از پیش طراحی‌شده و شدت سیگنال.",
     note: "مسیر تخصصی آینده",
@@ -70,7 +70,7 @@ const technologies = [
     title: "RNA-seq تک‌سلولی",
     description:
       "اندازه‌گیری RNA در سطح سلول‌ها برای مشاهده ناهمگنی سلولی.",
-    note: "خانواده sequencing-based",
+    note: "خانواده مبتنی بر توالی‌یابی",
   },
   {
     title: "ترنسکریپتومیکس فضایی",
@@ -82,13 +82,13 @@ const technologies = [
     title: "ترنسکریپتومیکس خوانش‌بلند",
     description:
       "استفاده از خوانش‌های بلندتر برای مطالعه ساختار ترنسکریپت و ایزوفرم‌ها.",
-    note: "خانواده sequencing-based",
+    note: "خانواده مبتنی بر توالی‌یابی",
   },
   {
-    title: "small RNA-seq",
+    title: "RNA-seq برای RNAهای کوچک",
     description:
       "توالی‌یابی با طراحی مناسب برای RNAهای کوچک مانند miRNA.",
-    note: "خانواده sequencing-based",
+    note: "خانواده مبتنی بر توالی‌یابی",
   },
 ];
 
@@ -291,7 +291,7 @@ export function RnaSeqInTranscriptomicsLesson() {
       foundationIndex={7}
       total={7}
       title="نقشه فناوری‌های ترنسکریپتومیکس"
-      subtitle="آخرین درس مبانی ترنسکریپتومیکس: از تفاوت RNA-seq و Microarray تا جایگاه تک‌سلولی، فضایی، خوانش‌بلند و small RNA-seq."
+      subtitle="آخرین درس مبانی ترنسکریپتومیکس: از تفاوت RNA-seq و میکروآرایه تا جایگاه تک‌سلولی، فضایی، خوانش‌بلند و RNA-seq برای RNAهای کوچک."
       currentScene={scene}
       sceneCount={sceneTitles.length}
       sceneLabel={sceneTitles[scene]}
@@ -374,7 +374,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                 correctIndex={1}
                 onSelect={setOpeningAnswer}
                 correctFeedback="دقیقاً. همین تفکیک پایه ورود به نقشه فناوری‌هاست."
-                incorrectFeedback="ترنسکریپتومیکس یک حوزه علمی است؛ RNA-seq، Microarray و فناوری‌های دیگر ابزارهای مطالعه آن‌اند."
+                incorrectFeedback="ترنسکریپتومیکس یک حوزه علمی است؛ RNA-seq، میکروآرایه و فناوری‌های دیگر ابزارهای مطالعه آن‌اند."
               />
 
               <InsightBox>
@@ -401,17 +401,17 @@ export function RnaSeqInTranscriptomicsLesson() {
               </div>
 
               <DecisionQuestion
-                question="چرا نباید Bulk، Single-cell، Long-read و Microarray را ساده‌سازی کنیم و همه را دقیقاً یک نوع دسته‌بندی بدانیم؟"
+                question="چرا نباید توده‌ای، تک‌سلولی، خوانش‌بلند و میکروآرایه را ساده‌سازی کنیم و همه را دقیقاً یک نوع دسته‌بندی بدانیم؟"
                 options={[
                   "چون بعضی واژه‌ها درباره سطح مشاهده‌اند و بعضی درباره فناوری یا استراتژی اندازه‌گیری.",
-                  "چون فقط Microarray فناوری واقعی است.",
+                  "چون فقط میکروآرایه فناوری واقعی است.",
                   "چون RNA-seq هیچ ارتباطی با ترنسکریپتومیکس ندارد.",
                 ]}
                 selected={mapAnswer}
                 correctIndex={0}
                 onSelect={setMapAnswer}
                 correctFeedback="دقیقاً. نقشه فناوری‌ها چند محور مفهومی دارد و F6 زمینه همین تفکیک را ساخته بود."
-                incorrectFeedback="توده‌ای و تک‌سلولی بیشتر درباره مقیاس مشاهده‌اند؛ Microarray و RNA-seq درباره منطق فناوری‌اند؛ Long-read هم استراتژی توالی‌یابی را تغییر می‌دهد."
+                incorrectFeedback="توده‌ای و تک‌سلولی بیشتر درباره مقیاس مشاهده‌اند؛ میکروآرایه و RNA-seq درباره منطق فناوری‌اند؛ خوانش‌بلند هم راهبرد توالی‌یابی را تغییر می‌دهد."
               />
             </SceneCard>
           )}
@@ -420,22 +420,22 @@ export function RnaSeqInTranscriptomicsLesson() {
             <SceneCard
               eyebrow="مقایسه فناوری"
               title="دو منطق متفاوت برای مطالعه بیان RNA"
-              description="RNA-seq و Microarray هر دو برای مطالعه بیان RNA استفاده می‌شوند، اما منطق تولید داده در آن‌ها متفاوت است."
+              description="RNA-seq و میکروآرایه هر دو برای مطالعه بیان RNA استفاده می‌شوند، اما منطق تولید داده در آن‌ها متفاوت است."
             >
               <TranscriptomicsTechnologyVisual />
 
               <DecisionQuestion
                 question="تفاوت بنیادی این دو فناوری چیست؟"
                 options={[
-                  "RNA-seq توالی مولکول‌ها را می‌خواند، اما Microarray شدت اتصال به پروب‌های از پیش طراحی‌شده را می‌سنجد.",
+                  "RNA-seq توالی مولکول‌ها را می‌خواند، اما میکروآرایه شدت اتصال به پروب‌های از پیش طراحی‌شده را می‌سنجد.",
                   "هر دو فناوری دقیقاً با یک روش داده تولید می‌کنند.",
-                  "Microarray هم مانند RNA-seq الزاماً FASTQ تولید می‌کند.",
+                  "میکروآرایه هم مانند RNA-seq الزاماً FASTQ تولید می‌کند.",
                 ]}
                 selected={pathAnswer}
                 correctIndex={0}
                 onSelect={setPathAnswer}
                 correctFeedback="دقیقاً. این همان تفاوت مفهومی اصلی بین این دو فناوری است."
-                incorrectFeedback="به منطق تولید داده نگاه کنید: RNA-seq مبتنی بر توالی‌یابی است؛ Microarray مبتنی بر هیبریداسیون، پروب و شدت سیگنال."
+                incorrectFeedback="به منطق تولید داده نگاه کنید: RNA-seq مبتنی بر توالی‌یابی است؛ میکروآرایه مبتنی بر هیبریداسیون، پروب و شدت سیگنال است."
               />
 
               <InsightBox>
@@ -452,12 +452,12 @@ export function RnaSeqInTranscriptomicsLesson() {
             >
               <div className="grid gap-4 lg:grid-cols-2">
                 <InfoBlock
-                  title="خانواده‌های sequencing-based"
+                  title="خانواده‌های مبتنی بر توالی‌یابی"
                   items={[
                     "RNA-seq توده‌ای: توالی‌یابی RNA در سطح نمونه",
                     "RNA-seq تک‌سلولی: توالی‌یابی RNA در سطح سلول",
-                    "small RNA-seq: طراحی مناسب برای RNAهای کوچک",
-                    "ترنسکریپتومیکس خوانش‌بلند: خوانش‌های بلندتر برای transcript و isoform",
+                    "RNA-seq برای RNAهای کوچک: طراحی کتابخانه متناسب با RNAهای کوچک",
+                    "ترنسکریپتومیکس خوانش‌بلند: خوانش‌های بلندتر برای بررسی رونوشت و ایزوفرم",
                   ]}
                   emphasized
                 />
@@ -465,7 +465,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                 <InfoBlock
                   title="فناوری‌هایی با منطق متفاوت یا متنوع"
                   items={[
-                    "Microarray: پروب، هیبریداسیون و شدت سیگنال",
+                    "میکروآرایه: پروب، هیبریداسیون و شدت سیگنال",
                     "ترنسکریپتومیکس فضایی: خانواده‌ای متنوع؛ بسته به پلتفرم ممکن است از sequencing، probe-based detection، imaging یا ترکیبی از این منطق‌ها استفاده کند.",
                   ]}
                 />
@@ -481,8 +481,8 @@ export function RnaSeqInTranscriptomicsLesson() {
                 selected={familyAnswer}
                 correctIndex={1}
                 onSelect={setFamilyAnswer}
-                correctFeedback="درست است. به همین دلیل Spatial را نباید به یک فناوری واحد تقلیل داد."
-                incorrectFeedback="Spatial یک خانواده از فناوری‌هاست، نه یک دستگاه یا pipeline واحد."
+                correctFeedback="درست است. به همین دلیل ترنسکریپتومیکس فضایی را نباید به یک فناوری واحد تقلیل داد."
+                incorrectFeedback="ترنسکریپتومیکس فضایی یک خانواده از فناوری‌هاست، نه یک دستگاه یا مسیر تحلیل واحد."
               />
             </SceneCard>
           )}
@@ -491,7 +491,7 @@ export function RnaSeqInTranscriptomicsLesson() {
             <SceneCard
               eyebrow="امضای داده"
               title="نوع فایل و ساختار داده می‌تواند درباره فناوری سرنخ بدهد."
-              description="اما همیشه باید Metadata، روش مقاله و اطلاعات پلتفرم را هم بررسی کنیم."
+              description="اما همیشه باید فراداده، روش مقاله و اطلاعات پلتفرم را هم بررسی کنیم."
             >
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <DataCard
@@ -500,43 +500,43 @@ export function RnaSeqInTranscriptomicsLesson() {
                 />
 
                 <DataCard
-                  title="Microarray"
+                  title="میکروآرایه"
                   description="داده از شدت سیگنال پروب‌ها به دست می‌آید. پس از پردازش و نرمال‌سازی، ماتریس بیان ژن ساخته می‌شود."
                 />
 
                 <DataCard
                   title="RNA-seq تک‌سلولی"
-                  description="FASTQ نقطه شروع رایج است. پس از پردازش، یک ماتریس ژن × سلول همراه با Metadata سلولی به دست می‌آید."
+                  description="FASTQ نقطه شروع رایج است. پس از پردازش، یک ماتریس ژن × سلول همراه با فراداده سلولی به دست می‌آید."
                 />
 
                 <DataCard
-                  title="Spatial"
+                  title="فضایی"
                   description="داده بیان RNA با مختصات مکانی و معمولاً اطلاعات تصویری بافت همراه است؛ بنابراین فقط یک ماتریس بیان ساده نیست."
                 />
 
                 <DataCard
-                  title="Long-read"
-                  description="خروجی شامل خوانش‌های بلند است که برای بازسازی transcriptها و بررسی isoformها استفاده می‌شود."
+                  title="خوانش‌بلند"
+                  description="خروجی شامل خوانش‌های بلند است که برای بازسازی رونوشت‌ها و بررسی ایزوفرم‌ها استفاده می‌شود."
                 />
 
                 <DataCard
-                  title="small RNA-seq"
-                  description="داده خام معمولاً FASTQ است، اما Library برای RNAهای کوچک طراحی شده و مسیر تحلیل هم متناسب با همین هدف است."
+                  title="RNA-seq برای RNAهای کوچک"
+                  description="داده خام معمولاً FASTQ است، اما کتابخانه برای RNAهای کوچک طراحی شده و مسیر تحلیل نیز متناسب با همین هدف است."
                 />
               </div>
 
               <DecisionQuestion
-                question="یک Dataset ترنسکریپتومیکس FASTQ ندارد. اولین نتیجه‌گیری درست چیست؟"
+                question="یک مجموعه‌داده ترنسکریپتومیکس FASTQ ندارد. اولین نتیجه‌گیری درست چیست؟"
                 options={[
                   "حتماً داده ناقص است.",
-                  "اول فناوری تولید داده را بررسی می‌کنیم؛ ممکن است Microarray یا یک خروجی پردازش‌شده باشد.",
+                  "اول فناوری تولید داده را بررسی می‌کنیم؛ ممکن است میکروآرایه یا یک خروجی پردازش‌شده باشد.",
                   "حتماً داده DNA است.",
                 ]}
                 selected={dataAnswer}
                 correctIndex={1}
                 onSelect={setDataAnswer}
-                correctFeedback="دقیقاً. نوع فایل را باید در زمینه فناوری و Metadata تفسیر کرد."
-                incorrectFeedback="نبود FASTQ به‌تنهایی نشان نمی‌دهد Dataset ترنسکریپتومیکس نیست."
+                correctFeedback="دقیقاً. نوع فایل را باید در زمینه فناوری و فراداده تفسیر کرد."
+                incorrectFeedback="نبود FASTQ به‌تنهایی نشان نمی‌دهد مجموعه‌داده مربوط به ترنسکریپتومیکس نیست."
               />
             </SceneCard>
           )}
@@ -550,9 +550,9 @@ export function RnaSeqInTranscriptomicsLesson() {
               <DecisionQuestion
                 question="۱) می‌خواهم پاسخ کلی بیان ژن یک نمونه را بین کنترل و تیمار مقایسه کنم."
                 options={[
-                  "RNA-seq توده‌ای یا در برخی طراحی‌ها Microarray می‌تواند مناسب باشد.",
-                  "حتماً باید Spatial باشد.",
-                  "حتماً باید Long-read باشد.",
+                  "RNA-seq توده‌ای یا در برخی طراحی‌ها میکروآرایه می‌تواند مناسب باشد.",
+                  "حتماً باید فضایی باشد.",
+                  "حتماً باید خوانش‌بلند باشد.",
                 ]}
                 selected={case1}
                 correctIndex={0}
@@ -565,7 +565,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                 question="۲) می‌خواهم بدانم کدام زیرجمعیت سلولی به درمان پاسخ داده است."
                 options={[
                   "RNA-seq تک‌سلولی",
-                  "Microarray توده‌ای به‌تنهایی",
+                  "میکروآرایه توده‌ای به‌تنهایی",
                   "فقط توالی‌یابی DNA",
                 ]}
                 selected={case2}
@@ -579,8 +579,8 @@ export function RnaSeqInTranscriptomicsLesson() {
                 question="۳) می‌خواهم بدانم سلول‌های پاسخ‌دهنده در کدام ناحیه بافت قرار گرفته‌اند."
                 options={[
                   "ترنسکریپتومیکس فضایی",
-                  "Microarray توده‌ای",
-                  "فقط ماتریس شمارش Bulk",
+                  "میکروآرایه توده‌ای",
+                  "فقط ماتریس شمارش توده‌ای",
                 ]}
                 selected={case3}
                 correctIndex={0}
@@ -590,31 +590,31 @@ export function RnaSeqInTranscriptomicsLesson() {
               />
 
               <DecisionQuestion
-                question="۴) سؤال اصلی من تفاوت ایزوفرم‌ها و ساختار transcript است."
+                question="۴) سؤال اصلی من تفاوت ایزوفرم‌ها و ساختار رونوشت است."
                 options={[
                   "ترنسکریپتومیکس خوانش‌بلند",
-                  "Microarray ساده",
+                  "میکروآرایه ساده",
                   "فقط تعداد نمونه بیشتر",
                 ]}
                 selected={case4}
                 correctIndex={0}
                 onSelect={setCase4}
-                correctFeedback="درست است. Long-read می‌تواند برای ساختار transcript و isoform اطلاعات ارزشمندی بدهد."
-                incorrectFeedback="وقتی ساختار transcript سؤال اصلی است، استراتژی خوانش‌بلند اهمیت پیدا می‌کند."
+                correctFeedback="درست است. فناوری خوانش‌بلند می‌تواند درباره ساختار رونوشت و ایزوفرم اطلاعات ارزشمندی بدهد."
+                incorrectFeedback="وقتی ساختار رونوشت سؤال اصلی است، راهبرد خوانش‌بلند اهمیت پیدا می‌کند."
               />
 
               <DecisionQuestion
                 question="۵) می‌خواهم miRNAها و سایر RNAهای کوچک را بررسی کنم."
                 options={[
-                  "small RNA-seq",
-                  "هر Library معمولی RNA-seq بدون تغییر",
-                  "فقط Microarray پروتئینی",
+                  "RNA-seq برای RNAهای کوچک",
+                  "هر کتابخانه معمولی RNA-seq بدون تغییر",
+                  "فقط میکروآرایه پروتئینی",
                 ]}
                 selected={case5}
                 correctIndex={0}
                 onSelect={setCase5}
-                correctFeedback="دقیقاً. RNAهای کوچک به طراحی مناسب Library و pipeline مرتبط نیاز دارند."
-                incorrectFeedback="نوع RNA هدف روی طراحی Library و مسیر تحلیل اثر می‌گذارد."
+                correctFeedback="دقیقاً. RNAهای کوچک به طراحی مناسب کتابخانه و مسیر تحلیل مرتبط نیاز دارند."
+                incorrectFeedback="نوع RNA هدف روی طراحی کتابخانه و مسیر تحلیل اثر می‌گذارد."
               />
 
               <InsightBox>
@@ -634,7 +634,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                 options={[
                   "ترنسکریپتومیکس همان RNA-seq است و همه مطالعات آن باید FASTQ داشته باشند.",
                   "ترنسکریپتومیکس یک حوزه است؛ فناوری‌های مختلف با منطق‌های متفاوت می‌توانند اطلاعات آن را اندازه‌گیری کنند و انتخاب فناوری باید از سؤال پژوهشی بیاید.",
-                  "Microarray، Single-cell و Spatial سه واژه هم‌معنی‌اند.",
+                  "میکروآرایه، تک‌سلولی و فضایی سه واژه هم‌معنی‌اند.",
                   "پیچیده‌ترین فناوری همیشه بهترین انتخاب است.",
                 ]}
                 selected={masteryAnswer}
@@ -660,7 +660,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                   <ConfidenceButton
                     active={confidence === "developing"}
                     title="تقریباً متوجه شدم"
-                    description="نقشه کلی را می‌فهمم ولی در Datasetهای واقعی تمرین لازم دارم."
+                    description="نقشه کلی را می‌فهمم ولی در مجموعه‌داده‌های واقعی تمرین لازم دارم."
                     onClick={() => setConfidence("developing")}
                   />
 
@@ -751,7 +751,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                   />
 
                   <PathCard
-                    title="Microarray"
+                    title="میکروآرایه"
                     description="از پلتفرم و پروب تا نرمال‌سازی و تحلیل بیان."
                   />
 
@@ -767,11 +767,11 @@ export function RnaSeqInTranscriptomicsLesson() {
 
                   <PathCard
                     title="ترنسکریپتومیکس خوانش‌بلند"
-                    description="ساختار transcript، isoform و خوانش‌های بلند."
+                    description="ساختار رونوشت، ایزوفرم و خوانش‌های بلند."
                   />
 
                   <PathCard
-                    title="small RNA-seq"
+                    title="RNA-seq برای RNAهای کوچک"
                     description="طراحی و تحلیل مناسب RNAهای کوچک."
                   />
                 </div>
