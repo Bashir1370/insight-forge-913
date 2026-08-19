@@ -15,6 +15,10 @@ import {
   GuidedLessonCmsAdmin,
   LearningMediaBlocks,
 } from "@/features/learning/cms/GuidedLessonCms";
+import {
+  TermsIntroCmsControl,
+  useTermsIntroContent,
+} from "@/features/learning/cms/TermsIntroCms";
 import type { LearningMedia } from "@/features/learning/cms/learning-content-service";
 import { useStableGuidedLessonCms } from "@/features/learning/cms/useStableGuidedLessonCms";
 import { normalizeLearningText } from "@/features/learning/learning-terminology";
@@ -230,7 +234,10 @@ export function GuidedConceptLesson({
               )}
 
               {section.terms && section.terms.length > 0 && (
-                <TermExplorer terms={section.terms} />
+                <TermExplorer
+                  terms={section.terms}
+                  cmsKey={`terms-intro:${sectionId}:${sectionIndex}`}
+                />
               )}
 
               {section.scenario && <ScenarioCard scenario={section.scenario} />}
@@ -415,24 +422,47 @@ function ConceptCard({ title, text, emphasized = false }: GuidedConcept) {
   );
 }
 
-function TermExplorer({ terms }: { terms: LearningTerm[] }) {
+function TermExplorer({
+  terms,
+  cmsKey,
+}: {
+  terms: LearningTerm[];
+  cmsKey: string;
+}) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
+  const cms = useTermsIntroContent(cmsKey);
+  const intro = cms.content;
 
   return (
     <section className="mt-6 rounded-3xl border border-violet-200 bg-violet-50/60 p-5 sm:p-6">
-      <div className="flex items-center gap-3">
-        <Sparkles className="size-5 text-violet-700" />
-        <div>
-          <p className="text-xs font-black text-violet-700">
-            اصطلاح علمی؛ اول معنی، بعد نام
-          </p>
-          <p className="mt-1 text-sm leading-7 text-violet-950">
-            اصطلاح‌های دارای معادل روشن با نوشتار فارسی نمایش داده می‌شوند؛ نام‌های علمی و اختصارهای بدون معادل جاافتاده همان شکل علمی خود را حفظ می‌کنند.
-          </p>
-        </div>
-      </div>
+      {cms.isAdmin && (
+        <TermsIntroCmsControl
+          pageKey={cmsKey}
+          content={intro}
+          onPreview={cms.setPreview}
+          onPublished={cms.reload}
+        />
+      )}
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
+      {intro.visible && (
+        <div className="flex items-center gap-3">
+          <Sparkles className="size-5 text-violet-700" />
+          <div>
+            {intro.title && (
+              <p className="text-xs font-black text-violet-700">
+                {normalizeLearningText(intro.title)}
+              </p>
+            )}
+            {intro.description && (
+              <p className="mt-1 text-sm leading-7 text-violet-950">
+                {normalizeLearningText(intro.description)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className={intro.visible ? "mt-4 grid gap-3 md:grid-cols-2" : "grid gap-3 md:grid-cols-2"}>
         {terms.map((term, index) => {
           const open = openIndex === index;
           return (
