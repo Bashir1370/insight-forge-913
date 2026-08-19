@@ -211,10 +211,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "sample-level-qc",
     title: "کنترل کیفیت در سطح نمونه",
     summary:
-      "اندازه کتابخانه، همبستگی، خوشه‌بندی، PCA و نمونه‌های پرت را در سطح مطالعه بررسی کنید.",
+      "اندازه کتابخانه، تبدیل برای نمایش، فاصله و همبستگی، خوشه‌بندی، PCA، فراداده و بررسی نمونه پرت را قدم‌به‌قدم یاد بگیرید.",
     principle:
-      "قبل از تفسیر ژن‌ها باید مطمئن شویم رفتار کلی نمونه‌ها قابل توضیح است.",
-    status: "planned",
+      "نمونه پرت یک سرنخ برای بررسی است، نه مجوز خودکار حذف.",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/sample-level-qc",
   },
   {
     index: 9,
