@@ -6,6 +6,16 @@ export type CanonicalLearningTerm = {
 };
 
 export const canonicalLearningTerms: CanonicalLearningTerm[] = [
+  { english: "gene set enrichment analysis", canonical: "تحلیل غنی‌سازی مجموعه ژنی" },
+  { english: "over-representation analysis", canonical: "تحلیل بیش‌نمایندگی" },
+  { english: "normalized enrichment score", canonical: "امتیاز غنی‌سازی نرمال‌شده" },
+  { english: "background universe", canonical: "جهان پس‌زمینه" },
+  { english: "gene identifier mapping", canonical: "نگاشت شناسه ژن" },
+  { english: "gene set redundancy", canonical: "افزونگی مجموعه‌های ژنی" },
+  { english: "gene ontology", canonical: "هستی‌شناسی ژن" },
+  { english: "gene set", canonical: "مجموعه ژنی" },
+  { english: "leading edge", canonical: "زیرمجموعه پیشرو" },
+  { english: "pathway", canonical: "مسیر زیستی" },
   { english: "false discovery rate", canonical: "نرخ کشف کاذب" },
   { english: "statistical significance", canonical: "معنی‌داری آماری" },
   { english: "biological relevance", canonical: "اهمیت زیستی" },
@@ -97,6 +107,21 @@ export const canonicalLearningTerms: CanonicalLearningTerm[] = [
   { english: "batch", canonical: "دسته آزمایشی" },
   { english: "QC", canonical: "کنترل کیفیت" },
   { english: "Wald test", canonical: "آزمون والد" },
+  {
+    english: "GSEA",
+    canonical: "GSEA",
+    note: "نام شناخته‌شده روش حفظ می‌شود و در اولین کاربرد به‌عنوان تحلیل غنی‌سازی مجموعه ژنی توضیح داده شود.",
+  },
+  {
+    english: "ORA",
+    canonical: "ORA",
+    note: "اختصار علمی حفظ می‌شود و در اولین کاربرد به‌عنوان تحلیل بیش‌نمایندگی توضیح داده شود.",
+  },
+  {
+    english: "NES",
+    canonical: "NES",
+    note: "اختصار علمی حفظ می‌شود و در اولین کاربرد امتیاز غنی‌سازی نرمال‌شده توضیح داده شود.",
+  },
   {
     english: "PCA",
     canonical: "PCA",
