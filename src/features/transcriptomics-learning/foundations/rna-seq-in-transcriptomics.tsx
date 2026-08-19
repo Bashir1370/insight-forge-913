@@ -338,7 +338,7 @@ export function RnaSeqInTranscriptomicsLesson() {
                   نقشه تصمیم
                 </p>
 
-                <div className="mt-5 flex flex-wrap items-center gap-2 text-sm font-black">
+                <div dir="rtl" className="mt-5 flex flex-wrap items-center gap-2 text-sm font-black">
                   {[
                     "سؤال پژوهشی",
                     "اطلاعات موردنیاز",
@@ -496,27 +496,32 @@ export function RnaSeqInTranscriptomicsLesson() {
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <DataCard
                   title="RNA-seq"
-                  data="FASTQ → کمی‌سازی → ماتریس بیان"
+                  description="داده خام معمولاً به‌صورت FASTQ است. بعد از کنترل کیفیت و کمی‌سازی، به مقادیر بیان ژن و در نهایت ماتریس بیان می‌رسیم."
                 />
+
                 <DataCard
                   title="Microarray"
-                  data="فایل‌های سیگنال / داده پردازش‌شده → ماتریس بیان"
+                  description="داده از شدت سیگنال پروب‌ها به دست می‌آید. پس از پردازش و نرمال‌سازی، ماتریس بیان ژن ساخته می‌شود."
                 />
+
                 <DataCard
                   title="RNA-seq تک‌سلولی"
-                  data="FASTQ → ماتریس ژن × سلول + Metadata"
+                  description="FASTQ نقطه شروع رایج است. پس از پردازش، یک ماتریس ژن × سلول همراه با Metadata سلولی به دست می‌آید."
                 />
+
                 <DataCard
                   title="Spatial"
-                  data="بیان RNA + مختصات / اطلاعات تصویری"
+                  description="داده بیان RNA با مختصات مکانی و معمولاً اطلاعات تصویری بافت همراه است؛ بنابراین فقط یک ماتریس بیان ساده نیست."
                 />
+
                 <DataCard
                   title="Long-read"
-                  data="خوانش‌های بلند + اطلاعات transcript / isoform"
+                  description="خروجی شامل خوانش‌های بلند است که برای بازسازی transcriptها و بررسی isoformها استفاده می‌شود."
                 />
+
                 <DataCard
                   title="small RNA-seq"
-                  data="FASTQ با Library مناسب RNAهای کوچک"
+                  description="داده خام معمولاً FASTQ است، اما Library برای RNAهای کوچک طراحی شده و مسیر تحلیل هم متناسب با همین هدف است."
                 />
               </div>
 
@@ -901,10 +906,10 @@ function InfoBlock({
 
 function DataCard({
   title,
-  data,
+  description,
 }: {
   title: string;
-  data: string;
+  description: string;
 }) {
   return (
     <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -912,8 +917,8 @@ function DataCard({
         {title}
       </p>
 
-      <p className="mt-3 text-sm font-semibold leading-8 text-teal-800">
-        {data}
+      <p className="mt-3 text-sm leading-8 text-slate-600">
+        {description}
       </p>
     </div>
   );
