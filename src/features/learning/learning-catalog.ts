@@ -113,8 +113,7 @@ export const transcriptomicsFoundationLessons: FoundationLesson[] = [
     title: "توده‌ای، تک‌سلولی یا فضایی؟",
     summary:
       "تفکیک سطح مشاهده از فناوری و انتخاب سطح مناسب بر اساس سؤال پژوهشی.",
-    principle:
-      "سطح مشاهده با فناوری اندازه‌گیری یکی نیست.",
+    principle: "سطح مشاهده با فناوری اندازه‌گیری یکی نیست.",
     href: "/learn/transcriptomics/foundations/bulk-single-cell-spatial",
   },
   {
@@ -157,10 +156,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "library-preparation",
     title: "آماده‌سازی کتابخانه",
     summary:
-      "غنی‌سازی mRNA، حذف rRNA، قطعه‌قطعه‌سازی، cDNA و منطق ساخت کتابخانه را بفهمید.",
+      "غنی‌سازی mRNA، حذف rRNA، قطعه‌قطعه‌سازی، cDNA، جهت‌داری و منطق ساخت کتابخانه را بفهمید.",
     principle:
       "طراحی کتابخانه تعیین می‌کند چه بخش‌هایی از RNA فرصت دیده‌شدن پیدا کنند.",
-    status: "planned",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/library-preparation",
   },
   {
     index: 4,
@@ -339,13 +339,7 @@ export const learningDomains: LearningDomain[] = [
       "RNAها در یک نمونه، سلول یا بافت چه چیزی درباره وضعیت زیستی به ما می‌گویند؟",
     status: "active",
     href: "/learn/transcriptomics",
-    topics: [
-      "بیان ژن",
-      "RNA-seq",
-      "میکروآرایه",
-      "تک‌سلولی",
-      "فضایی",
-    ],
+    topics: ["بیان ژن", "RNA-seq", "میکروآرایه", "تک‌سلولی", "فضایی"],
   },
   {
     id: "proteomics",
@@ -357,12 +351,7 @@ export const learningDomains: LearningDomain[] = [
     guidingQuestion:
       "کدام پروتئین‌ها حضور دارند، چه مقدارند و چگونه میان شرایط مختلف تغییر می‌کنند؟",
     status: "developing",
-    topics: [
-      "پروتئین",
-      "طیف‌سنجی جرمی",
-      "کمی‌سازی",
-      "پروتئوم",
-    ],
+    topics: ["پروتئین", "طیف‌سنجی جرمی", "کمی‌سازی", "پروتئوم"],
   },
   {
     id: "genomics",
@@ -374,12 +363,7 @@ export const learningDomains: LearningDomain[] = [
     guidingQuestion:
       "چه تغییراتی در DNA وجود دارد و این تغییرات چه پیامد زیستی یا بالینی دارند؟",
     status: "developing",
-    topics: [
-      "ژنوم",
-      "واریانت",
-      "توالی‌یابی DNA",
-      "تفسیر ژنتیکی",
-    ],
+    topics: ["ژنوم", "واریانت", "توالی‌یابی DNA", "تفسیر ژنتیکی"],
   },
   {
     id: "epigenomics",
@@ -391,12 +375,7 @@ export const learningDomains: LearningDomain[] = [
     guidingQuestion:
       "چگونه وضعیت کروماتین و نشانه‌های اپی‌ژنتیکی فعالیت ژن‌ها را تنظیم می‌کنند؟",
     status: "developing",
-    topics: [
-      "کروماتین",
-      "متیلاسیون",
-      "تنظیم ژن",
-      "اپی‌ژنتیک",
-    ],
+    topics: ["کروماتین", "متیلاسیون", "تنظیم ژن", "اپی‌ژنتیک"],
   },
   {
     id: "metabolomics",
@@ -408,12 +387,7 @@ export const learningDomains: LearningDomain[] = [
     guidingQuestion:
       "کدام متابولیت‌ها و مسیرهای متابولیکی میان شرایط مختلف تغییر می‌کنند؟",
     status: "developing",
-    topics: [
-      "متابولیت",
-      "مسیر متابولیکی",
-      "کمی‌سازی",
-      "تفسیر زیستی",
-    ],
+    topics: ["متابولیت", "مسیر متابولیکی", "کمی‌سازی", "تفسیر زیستی"],
   },
 ];
 
