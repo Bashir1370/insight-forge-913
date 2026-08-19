@@ -222,10 +222,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "differential-expression",
     title: "نرمال‌سازی و بیان افتراقی",
     summary:
-      "منطق نرمال‌سازی، تغییر بیان، عدم‌قطعیت آماری، مقدار p و نرخ کشف کاذب را بفهمید.",
+      "از ضریب مقیاس و پراکندگی تا اندازه اثر، مقدار p، آزمون‌های متعدد و نرخ کشف کاذب را قدم‌به‌قدم یاد بگیرید.",
     principle:
-      "تغییر بزرگ و معنی‌داری آماری دو مفهوم متفاوت‌اند.",
-    status: "planned",
+      "بیان افتراقی باید اندازه اثر، عدم‌قطعیت و طراحی مطالعه را هم‌زمان در نظر بگیرد.",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/differential-expression",
   },
   {
     index: 10,
