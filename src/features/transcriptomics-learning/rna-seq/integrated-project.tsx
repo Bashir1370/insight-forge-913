@@ -13,6 +13,12 @@ import {
 } from "lucide-react";
 
 import { SpecialistLessonShell } from "@/features/learning/components/SpecialistLessonShell";
+import {
+  IntegratedProjectCmsAdmin,
+  ProjectMissionMedia,
+  useIntegratedProjectCms,
+  type ProjectMissionContent,
+} from "@/features/learning/cms/IntegratedProjectCms";
 import { usePersistentLessonProgress } from "@/features/learning/usePersistentLessonProgress";
 
 const sampleRows = [
@@ -38,19 +44,9 @@ const deRows = [
   { gene: "COL1A1", log2fc: 0.8, padj: "0.041", theme: "ماتریکس خارج‌سلولی" },
 ];
 
-type Mission = {
-  title: string;
-  lessonRef: string;
-  prompt: string;
-  context: string;
-  options: string[];
-  correctIndex: number;
-  correctFeedback: string;
-  incorrectFeedback: string;
-  deliverable: string;
-};
+type Mission = ProjectMissionContent;
 
-const missions: Mission[] = [
+const defaultMissions: Mission[] = [
   {
     title: "سؤال پژوهشی را قفل کنید",
     lessonRef: "بازگشت به درس ۱",
@@ -252,6 +248,15 @@ const missions: Mission[] = [
 ];
 
 export function RnaSeqIntegratedProjectLesson() {
+  const cms = useIntegratedProjectCms({
+    pageKey: "project:rna-seq-integrated-project",
+    title: "پروژه یکپارچه سرطان پانکراس",
+    subtitle:
+      "این بار مفهوم تازه‌ای حفظ نمی‌کنید؛ یک پرونده RNA-seq را از سؤال پژوهشی تا ادعای زیستی و گزارش قابل بازتولید هدایت می‌کنید. هر تصمیم باید با چیزی که در درس‌های ۱ تا ۱۰ ساخته‌اید دفاع شود.",
+    missions: defaultMissions,
+  });
+  const missions = cms.missions;
+
   const {
     currentIndex: missionIndex,
     setCurrentIndex: setMissionIndex,
@@ -260,6 +265,8 @@ export function RnaSeqIntegratedProjectLesson() {
     maxUnlocked,
     setMaxUnlocked,
     resetProgress,
+    syncMode,
+    syncing,
   } = usePersistentLessonProgress({
     storageId: "integrated:rna-seq:pancreatic-cancer-project",
     itemCount: missions.length,
@@ -279,7 +286,7 @@ export function RnaSeqIntegratedProjectLesson() {
       missions
         .map((item, index) => ({ item, index, solved: answers[index] === item.correctIndex }))
         .filter((entry) => entry.solved),
-    [answers],
+    [answers, missions],
   );
 
   function answer(optionIndex: number) {
@@ -313,19 +320,39 @@ export function RnaSeqIntegratedProjectLesson() {
       domainId="transcriptomics"
       trackId="bulk-rna-seq"
       lessonIndex={11}
-      title="پروژه یکپارچه سرطان پانکراس"
-      subtitle="این بار مفهوم تازه‌ای حفظ نمی‌کنید؛ یک پرونده RNA-seq را از سؤال پژوهشی تا ادعای زیستی و گزارش قابل بازتولید هدایت می‌کنید. هر تصمیم باید با چیزی که در درس‌های ۱ تا ۱۰ ساخته‌اید دفاع شود."
+      title={cms.title}
+      subtitle={cms.subtitle}
       currentScene={missionIndex}
       sceneCount={missions.length}
       sceneLabel={mission.title}
     >
       <section id="integrated-project" className="scroll-mt-6" dir="rtl">
         <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-          <ProjectHeader score={score} completed={completed} onReset={resetProject} />
+          {cms.isAdmin && (
+            <IntegratedProjectCmsAdmin
+              pageKey={cms.pageKey}
+              document={cms.document}
+              currentMissionIndex={missionIndex}
+              onPreview={cms.setPreviewDocument}
+              onPublished={cms.reloadPublished}
+            />
+          )}
+
+          <ProjectHeader
+            score={score}
+            completed={completed}
+            total={missions.length}
+            title={cms.title}
+            description={cms.subtitle}
+            syncMode={syncMode}
+            syncing={syncing}
+            onReset={resetProject}
+          />
 
           <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_330px]">
             <main>
               <MissionNavigator
+                missions={missions}
                 current={missionIndex}
                 maxUnlocked={maxUnlocked}
                 answers={answers}
@@ -354,6 +381,8 @@ export function RnaSeqIntegratedProjectLesson() {
 
                 <div className="p-6 sm:p-8">
                   <MissionLab missionIndex={missionIndex} />
+
+                  <ProjectMissionMedia mission={mission} />
 
                   <DecisionPanel
                     mission={mission}
@@ -435,10 +464,20 @@ export function RnaSeqIntegratedProjectLesson() {
 function ProjectHeader({
   score,
   completed,
+  total,
+  title,
+  description,
+  syncMode,
+  syncing,
   onReset,
 }: {
   score: number;
   completed: number;
+  total: number;
+  title: string;
+  description: string;
+  syncMode: "account" | "device";
+  syncing: boolean;
   onReset: () => void;
 }) {
   return (
@@ -449,11 +488,9 @@ function ProjectHeader({
             <FlaskConical className="size-5" />
             <span className="text-xs font-black">شبیه‌ساز پروژه RNA-seq</span>
           </div>
-          <h1 className="mt-3 text-2xl font-black sm:text-3xl">
-            پرونده آموزشی: درمان X در سرطان پانکراس
-          </h1>
+          <h1 className="mt-3 text-2xl font-black sm:text-3xl">{title}</h1>
           <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-300">
-            هدف این درس گرفتن «بیشترین امتیاز» نیست؛ هدف ساختن زنجیره‌ای است که یک پژوهشگر دیگر بتواند منطق هر تصمیم را دنبال کند.
+            {description}
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -480,20 +517,28 @@ function ProjectHeader({
       </div>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
         <p>
-          {completed.toLocaleString("fa-IR")} تصمیم از {missions.length.toLocaleString("fa-IR")} تصمیم ثبت شده است.
+          {completed.toLocaleString("fa-IR")} تصمیم از {total.toLocaleString("fa-IR")} تصمیم ثبت شده است.
         </p>
-        <p className="font-bold text-emerald-300">پیشرفت پروژه روی همین دستگاه ذخیره می‌شود</p>
+        <p className="font-bold text-emerald-300">
+          {syncMode === "account"
+            ? syncing
+              ? "در حال همگام‌سازی پیشرفت…"
+              : "پیشرفت پروژه با حساب کاربری همگام است"
+            : "پیشرفت پروژه روی همین دستگاه ذخیره می‌شود"}
+        </p>
       </div>
     </section>
   );
 }
 
 function MissionNavigator({
+  missions,
   current,
   maxUnlocked,
   answers,
   onSelect,
 }: {
+  missions: Mission[];
   current: number;
   maxUnlocked: number;
   answers: Record<number, number>;
@@ -837,7 +882,8 @@ function DifferentialExpressionLab() {
         <pre
           className="mt-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-left text-xs leading-7 text-slate-200"
           dir="ltr"
-        >{`design = ~ batch + condition\ncontrast = treatment_X vs reference`}</pre>
+        >{`design = ~ batch + condition
+contrast = treatment_X vs reference`}</pre>
       ) : (
         <ResultsTable />
       )}
