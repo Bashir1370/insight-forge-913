@@ -1,603 +1,372 @@
 import {
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Lightbulb,
-} from "lucide-react";
+  GuidedConceptLesson,
+  type GuidedLessonSection,
+} from "@/features/learning/components/GuidedConceptLesson";
 
-import { SpecialistLessonShell } from "@/features/learning/components/SpecialistLessonShell";
-
-const sceneTitles = [
-  "کتابخانه یعنی چه؟",
-  "انتخاب RNA هدف",
-  "قطعه‌قطعه‌سازی و cDNA",
-  "جهت‌داری کتابخانه",
-  "آداپتور، شاخص و تکثیر",
-  "سناریوی سرطان پانکراس",
-  "ایستگاه تسلط",
+const sections: GuidedLessonSection[] = [
+  {
+    title: "کتابخانه یعنی چه؟",
+    eyebrow: "پل بین RNA و دستگاه",
+    headline: "RNA استخراج‌شده هنوز مستقیماً داده توالی‌یابی نیست.",
+    lead:
+      "برای اینکه دستگاه بتواند مولکول‌ها را بخواند، RNA باید طی مجموعه‌ای از مراحل به مولکول‌های آماده توالی‌یابی تبدیل شود. حاصل این فرایند را «کتابخانه» می‌نامیم. کتابخانه فقط یک ظرف مولکولی نیست؛ تعیین می‌کند چه RNAهایی بیشتر یا کمتر وارد اندازه‌گیری شوند.",
+    flow: ["RNA استخراج‌شده", "انتخاب RNA هدف", "ساخت قطعات مناسب", "cDNA", "آداپتور", "کتابخانه"],
+    terms: [
+      {
+        term: "library",
+        persianLabel: "کتابخانه",
+        explanation:
+          "مجموعه مولکول‌های آماده توالی‌یابی که از RNA نمونه ساخته شده‌اند. ترکیب این مجموعه تعیین می‌کند چه بخش‌هایی از RNA شانس بیشتری برای دیده‌شدن در داده نهایی داشته باشند.",
+      },
+      {
+        term: "cDNA",
+        explanation:
+          "DNA مکملی است که از روی RNA ساخته می‌شود. بسیاری از روش‌های RNA-seq کوتاه‌خوان، RNA را به cDNA تبدیل می‌کنند تا مراحل بعدی ساخت کتابخانه و توالی‌یابی روی DNA انجام شود.",
+      },
+    ],
+    question: {
+      question: "کدام تعریف برای کتابخانه RNA-seq دقیق‌تر است؟",
+      options: [
+        "همان RNA خامی است که از نمونه استخراج شده است.",
+        "مجموعه مولکول‌های آماده توالی‌یابی است که از RNA هدف ساخته شده‌اند.",
+        "همان فایل FASTQ نهایی است.",
+      ],
+      correctIndex: 1,
+      correctFeedback:
+        "دقیقاً. کتابخانه هنوز داده محاسباتی نیست؛ محصول آزمایشگاهی آماده ورود به توالی‌یابی است.",
+      incorrectFeedback:
+        "سه سطح را جدا نگه دارید: RNA زیستی ← کتابخانه آزمایشگاهی ← داده محاسباتی FASTQ.",
+    },
+    bridge: {
+      openQuestion: "اگر کل RNA سلول وارد نمونه شده باشد، آیا همه انواع RNA را به یک اندازه می‌خواهیم بخوانیم؟",
+      nextStep:
+        "نه همیشه. بخش بعد نشان می‌دهد انتخاب RNA هدف یکی از مهم‌ترین تصمیم‌های کتابخانه است.",
+    },
+  },
+  {
+    title: "انتخاب RNA هدف",
+    eyebrow: "فیلتر اول اندازه‌گیری",
+    headline: "غنی‌سازی RNAهای دارای poly(A) و حذف rRNA دو راهبرد متفاوت‌اند.",
+    lead:
+      "بخش بزرگی از RNA سلولی را rRNA تشکیل می‌دهد. اگر سؤال اصلی درباره mRNA باشد، معمولاً نمی‌خواهیم ظرفیت توالی‌یابی عمدتاً صرف rRNA شود. برای همین می‌توانیم یا RNAهای موردنظر را غنی کنیم، یا RNA غالب ناخواسته را کاهش دهیم.",
+    connection:
+      "اکنون می‌دانیم کتابخانه تعیین می‌کند چه مولکول‌هایی وارد اندازه‌گیری شوند. اولین انتخاب مهم این است که کدام RNAها را نگه داریم.",
+    terms: [
+      {
+        term: "poly(A) selection",
+        persianLabel: "غنی‌سازی RNAهای دارای poly(A)",
+        explanation:
+          "از دُم poly(A) بسیاری از mRNAهای یوکاریوتی برای غنی‌کردن آن‌ها استفاده می‌کند. این راهبرد برای مطالعه بسیاری از mRNAها مناسب است، اما RNAهای بدون poly(A) کمتر نمایندگی می‌شوند.",
+      },
+      {
+        term: "rRNA depletion",
+        persianLabel: "حذف rRNA",
+        explanation:
+          "به‌جای انتخاب مثبت mRNA، rRNAهای فراوان را هدف می‌گیرد و کاهش می‌دهد تا طیف وسیع‌تری از RNAهای غیر-rRNA باقی بماند.",
+      },
+    ],
+    concepts: [
+      {
+        title: "اگر سؤال روی mRNA است",
+        text: "غنی‌سازی poly(A) می‌تواند انتخاب منطقی باشد، به‌ویژه وقتی RNA کیفیت مناسبی دارد و RNAهای بدون poly(A) هدف اصلی نیستند.",
+        emphasized: true,
+      },
+      {
+        title: "اگر RNA تخریب‌شده یا دامنه RNA گسترده‌تر مهم است",
+        text: "حذف rRNA می‌تواند مزیت داشته باشد، اما انتخاب نهایی به نوع نمونه، کیفیت RNA و هدف پژوهش بستگی دارد.",
+      },
+    ],
+    question: {
+      question: "کدام جمله درباره poly(A) selection و rRNA depletion درست‌تر است؟",
+      options: [
+        "دو مرحله اجباری‌اند که همیشه باید پشت سر هم انجام شوند.",
+        "دو راهبرد متفاوت برای تعیین ترکیب RNA ورودی به کتابخانه‌اند.",
+        "هیچ‌کدام روی داده نهایی اثر ندارند.",
+      ],
+      correctIndex: 1,
+      correctFeedback:
+        "درست است. این دو منطق متفاوت‌اند و انتخابشان باید از سؤال زیستی و کیفیت نمونه بیاید.",
+      incorrectFeedback:
+        "آن‌ها را به‌عنوان دو انتخاب طراحی ببینید، نه دو مرحله جهانی و اجباری برای همه RNA-seqها.",
+    },
+    bridge: {
+      openQuestion: "بعد از انتخاب RNA هدف، چرا نمی‌توانیم همان مولکول‌های بلند را بدون تغییر به دستگاه بدهیم؟",
+      nextStep:
+        "بخش بعد توضیح می‌دهد چرا طول قطعات و تبدیل RNA به cDNA برای سازگاری با روش توالی‌یابی مهم است.",
+    },
+  },
+  {
+    title: "قطعه‌قطعه‌سازی و cDNA",
+    eyebrow: "ساخت مولکول مناسب",
+    headline: "هدف، تبدیل RNA انتخاب‌شده به قطعاتی است که روش توالی‌یابی بتواند آن‌ها را بخواند.",
+    lead:
+      "مولکول‌های RNA می‌توانند بسیار بلند باشند، در حالی که بیشتر روش‌های RNA-seq کوتاه‌خوان روی قطعات کوتاه‌تر کار می‌کنند. بنابراین در فرایند ساخت کتابخانه، RNA یا cDNA به قطعات مناسب تبدیل می‌شود. ترتیب دقیق این مراحل در همه کیت‌ها یکسان نیست.",
+    connection:
+      "RNA هدف را انتخاب کردیم. حالا باید شکل فیزیکی آن را برای فناوری توالی‌یابی مناسب کنیم.",
+    terms: [
+      {
+        term: "fragmentation",
+        persianLabel: "قطعه‌قطعه‌سازی",
+        explanation:
+          "فرایندی برای تبدیل مولکول‌های بلند به قطعات کوتاه‌تر. هدف، رسیدن به توزیع اندازه‌ای است که با ساخت کتابخانه و خواندن دستگاه سازگار باشد.",
+      },
+      {
+        term: "reverse transcription",
+        persianLabel: "رونویسی معکوس",
+        explanation:
+          "ساخت cDNA از روی RNA با کمک آنزیم reverse transcriptase. نام علمی آنزیم حفظ می‌شود، اما کارش ساده است: از RNA یک نسخه DNA می‌سازد.",
+      },
+    ],
+    concepts: [
+      {
+        title: "اصل ثابت",
+        text: "کتابخانه باید قطعاتی با اندازه مناسب و مولکول‌های قابل استفاده برای دستگاه تولید کند.",
+        emphasized: true,
+      },
+      {
+        title: "جزئیات متغیر",
+        text: "اینکه قطعه‌قطعه‌سازی دقیقاً قبل یا بعد از ساخت cDNA رخ دهد، به پروتکل بستگی دارد. نباید ترتیب یک کیت را قانون همه RNA-seqها بدانیم.",
+      },
+    ],
+    question: {
+      question: "چرا حفظ کردن یک ترتیب جهانی مثل «همیشه fragmentation سپس cDNA» مناسب نیست؟",
+      options: [
+        "چون پروتکل‌ها در محل و روش تولید قطعات متفاوت‌اند، هرچند هدف کلی مشابه است.",
+        "چون RNA-seq هیچ‌وقت به cDNA نیاز ندارد.",
+        "چون قطعه‌قطعه‌سازی فقط بعد از تولید FASTQ انجام می‌شود.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "دقیقاً. برای یادگیری پایه‌ای باید هدف مرحله را بفهمیم و بعد جزئیات پروتکل واقعی را بخوانیم.",
+      incorrectFeedback:
+        "در آموزش مفهومی، منطق مرحله مهم‌تر از حفظ ترتیب یک کیت خاص است.",
+    },
+    bridge: {
+      openQuestion: "اگر قطعه‌ای از یک ژن خوانده شود، آیا همیشه می‌دانیم از کدام جهت رونوشت آمده است؟",
+      nextStep:
+        "نه. بخش بعد مفهوم جهت‌داری کتابخانه را معرفی می‌کند؛ اطلاعاتی که می‌تواند جهت رونوشت را حفظ یا از بین ببرد.",
+    },
+  },
+  {
+    title: "جهت‌داری کتابخانه",
+    eyebrow: "اطلاعاتی فراتر از توالی",
+    headline: "بعضی کتابخانه‌ها جهت رونوشت اولیه را حفظ می‌کنند و بعضی نه.",
+    lead:
+      "ژن‌ها می‌توانند در دو جهت روی DNA قرار داشته باشند و حتی بخش‌هایی از ژن‌های مختلف با هم هم‌پوشانی داشته باشند. اگر کتابخانه جهت‌دار باشد، اطلاعات جهت می‌تواند کمک کند یک خوانش را به رونوشت درست‌تری نسبت دهیم.",
+    connection:
+      "تا اینجا مولکول‌های مناسب ساخته‌ایم. حالا می‌پرسیم آیا هنگام تبدیل RNA به کتابخانه، اطلاعات جهت مولکول اولیه هم حفظ شده است یا نه.",
+    terms: [
+      {
+        term: "strandedness",
+        persianLabel: "جهت‌داری کتابخانه",
+        explanation:
+          "ویژگی پروتکل که مشخص می‌کند داده تا چه حد جهت رشته RNA اولیه را حفظ می‌کند. این اطلاعات باید در مراحل کمی‌سازی و شمارش بعدی درست به نرم‌افزار اعلام شود.",
+      },
+    ],
+    concepts: [
+      {
+        title: "کتابخانه جهت‌دار",
+        text: "اطلاعاتی درباره جهت رونوشت اولیه نگه می‌دارد و در نواحی هم‌پوشان می‌تواند ابهام را کمتر کند.",
+        emphasized: true,
+      },
+      {
+        title: "کتابخانه بدون جهت",
+        text: "توالی را داریم، اما جهت اولیه رونوشت به‌صورت مستقیم حفظ نشده است.",
+      },
+    ],
+    question: {
+      question: "چرا دانستن جهت‌داری کتابخانه برای تحلیل مهم است؟",
+      options: [
+        "چون روی تفسیر جهت خوانش‌ها و نسبت‌دادن آن‌ها به رونوشت‌ها اثر می‌گذارد.",
+        "فقط برای نام‌گذاری فایل‌هاست.",
+        "چون جهت‌داری تعداد تکرار زیستی را تعیین می‌کند.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "درست است. اگر نوع جهت‌داری را اشتباه به ابزار تحلیل معرفی کنیم، بعضی خوانش‌ها می‌توانند نادرست تفسیر شوند.",
+      incorrectFeedback:
+        "جهت‌داری یک ویژگی واقعی کتابخانه است و در نحوه تفسیر خوانش‌ها نقش دارد.",
+    },
+    bridge: {
+      openQuestion: "مولکول مناسب و جهت اطلاعات را داریم؛ دستگاه چگونه این قطعات را می‌شناسد و نمونه‌ها را از هم جدا می‌کند؟",
+      nextStep:
+        "برای این کار به آداپتور و شاخص نمونه نیاز داریم. بخش بعد این دو را از هم جدا و ساده توضیح می‌دهد.",
+    },
+  },
+  {
+    title: "آداپتور و شاخص نمونه",
+    eyebrow: "اتصال به دستگاه و هویت نمونه",
+    headline: "آداپتور به مولکول کمک می‌کند وارد سامانه توالی‌یابی شود؛ شاخص نمونه هویت آن را بین نمونه‌های مخلوط حفظ می‌کند.",
+    lead:
+      "در بسیاری از روش‌ها، توالی‌های کوتاه طراحی‌شده‌ای به قطعات کتابخانه اضافه می‌شوند. بخشی از آن‌ها برای اتصال و خوانده‌شدن در سامانه لازم‌اند و بخشی می‌توانند به‌عنوان شاخص نمونه عمل کنند تا چند کتابخانه با هم توالی‌یابی شوند و بعد دوباره از هم جدا شوند.",
+    connection:
+      "کتابخانه از نظر مولکولی آماده‌تر شده است. حالا باید هم با دستگاه سازگار شود و هم هویت نمونه در میان کتابخانه‌های دیگر گم نشود.",
+    terms: [
+      {
+        term: "adapter",
+        persianLabel: "آداپتور",
+        explanation:
+          "توالی طراحی‌شده‌ای که به قطعه کتابخانه متصل می‌شود و برای مراحل فنی توالی‌یابی، اتصال یا آغاز خواندن مورد استفاده قرار می‌گیرد. شکل دقیق آن به سامانه و کیت بستگی دارد.",
+      },
+      {
+        term: "sample index",
+        persianLabel: "شاخص نمونه",
+        explanation:
+          "توالی کوتاه شناسه‌مانندی که کمک می‌کند بعد از توالی‌یابی مشترک، خوانش‌های هر نمونه دوباره به کتابخانه اصلی خود نسبت داده شوند.",
+      },
+      {
+        term: "pooling",
+        persianLabel: "تجمیع کتابخانه‌ها",
+        explanation:
+          "مخلوط‌کردن چند کتابخانه دارای شاخص برای توالی‌یابی مشترک در یک اجرا.",
+      },
+      {
+        term: "demultiplexing",
+        persianLabel: "جداسازی نمونه‌ها بر پایه شاخص",
+        explanation:
+          "مرحله‌ای پس از تولید داده که از شاخص‌ها استفاده می‌کند تا خوانش‌های مخلوط‌شده دوباره به نمونه‌های مربوط به خود تقسیم شوند.",
+      },
+    ],
+    question: {
+      question: "اگر چهار کتابخانه با شاخص‌های متفاوت با هم توالی‌یابی شوند، بعداً چگونه از هم جدا می‌شوند؟",
+      options: [
+        "با استفاده از شاخص نمونه و فرایند جداسازی بر پایه شاخص.",
+        "فقط از روی طول FASTQ.",
+        "با تعداد ژن‌های بیان‌شده.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "درست است. شاخص نمونه هویت کتابخانه را در یک اجرای مشترک حفظ می‌کند.",
+      incorrectFeedback:
+        "هویت نمونه باید از قبل در کتابخانه کدگذاری شده باشد؛ شاخص نمونه این نقش را دارد.",
+    },
+    bridge: {
+      openQuestion: "اگر مقدار کتابخانه کم باشد، چرا بعضی پروتکل‌ها از PCR استفاده می‌کنند و این کار چه عارضه‌ای می‌تواند داشته باشد؟",
+      nextStep:
+        "بخش بعد PCR را از یک اصطلاح رهاشده به یک مفهوم روشن تبدیل می‌کند: چرا تکثیر می‌کنیم و چگونه تکثیر بیش از حد می‌تواند داده را سوگیر کند.",
+    },
+  },
+  {
+    title: "PCR و اثر مصنوعی",
+    eyebrow: "تکثیر با یک هزینه احتمالی",
+    headline: "PCR می‌تواند تعداد مولکول‌های کتابخانه را افزایش دهد، اما همه مولکول‌ها لزوماً به یک اندازه تکثیر نمی‌شوند.",
+    lead:
+      "PCR مخفف Polymerase Chain Reaction است؛ روشی برای تکثیر DNA. در برخی پروتکل‌های ساخت کتابخانه از PCR برای افزایش مقدار مولکول‌های قابل توالی‌یابی استفاده می‌شود. مشکل زمانی ایجاد می‌شود که تکثیر، نمایندگی اولیه مولکول‌ها را تغییر دهد.",
+    connection:
+      "آداپتور و شاخص را اضافه کردیم. حالا می‌خواهیم بدانیم افزایش تعداد مولکول‌ها قبل از توالی‌یابی چه اثری روی نمایندگی کتابخانه دارد.",
+    terms: [
+      {
+        term: "PCR",
+        explanation:
+          "یک روش تکثیر DNA است. در زمینه کتابخانه RNA-seq، هدفش می‌تواند افزایش تعداد نسخه‌های مولکول‌های کتابخانه برای رسیدن به مقدار مناسب توالی‌یابی باشد.",
+      },
+      {
+        term: "PCR artifact",
+        persianLabel: "اثر مصنوعی ناشی از PCR",
+        explanation:
+          "الگویی است که از خود زیست‌شناسی نمونه نیامده و در اثر تکثیر فنی ایجاد یا تقویت شده است؛ مثلاً بعضی مولکول‌ها بیش از حد تکثیر شوند و سهمشان در داده بزرگ‌تر از مقدار اولیه به نظر برسد.",
+      },
+      {
+        term: "PCR duplicate",
+        persianLabel: "نسخه تکراری ناشی از PCR",
+        explanation:
+          "چند خوانش ممکن است از نسخه‌های تکثیرشده یک مولکول اولیه آمده باشند. اما هر خوانش تکراری الزاماً PCR artifact نیست؛ RNAهای واقعاً پرفراوان نیز می‌توانند خوانش‌های مشابه زیادی تولید کنند.",
+      },
+    ],
+    insight:
+      "اصل مهم برای درس‌های بعد: «تکراری بودن خوانش» و «اثر مصنوعی ناشی از PCR» یکی نیستند. برای قضاوت باید زمینه کتابخانه و الگوی داده را ببینیم.",
+    question: {
+      question: "اگر چند خوانش یکسان ببینیم، آیا می‌توانیم فوراً بگوییم همه آن‌ها اثر مصنوعی PCR هستند؟",
+      options: [
+        "بله؛ هر تکرار توالی حتماً فنی است.",
+        "خیر؛ RNA پرفراوان هم می‌تواند خوانش‌های مشابه ایجاد کند و باید زمینه را بررسی کرد.",
+      ],
+      correctIndex: 1,
+      correctFeedback:
+        "دقیقاً. این تمایز در درس کنترل کیفیت دوباره مهم می‌شود؛ هشدار تکرار بالا باید تفسیر شود، نه اینکه خودکار به حذف داده منجر شود.",
+      incorrectFeedback:
+        "تکرار می‌تواند منشأ فنی یا زیستی داشته باشد. بدون زمینه نمی‌توان از روی شباهت توالی علت را قطعی کرد.",
+    },
+    bridge: {
+      openQuestion: "کتابخانه حالا آماده است؛ دستگاه از هر مولکول چه چیزی تحویل ما می‌دهد؟",
+      nextStep:
+        "درس ۴ پاسخ می‌دهد: دستگاه از قطعات کتابخانه «خوانش» تولید می‌کند و توالی و عدم‌قطعیت هر باز را در FASTQ ثبت می‌کند.",
+    },
+  },
+  {
+    title: "سناریوی سرطان پانکراس",
+    eyebrow: "انتخاب روش از روی نمونه",
+    headline: "راهبرد کتابخانه باید با سؤال و کیفیت RNA هماهنگ باشد.",
+    lead:
+      "فرض کنید یک پروژه سرطان پانکراس هم نمونه‌های تازه‌منجمد با RNA دست‌نخورده‌تر دارد و هم نمونه‌های FFPE با RNA شکسته‌تر. انتخاب راهبرد یکسان بدون توجه به این تفاوت می‌تواند نمایندگی RNA را تغییر دهد.",
+    connection:
+      "همه اجزای کتابخانه را شناختیم. حالا آن‌ها را در یک تصمیم واقعی کنار هم می‌گذاریم.",
+    scenario: {
+      title: "دو وضعیت ماده اولیه",
+      description: "هدف هنوز مقایسه بیان RNA است، اما کیفیت ماده اولیه یکسان نیست.",
+      items: [
+        "نمونه با RNA مناسب و تمرکز بر mRNA: غنی‌سازی poly(A) می‌تواند گزینه‌ای منطقی باشد.",
+        "نمونه بسیار تخریب‌شده یا نیاز به دامنه RNA گسترده‌تر: حذف rRNA می‌تواند مناسب‌تر باشد.",
+        "روش کتابخانه نباید بدون برنامه دقیقاً با گروه زیستی هم‌جهت شود.",
+      ],
+    },
+    question: {
+      question: "کدام اصل برای انتخاب روش کتابخانه مهم‌تر است؟",
+      options: [
+        "همیشه یک پروتکل واحد بهترین است.",
+        "سؤال پژوهشی، نوع RNA هدف، کیفیت نمونه و سازگاری پروتکل باید با هم دیده شوند.",
+        "فقط نام دستگاه توالی‌یاب تعیین‌کننده است.",
+      ],
+      correctIndex: 1,
+      correctFeedback:
+        "درست است. طراحی کتابخانه ادامه همان زنجیره تصمیم‌گیری از سؤال و نمونه است.",
+      incorrectFeedback:
+        "هیچ انتخاب آزمایشگاهی را جدا از سؤال و کیفیت ماده اولیه نبینید.",
+    },
+    bridge: {
+      openQuestion: "کتابخانه آماده است، اما چگونه مولکول به توالی متنی و امتیاز کیفیت تبدیل می‌شود؟",
+      nextStep:
+        "درس ۴ از همین نقطه آغاز می‌شود: توالی‌یابی، تشخیص باز، خوانش و ساختار FASTQ.",
+    },
+  },
+  {
+    title: "جمع‌بندی فعال",
+    eyebrow: "ایستگاه تسلط",
+    headline: "کتابخانه یک فیلتر اندازه‌گیری است، نه یک مرحله خنثی بین RNA و دستگاه.",
+    lead:
+      "اگر بدانید چه RNAهایی انتخاب شده‌اند، چگونه قطعه‌قطعه شده‌اند، جهت‌داری حفظ شده یا نه، آداپتور و شاخص چه می‌کنند و PCR چه اثری می‌تواند داشته باشد، آماده ورود به توالی‌یابی هستید.",
+    connection:
+      "این بخش بررسی می‌کند آیا می‌توانید مسیر RNA تا کتابخانه را بدون حفظ‌کردن یک کیت خاص توضیح دهید.",
+    flow: ["RNA هدف", "قطعات مناسب", "cDNA", "جهت‌داری", "آداپتور و شاخص", "کتابخانه قابل توالی‌یابی"],
+    question: {
+      question: "کدام جمله دقیق‌ترین خلاصه درس است؟",
+      options: [
+        "آماده‌سازی کتابخانه فقط یک مرحله فنی است و روی چیزی که دیده می‌شود اثر ندارد.",
+        "طراحی کتابخانه تعیین می‌کند چه RNAهایی و با چه ویژگی‌هایی فرصت ورود به توالی‌یابی را پیدا کنند.",
+        "کتابخانه همان FASTQ است.",
+      ],
+      correctIndex: 1,
+      correctFeedback:
+        "عالی. حالا آماده‌سازی کتابخانه را به‌عنوان یک تصمیم اندازه‌گیری می‌بینید، نه یک جعبه سیاه.",
+      incorrectFeedback:
+        "به انتخاب RNA هدف، جهت‌داری، آداپتور و PCR برگردید؛ هرکدام می‌توانند روی داده بعدی اثر بگذارند.",
+    },
+    bridge: {
+      openQuestion: "کتابخانه چگونه به خوانش و سپس FASTQ تبدیل می‌شود؟",
+      nextStep:
+        "درس ۴ این تبدیل را مرحله‌به‌مرحله باز می‌کند تا فایل FASTQ دیگر چهار خط نامفهوم نباشد.",
+    },
+  },
 ];
 
 export function RnaSeqLibraryPreparationLesson() {
-  const [scene, setScene] = useState(0);
-  const [libraryAnswer, setLibraryAnswer] = useState<number | null>(null);
-  const [selectionAnswer, setSelectionAnswer] = useState<number | null>(null);
-  const [fragmentAnswer, setFragmentAnswer] = useState<number | null>(null);
-  const [strandAnswer, setStrandAnswer] = useState<number | null>(null);
-  const [adapterAnswer, setAdapterAnswer] = useState<number | null>(null);
-  const [caseAnswer, setCaseAnswer] = useState<number | null>(null);
-  const [masteryAnswer, setMasteryAnswer] = useState<number | null>(null);
-
-  function goToScene(nextScene: number) {
-    setScene(nextScene);
-
-    window.setTimeout(() => {
-      document.getElementById("rna-seq-library-preparation")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 20);
-  }
-
   return (
-    <SpecialistLessonShell
-      domainId="transcriptomics"
-      trackId="bulk-rna-seq"
+    <GuidedConceptLesson
       lessonIndex={3}
       title="آماده‌سازی کتابخانه"
-      subtitle="RNA استخراج‌شده هنوز مستقیماً وارد دستگاه توالی‌یابی نمی‌شود. در این درس می‌بینیم انتخاب RNA هدف، قطعه‌قطعه‌سازی، ساخت cDNA، جهت‌داری، آداپتورها و شاخص‌ها چگونه تعیین می‌کنند چه اطلاعاتی در داده نهایی قابل مشاهده باشد."
-      currentScene={scene}
-      sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
-    >
-      <section
-        id="rna-seq-library-preparation"
-        className="scroll-mt-6"
-      >
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-wrap gap-2">
-            {sceneTitles.map((title, index) => (
-              <button
-                key={title}
-                type="button"
-                onClick={() => goToScene(index)}
-                className={[
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                  index === scene
-                    ? "border-teal-600 bg-teal-600 text-white"
-                    : index < scene
-                      ? "border-teal-200 bg-teal-50 text-teal-700"
-                      : "border-slate-200 bg-white text-slate-400",
-                ].join(" ")}
-              >
-                {new Intl.NumberFormat("fa-IR").format(index + 1)}. {title}
-              </button>
-            ))}
-          </div>
-
-          {scene === 0 && (
-            <SceneCard
-              eyebrow="پل بین RNA و توالی‌یابی"
-              title="کتابخانه، نسخه‌ای آماده برای توالی‌یابی از مولکول‌های انتخاب‌شده RNA است."
-              description="هدف آماده‌سازی کتابخانه فقط تبدیل RNA به cDNA نیست؛ این مرحله مشخص می‌کند کدام مولکول‌ها وارد اندازه‌گیری شوند و چگونه برای دستگاه قابل خواندن شوند."
-            >
-              <Flow
-                items={[
-                  "RNA استخراج‌شده",
-                  "انتخاب RNA هدف",
-                  "ساخت قطعات مناسب",
-                  "cDNA",
-                  "آداپتور و شاخص",
-                  "کتابخانه قابل توالی‌یابی",
-                ]}
-              />
-
-              <DecisionQuestion
-                question="کدام جمله درباره کتابخانه RNA-seq دقیق‌تر است؟"
-                options={[
-                  "کتابخانه همان RNA خام استخراج‌شده از نمونه است.",
-                  "کتابخانه مجموعه‌ای از مولکول‌های آماده توالی‌یابی است که از RNA هدف ساخته شده‌اند.",
-                  "کتابخانه همان فایل FASTQ نهایی است.",
-                ]}
-                selected={libraryAnswer}
-                correctIndex={1}
-                onSelect={setLibraryAnswer}
-                correctFeedback="دقیقاً. کتابخانه هنوز داده محاسباتی نیست؛ محصول آزمایشگاهی آماده ورود به توالی‌یابی است."
-                incorrectFeedback="RNA خام، کتابخانه و FASTQ سه سطح متفاوت‌اند: ماده زیستی، محصول آماده توالی‌یابی و داده محاسباتی."
-              />
-
-              <InsightBox>
-                آماده‌سازی کتابخانه یک <strong>فیلتر اندازه‌گیری</strong> است؛ هر انتخاب در این مرحله می‌تواند تعیین کند چه نوع RNA در داده بعدی دیده یا کمتر دیده شود.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 1 && (
-            <SceneCard
-              eyebrow="انتخاب RNA هدف"
-              title="غنی‌سازی mRNA و حذف rRNA دو راهبرد متفاوت‌اند، نه دو مرحله اجباری پشت سر هم."
-              description="rRNA بخش بزرگی از RNA سلول را تشکیل می‌دهد. برای بسیاری از پروژه‌ها باید پیش از ساخت کتابخانه تصمیم بگیریم چه چیزی را نگه داریم و چه چیزی را کاهش دهیم."
-            >
-              <div className="grid gap-4 lg:grid-cols-2">
-                <StrategyCard
-                  title="غنی‌سازی mRNA با poly(A)"
-                  badge="انتخاب مثبت"
-                  items={[
-                    "RNAهای دارای دُم poly(A) را غنی می‌کند.",
-                    "برای بسیاری از مطالعات بیان mRNA مناسب است.",
-                    "بخش زیادی از RNAهای بدون poly(A) کمتر نمایندگی می‌شوند.",
-                    "در RNA بسیار تخریب‌شده می‌تواند محدودیت ایجاد کند، بسته به پروتکل و کیفیت نمونه.",
-                  ]}
-                />
-
-                <StrategyCard
-                  title="حذف rRNA"
-                  badge="کاهش RNA غالب"
-                  items={[
-                    "rRNA را هدف قرار می‌دهد و کاهش می‌دهد.",
-                    "می‌تواند طیف گسترده‌تری از RNAهای غیر-rRNA را حفظ کند.",
-                    "برای برخی نمونه‌های تخریب‌شده یا سؤال‌های گسترده‌تر مفید است.",
-                    "ترکیب دقیق RNA باقی‌مانده به کیت و طراحی آزمایش بستگی دارد.",
-                  ]}
-                />
-              </div>
-
-              <DecisionQuestion
-                question="اگر سؤال اصلی درباره mRNAهای کدکننده در RNA با کیفیت مناسب باشد، کدام گزینه می‌تواند انتخاب منطقی باشد؟"
-                options={[
-                  "غنی‌سازی poly(A)، اگر با سؤال و کیفیت نمونه سازگار باشد.",
-                  "انجام اجباری poly(A) و سپس حذف rRNA در همه پروژه‌ها.",
-                  "هیچ انتخابی لازم نیست چون تمام RNAها به یک اندازه خوانده می‌شوند.",
-                ]}
-                selected={selectionAnswer}
-                correctIndex={0}
-                onSelect={setSelectionAnswer}
-                correctFeedback="درست است. انتخاب راهبرد باید از سؤال زیستی، نوع نمونه و کیفیت RNA بیاید."
-                incorrectFeedback="هیچ راهبرد واحدی برای همه RNA-seqها وجود ندارد؛ poly(A) selection و rRNA depletion دو منطق متفاوت‌اند."
-              />
-
-              <InsightBox>
-                اگر پروژه به RNAهای بدون poly(A)، رونوشت‌های نابالغ یا نمونه‌های بسیار تخریب‌شده حساس باشد، راهبرد انتخاب RNA باید با دقت بیشتری بررسی شود.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 2 && (
-            <SceneCard
-              eyebrow="اندازه قطعات و تبدیل مولکولی"
-              title="RNA یا cDNA باید به قطعاتی سازگار با روش توالی‌یابی تبدیل شود؛ اما ترتیب دقیق مراحل بین پروتکل‌ها یکسان نیست."
-              description="در برخی روش‌ها RNA پیش از ساخت cDNA قطعه‌قطعه می‌شود و در برخی طراحی‌ها قطعه‌قطعه‌سازی یا تولید قطعات به شکل دیگری انجام می‌شود. اصل مهم، فهم هدف این تبدیل است نه حفظ کردن یک ترتیب جهانی."
-            >
-              <div className="grid gap-4 md:grid-cols-3">
-                <ConceptCard
-                  title="قطعه‌قطعه‌سازی"
-                  text="مولکول‌های بلند به قطعاتی با دامنه اندازه مناسب برای ساخت کتابخانه و توالی‌یابی تبدیل می‌شوند."
-                  emphasized
-                />
-                <ConceptCard
-                  title="رونویسی معکوس"
-                  text="RNA با کمک reverse transcriptase به cDNA تبدیل می‌شود تا وارد مراحل بعدی ساخت کتابخانه شود."
-                />
-                <ConceptCard
-                  title="انتخاب اندازه"
-                  text="بسته به پروتکل، توزیع اندازه قطعات کتابخانه کنترل می‌شود تا محصول نهایی با روش توالی‌یابی سازگار باشد."
-                />
-              </div>
-
-              <DecisionQuestion
-                question="چرا نباید یک ترتیب واحد از fragmentation → cDNA را قانون همیشگی همه پروتکل‌ها بدانیم؟"
-                options={[
-                  "چون پروتکل‌ها می‌توانند در محل و روش تولید قطعات متفاوت باشند، هرچند هدف کلی مشابه است.",
-                  "چون RNA-seq اصلاً به cDNA نیاز ندارد.",
-                  "چون قطعه‌قطعه‌سازی فقط بعد از تولید FASTQ انجام می‌شود.",
-                ]}
-                selected={fragmentAnswer}
-                correctIndex={0}
-                onSelect={setFragmentAnswer}
-                correctFeedback="دقیقاً. باید منطق مرحله را بفهمیم و سپس جزئیات کیت یا پروتکل واقعی را بخوانیم."
-                incorrectFeedback="در آموزش مفهومی نباید جزئیات یک کیت خاص را به همه RNA-seqها تعمیم دهیم."
-              />
-            </SceneCard>
-          )}
-
-          {scene === 3 && (
-            <SceneCard
-              eyebrow="Strandedness"
-              title="بعضی کتابخانه‌ها اطلاعات جهت رونوشت را حفظ می‌کنند و بعضی نه."
-              description="در کتابخانه جهت‌دار، داده می‌تواند کمک کند تشخیص دهیم خوانش از کدام رشته رونوشت آمده است؛ این موضوع به‌ویژه در نواحی هم‌پوشان ژنی اهمیت پیدا می‌کند."
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <ConceptCard
-                  title="کتابخانه جهت‌دار"
-                  text="اطلاعات جهت رونوشت تا حدی حفظ می‌شود و در تحلیل باید قرارداد جهت‌داری همان پروتکل درست مشخص شود."
-                  emphasized
-                />
-                <ConceptCard
-                  title="کتابخانه غیرجهت‌دار"
-                  text="اطلاعات منشأ رشته در خروجی قابل استفاده نیست یا برای تحلیل جهت‌دار طراحی نشده است."
-                />
-              </div>
-
-              <DecisionQuestion
-                question="اگر در تحلیل، جهت‌داری کتابخانه را برعکس واقعیت اعلام کنیم چه اتفاقی ممکن است بیفتد؟"
-                options={[
-                  "شمارش یا انتساب خوانش‌ها به ژن‌ها می‌تواند اشتباه شود.",
-                  "هیچ اثری ندارد چون strandedness فقط یک نام آزمایشگاهی است.",
-                  "فقط حجم FASTQ تغییر می‌کند.",
-                ]}
-                selected={strandAnswer}
-                correctIndex={0}
-                onSelect={setStrandAnswer}
-                correctFeedback="درست است. strandedness بخشی از فراداده فنی مهم برای تحلیل است."
-                incorrectFeedback="پارامتر جهت‌داری می‌تواند مستقیماً روی انتساب خوانش‌ها اثر بگذارد؛ باید از اطلاعات واقعی کتابخانه مشخص شود."
-              />
-
-              <InsightBox>
-                «stranded» بودن به معنی کیفیت بالاتر مطلق نیست؛ یک ویژگی طراحی کتابخانه است که باید در تحلیل به‌درستی مدل شود.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 4 && (
-            <SceneCard
-              eyebrow="آماده‌سازی برای دستگاه"
-              title="آداپتورها اتصال کتابخانه به سامانه توالی‌یابی را ممکن می‌کنند و شاخص‌ها هویت نمونه‌ها را در یک استخر مشترک نگه می‌دارند."
-              description="در بسیاری از پروژه‌ها چند کتابخانه با شاخص‌های متفاوت با هم pool می‌شوند و سپس در یک run توالی‌یابی می‌شوند."
-            >
-              <Flow
-                items={[
-                  "قطعه cDNA",
-                  "آداپتور",
-                  "شاخص نمونه",
-                  "در صورت نیاز تکثیر",
-                  "کنترل کیفیت کتابخانه",
-                  "pool برای توالی‌یابی",
-                ]}
-              />
-
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
-                <ConceptCard
-                  title="آداپتور"
-                  text="توالی‌های مهندسی‌شده‌ای که برای مراحل بعدی ساخت و خواندن کتابخانه لازم‌اند؛ جزئیات آن‌ها به پلتفرم و کیت بستگی دارد."
-                />
-                <ConceptCard
-                  title="شاخص نمونه"
-                  text="کدی برای تمایز نمونه‌ها پس از توالی‌یابی مشترک؛ در مرحله demultiplexing خوانش‌ها بر اساس شاخص به نمونه‌ها بازمی‌گردند."
-                  emphasized
-                />
-                <ConceptCard
-                  title="تکثیر"
-                  text="در بسیاری از پروتکل‌ها PCR برای افزایش مقدار کتابخانه به کار می‌رود، اما می‌تواند سوگیری و duplicate ایجاد کند؛ شدت و ضرورت آن وابسته به پروتکل است."
-                />
-              </div>
-
-              <DecisionQuestion
-                question="نقش اصلی sample index چیست؟"
-                options={[
-                  "نشان دادن این‌که هر خوانش پس از pool کردن به کدام نمونه تعلق دارد.",
-                  "تبدیل RNA به DNA.",
-                  "اندازه‌گیری RIN نمونه.",
-                ]}
-                selected={adapterAnswer}
-                correctIndex={0}
-                onSelect={setAdapterAnswer}
-                correctFeedback="دقیقاً. شاخص هویت نمونه را در توالی‌یابی چندکتابخانه‌ای حفظ می‌کند."
-                incorrectFeedback="index برای ردیابی نمونه‌ها در pool مشترک استفاده می‌شود، نه برای استخراج RNA یا ساخت cDNA."
-              />
-            </SceneCard>
-          )}
-
-          {scene === 5 && (
-            <SceneCard
-              eyebrow="پروژه همراه سرطان پانکراس"
-              title="کیفیت و نوع نمونه می‌تواند انتخاب راهبرد کتابخانه را عوض کند."
-              description="فرض کنید بخشی از نمونه‌های سرطان پانکراس از بافت تازه منجمد و بخشی از FFPE با RNA تخریب‌شده‌تر آمده‌اند. انتخاب کتابخانه نباید مستقل از این تفاوت باشد."
-            >
-              <div className="grid gap-4 lg:grid-cols-2">
-                <CasePanel
-                  title="سناریو A — RNA با کیفیت مناسب"
-                  text="تمرکز اصلی مطالعه روی بیان mRNAهای کدکننده است و نمونه‌ها RNA نسبتاً سالم دارند."
-                  conclusion="poly(A) selection می‌تواند گزینه قابل بررسی باشد، اگر با هدف و پروتکل سازگار باشد."
-                />
-                <CasePanel
-                  title="سناریو B — RNA تخریب‌شده / FFPE"
-                  text="بخشی از RNAها کوتاه‌تر و تخریب‌شده‌اند و حفظ اطلاعات گسترده‌تر از RNA غیر-rRNA برای سؤال مهم است."
-                  conclusion="یک راهبرد مبتنی بر rRNA depletion یا پروتکل مناسب RNA تخریب‌شده می‌تواند منطقی‌تر باشد."
-                />
-              </div>
-
-              <DecisionQuestion
-                question="کدام تصمیم برای مقایسه این دو نوع نمونه خطرناک است؟"
-                options={[
-                  "استفاده از راهبردهای کتابخانه متفاوت بین گروه زیستی کنترل و تیمار بدون درنظرگرفتن اثر فنی آن.",
-                  "ثبت نوع نمونه و پروتکل کتابخانه در فراداده.",
-                  "بررسی سازگاری پروتکل با کیفیت RNA پیش از ساخت کتابخانه.",
-                ]}
-                selected={caseAnswer}
-                correctIndex={0}
-                onSelect={setCaseAnswer}
-                correctFeedback="درست است. اگر نوع کتابخانه با گروه زیستی هم‌جهت شود، اثر زیستی و اثر فنی می‌توانند مخدوش شوند."
-                incorrectFeedback="پروتکل کتابخانه بخشی از طراحی مطالعه است و باید بین گروه‌ها تا حد ممکن متوازن و در فراداده ثبت شود."
-              />
-
-              <InsightBox>
-                همان اصل درس ۱ دوباره برمی‌گردد: <strong>عامل فنی نباید با گروه زیستی کاملاً هم‌جهت شود</strong>، مگر اینکه طراحی و تفسیر مطالعه آن را صریحاً مدیریت کند.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 6 && (
-            <SceneCard
-              eyebrow="ایستگاه تسلط"
-              title="قبل از رفتن به توالی‌یابی باید بتوانید توضیح دهید کتابخانه چه چیزی را وارد اندازه‌گیری کرده است."
-              description="اگر ندانیم RNA چگونه انتخاب و کتابخانه چگونه ساخته شده، تفسیر FASTQ و شمارش ژن‌ها ناقص خواهد بود."
-            >
-              <DecisionQuestion
-                question="کدام جمله بهترین جمع‌بندی این درس است؟"
-                options={[
-                  "تمام RNA-seqها دقیقاً یک مسیر آماده‌سازی کتابخانه دارند.",
-                  "آماده‌سازی کتابخانه مجموعه‌ای از انتخاب‌هاست که تعیین می‌کند چه RNAهایی، با چه ساختاری و چه اطلاعات فنی وارد توالی‌یابی شوند.",
-                  "تا زمانی که FASTQ داریم، دانستن نوع کتابخانه اهمیتی ندارد.",
-                ]}
-                selected={masteryAnswer}
-                correctIndex={1}
-                onSelect={setMasteryAnswer}
-                correctFeedback="عالی. حالا می‌توانید کتابخانه را به‌عنوان بخشی از مدل اندازه‌گیری RNA-seq ببینید، نه فقط یک مرحله آزمایشگاهی."
-                incorrectFeedback="به انتخاب RNA هدف، strandedness، شاخص نمونه و اثر پروتکل روی چیزی که قابل مشاهده می‌شود برگردید."
-              />
-
-              <div className="mt-7 rounded-3xl bg-slate-950 p-6 text-white">
-                <p className="text-xs font-bold text-teal-300">
-                  چیزی که باید با خودتان ببرید
-                </p>
-                <p className="mt-3 text-lg font-bold leading-9">
-                  RNA ← انتخاب مولکول‌های هدف ← ساخت کتابخانه ← توالی‌یابی ← FASTQ
-                </p>
-              </div>
-
-              <InsightBox>
-                درس بعدی وارد <strong>توالی‌یابی و FASTQ</strong> می‌شود: دستگاه دقیقاً چه چیزی می‌خواند و فایل FASTQ چه ساختاری دارد؟
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              disabled={scene === 0}
-              onClick={() => goToScene(scene - 1)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ArrowRight className="size-4" />
-              بخش قبل
-            </button>
-
-            {scene < sceneTitles.length - 1 && (
-              <button
-                type="button"
-                onClick={() => goToScene(scene + 1)}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-              >
-                بخش بعد
-                <ArrowLeft className="size-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-    </SpecialistLessonShell>
-  );
-}
-
-function SceneCard({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
-      <div className="border-b border-slate-200 bg-gradient-to-l from-teal-50 via-white to-white p-6 sm:p-8">
-        <p className="text-xs font-bold text-teal-700">{eyebrow}</p>
-        <h2 className="mt-2 text-2xl font-black leading-10 text-slate-950 sm:text-3xl">
-          {title}
-        </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600">
-          {description}
-        </p>
-      </div>
-      <div className="p-6 sm:p-8">{children}</div>
-    </article>
-  );
-}
-
-function Flow({ items }: { items: string[] }) {
-  return (
-    <div
-      dir="rtl"
-      className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white"
-    >
-      <div className="flex flex-wrap items-center gap-2 text-sm font-black">
-        {items.map((item, index) => (
-          <div key={item} className="flex items-center gap-2">
-            <span className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-              {item}
-            </span>
-            {index < items.length - 1 && (
-              <span className="text-teal-300">←</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function StrategyCard({
-  title,
-  badge,
-  items,
-}: {
-  title: string;
-  badge: string;
-  items: string[];
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-lg font-black text-slate-950">{title}</p>
-        <span className="rounded-full bg-teal-100 px-3 py-1 text-xs font-bold text-teal-800">
-          {badge}
-        </span>
-      </div>
-      <ul className="mt-5 space-y-3">
-        {items.map((item) => (
-          <li key={item} className="flex gap-2 text-sm leading-7 text-slate-600">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-teal-600" />
-            <span>{item}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function ConceptCard({
-  title,
-  text,
-  emphasized = false,
-}: {
-  title: string;
-  text: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-3xl border p-5",
-        emphasized
-          ? "border-teal-300 bg-teal-50"
-          : "border-slate-200 bg-slate-50",
-      ].join(" ")}
-    >
-      <p className="font-black text-slate-950">{title}</p>
-      <p className="mt-3 text-sm leading-8 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function CasePanel({
-  title,
-  text,
-  conclusion,
-}: {
-  title: string;
-  text: string;
-  conclusion: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-      <p className="font-black text-slate-950">{title}</p>
-      <p className="mt-3 text-sm leading-8 text-slate-600">{text}</p>
-      <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
-        <p className="text-sm font-bold leading-7 text-teal-950">{conclusion}</p>
-      </div>
-    </div>
-  );
-}
-
-function DecisionQuestion({
-  question,
-  options,
-  selected,
-  correctIndex,
-  onSelect,
-  correctFeedback,
-  incorrectFeedback,
-}: {
-  question: string;
-  options: string[];
-  selected: number | null;
-  correctIndex: number;
-  onSelect: (index: number) => void;
-  correctFeedback: string;
-  incorrectFeedback: string;
-}) {
-  const answered = selected !== null;
-  const correct = selected === correctIndex;
-
-  return (
-    <section className="mt-7 rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white">
-          ؟
-        </span>
-        <p className="font-bold leading-8 text-slate-950">{question}</p>
-      </div>
-
-      <div className="mt-5 grid gap-3">
-        {options.map((option, index) => {
-          const active = selected === index;
-          const className = active
-            ? index === correctIndex
-              ? "border-emerald-500 bg-emerald-50"
-              : "border-amber-400 bg-amber-50"
-            : "border-slate-200 bg-white hover:border-teal-300";
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onSelect(index)}
-              className={`rounded-2xl border p-4 text-right text-sm font-medium leading-7 text-slate-700 transition ${className}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-
-      {answered && (
-        <div
-          className={[
-            "mt-4 rounded-2xl border p-4",
-            correct
-              ? "border-emerald-200 bg-emerald-50"
-              : "border-amber-200 bg-amber-50",
-          ].join(" ")}
-        >
-          <p
-            className={
-              correct
-                ? "text-sm font-bold text-emerald-900"
-                : "text-sm font-bold text-amber-950"
-            }
-          >
-            {correct
-              ? "مسیر فکری درست ✓"
-              : "این برداشت را دوباره بررسی کنید"}
-          </p>
-          <p className="mt-2 text-sm leading-7 text-slate-700">
-            {correct ? correctFeedback : incorrectFeedback}
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function InsightBox({ children }: { children: ReactNode }) {
-  return (
-    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-5">
-      <Lightbulb className="mt-1 size-5 shrink-0 text-teal-700" />
-      <p className="text-sm leading-8 text-teal-950">{children}</p>
-    </div>
+      subtitle="یاد می‌گیریم چگونه انتخاب RNA هدف، قطعه‌قطعه‌سازی، cDNA، جهت‌داری، آداپتور، شاخص و PCR شکل داده نهایی را تعیین می‌کنند."
+      sectionId="rna-seq-library-preparation"
+      sections={sections}
+    />
   );
 }
