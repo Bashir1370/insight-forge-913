@@ -6,6 +6,15 @@ export type CanonicalLearningTerm = {
 };
 
 export const canonicalLearningTerms: CanonicalLearningTerm[] = [
+  { english: "variance stabilizing transformation", canonical: "تبدیل پایدارساز واریانس" },
+  { english: "sample-to-sample distance", canonical: "فاصله بین نمونه‌ها" },
+  { english: "hierarchical clustering", canonical: "خوشه‌بندی سلسله‌مراتبی" },
+  { english: "principal component", canonical: "مؤلفه اصلی" },
+  { english: "variance explained", canonical: "واریانس توضیح‌داده‌شده" },
+  { english: "sample-level QC", canonical: "کنترل کیفیت در سطح نمونه" },
+  { english: "outlier sample", canonical: "نمونه پرت" },
+  { english: "sequencing depth", canonical: "عمق توالی‌یابی" },
+  { english: "library size", canonical: "اندازه کتابخانه" },
   { english: "library preparation", canonical: "آماده‌سازی کتابخانه" },
   { english: "poly(A) selection", canonical: "غنی‌سازی RNAهای دارای poly(A)" },
   { english: "rRNA depletion", canonical: "حذف rRNA" },
@@ -55,6 +64,8 @@ export const canonicalLearningTerms: CanonicalLearningTerm[] = [
   { english: "annotation", canonical: "حاشیه‌نویسی ژنومی" },
   { english: "alignment", canonical: "هم‌ترازی" },
   { english: "mapping", canonical: "نگاشت" },
+  { english: "correlation", canonical: "همبستگی" },
+  { english: "dendrogram", canonical: "دندروگرام" },
   { english: "metadata", canonical: "فراداده" },
   { english: "dataset", canonical: "مجموعه‌داده" },
   { english: "pipeline", canonical: "مسیر تحلیل" },
@@ -68,6 +79,16 @@ export const canonicalLearningTerms: CanonicalLearningTerm[] = [
   { english: "read", canonical: "خوانش", note: "در متن عمومی از read استفاده نشود." },
   { english: "batch", canonical: "دسته آزمایشی" },
   { english: "QC", canonical: "کنترل کیفیت" },
+  {
+    english: "PCA",
+    canonical: "PCA",
+    note: "اختصار علمی حفظ می‌شود و در اولین کاربرد به‌عنوان تحلیل مؤلفه‌های اصلی توضیح داده شود.",
+  },
+  {
+    english: "rlog",
+    canonical: "rlog",
+    note: "نام روش حفظ می‌شود و در اولین کاربرد نقش آن در نمایش داده توضیح داده شود.",
+  },
   {
     english: "Phred",
     canonical: "Phred",
