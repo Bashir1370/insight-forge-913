@@ -1,4 +1,9 @@
 import type { ReactNode } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+} from "lucide-react";
 
 type InteractiveLessonShellProps = {
   foundationIndex: number;
@@ -10,6 +15,44 @@ type InteractiveLessonShellProps = {
   sceneLabel: string;
   children: ReactNode;
 };
+
+const foundationLessons = [
+  {
+    index: 1,
+    href: "/learn/transcriptomics/foundations/genome-to-transcriptome",
+    principle: "ژنوم ≠ ترنسکریپتوم",
+  },
+  {
+    index: 2,
+    href: "/learn/transcriptomics/foundations/what-transcriptomics-measures",
+    principle: "ترنسکریپتوم، مجموعه RNAهای مشاهده‌شده در یک زمینه زیستی مشخص است.",
+  },
+  {
+    index: 3,
+    href: "/learn/transcriptomics/foundations/gene-expression",
+    principle: "بیان ژن یعنی میزان RNA مشاهده‌شده از یک ژن در شرایط مشخص.",
+  },
+  {
+    index: 4,
+    href: "/learn/transcriptomics/foundations/rna-diversity",
+    principle: "یک ژن می‌تواند به بیش از یک رونوشت و ایزوفرم منجر شود.",
+  },
+  {
+    index: 5,
+    href: "/learn/transcriptomics/foundations/transcriptomics-question-fit",
+    principle: "فناوری باید از سؤال پژوهشی و نوع اطلاعات موردنیاز انتخاب شود.",
+  },
+  {
+    index: 6,
+    href: "/learn/transcriptomics/foundations/bulk-single-cell-spatial",
+    principle: "سطح مشاهده با فناوری اندازه‌گیری یکی نیست.",
+  },
+  {
+    index: 7,
+    href: "/learn/transcriptomics/foundations/rna-seq-in-transcriptomics",
+    principle: "ترنسکریپتومیکس یک حوزه است؛ فناوری‌ها راه‌های متفاوت اندازه‌گیری آن هستند.",
+  },
+] as const;
 
 export function InteractiveLessonShell({
   foundationIndex,
@@ -30,6 +73,25 @@ export function InteractiveLessonShell({
   const lessonPercent = Math.round(
     ((currentScene + 1) / sceneCount) * 100,
   );
+
+  const currentLesson =
+    foundationLessons.find(
+      (lesson) => lesson.index === foundationIndex,
+    ) ?? foundationLessons[0];
+
+  const previousLesson =
+    foundationIndex > 1
+      ? foundationLessons.find(
+          (lesson) => lesson.index === foundationIndex - 1,
+        )
+      : null;
+
+  const nextLesson =
+    foundationIndex < total
+      ? foundationLessons.find(
+          (lesson) => lesson.index === foundationIndex + 1,
+        )
+      : null;
 
   return (
     <main
@@ -54,16 +116,19 @@ export function InteractiveLessonShell({
 
             <span className="text-slate-300">/</span>
 
-            <span className="font-semibold text-slate-900">
+            <a
+              href="/learn#transcriptomics-foundations"
+              className="font-semibold text-slate-900 transition hover:text-teal-800"
+            >
               مبانی ترنسکریپتومیکس
-            </span>
+            </a>
           </div>
 
           <a
-            href="/learn"
+            href="/learn#transcriptomics-foundations"
             className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
           >
-            بازگشت به آموزش‌ها
+            مشاهده مسیر مبانی
           </a>
         </div>
       </header>
@@ -133,7 +198,7 @@ export function InteractiveLessonShell({
                 </p>
 
                 <p className="mt-2 text-sm font-bold leading-7 text-white">
-                  ژنوم ≠ ترنسکریپتوم
+                  {currentLesson.principle}
                 </p>
               </div>
 
@@ -156,6 +221,108 @@ export function InteractiveLessonShell({
       </section>
 
       {children}
+
+      <FoundationLessonNavigation
+        foundationIndex={foundationIndex}
+        total={total}
+        previousLesson={previousLesson}
+        nextLesson={nextLesson}
+      />
     </main>
+  );
+}
+
+function FoundationLessonNavigation({
+  foundationIndex,
+  total,
+  previousLesson,
+  nextLesson,
+}: {
+  foundationIndex: number;
+  total: number;
+  previousLesson:
+    | (typeof foundationLessons)[number]
+    | null
+    | undefined;
+  nextLesson:
+    | (typeof foundationLessons)[number]
+    | null
+    | undefined;
+}) {
+  const faNumber = new Intl.NumberFormat("fa-IR");
+
+  return (
+    <section className="border-t border-slate-200 bg-white">
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-10 items-center justify-center rounded-xl bg-teal-50 text-teal-700">
+                <BookOpen className="size-5" />
+              </span>
+
+              <div>
+                <p className="text-xs font-bold text-teal-700">
+                  جابه‌جایی بین درس‌های مبانی
+                </p>
+
+                <p className="mt-1 text-sm text-slate-500">
+                  درس {faNumber.format(foundationIndex)} از {faNumber.format(total)}
+                </p>
+              </div>
+            </div>
+
+            <a
+              href="/learn#transcriptomics-foundations"
+              className="text-xs font-bold text-slate-500 transition hover:text-teal-800"
+            >
+              مشاهده هر ۷ درس
+            </a>
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div>
+              {previousLesson ? (
+                <a
+                  href={previousLesson.href}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                >
+                  <ArrowRight className="size-4" />
+                  درس قبلی — درس {faNumber.format(previousLesson.index)}
+                </a>
+              ) : (
+                <a
+                  href="/learn#transcriptomics-foundations"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold text-slate-700 transition hover:border-teal-300 hover:text-teal-800"
+                >
+                  <ArrowRight className="size-4" />
+                  بازگشت به مسیر مبانی
+                </a>
+              )}
+            </div>
+
+            <div>
+              {nextLesson ? (
+                <a
+                  href={nextLesson.href}
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
+                >
+                  درس بعدی — درس {faNumber.format(nextLesson.index)}
+                  <ArrowLeft className="size-4" />
+                </a>
+              ) : (
+                <a
+                  href="/learn/rna-seq"
+                  className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-teal-700 px-5 py-3 text-sm font-bold text-white transition hover:bg-teal-800"
+                >
+                  ورود به مسیر تخصصی RNA-seq
+                  <ArrowLeft className="size-4" />
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
