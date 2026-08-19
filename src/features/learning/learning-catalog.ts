@@ -146,10 +146,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "sample-to-rna",
     title: "از نمونه زیستی تا RNA",
     summary:
-      "منبع نمونه، استخراج RNA و کیفیت ماده اولیه‌ای را که وارد آزمایش می‌شود بشناسید.",
+      "منبع نمونه، نگهداری، استخراج RNA و کیفیت ماده اولیه‌ای را که وارد آزمایش می‌شود بشناسید.",
     principle:
       "کیفیت داده محاسباتی از کیفیت نمونه زیستی جدا نیست.",
-    status: "planned",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/sample-to-rna",
   },
   {
     index: 3,
