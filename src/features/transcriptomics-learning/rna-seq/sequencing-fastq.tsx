@@ -1,923 +1,357 @@
 import {
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  Dna,
-  FileText,
-  Gauge,
-  Lightbulb,
-  MousePointerClick,
-} from "lucide-react";
+  GuidedConceptLesson,
+  type GuidedLessonSection,
+} from "@/features/learning/components/GuidedConceptLesson";
 
-import { SpecialistLessonShell } from "@/features/learning/components/SpecialistLessonShell";
-
-const sceneTitles = [
-  "از کتابخانه تا خوانش",
-  "تک‌انتها یا جفت‌انتها؟",
-  "Base calling و کیفیت",
-  "کالبدشکافی FASTQ",
-  "خواندن Phred با چشم",
-  "فایل‌های R1 و R2",
-  "چالش کنترل کیفیت",
-  "ایستگاه تسلط",
-];
-
-const demoSequence = "ACGTTGCAACGT";
-const demoQuality = "IIIII?5+&&&&";
-const demoScores = [40, 40, 40, 40, 40, 30, 20, 10, 5, 5, 5, 5];
-
-const fastqLines = [
+const sections: GuidedLessonSection[] = [
   {
-    label: "خط ۱",
-    value: "@read_000001",
-    title: "شناسه خوانش",
-    explanation:
-      "هر رکورد FASTQ با یک شناسه شروع می‌شود. قالب دقیق شناسه به دستگاه و نرم‌افزار تولیدکننده داده بستگی دارد؛ بنابراین نباید یک شکل خاص را قانون همیشگی بدانیم.",
+    title: "از کتابخانه تا خوانش",
+    eyebrow: "شروع داده محاسباتی",
+    headline: "دستگاه از مولکول‌های کتابخانه، توالی‌های کوتاهی به نام «خوانش» تولید می‌کند.",
+    lead:
+      "در درس قبل کتابخانه را ساختیم. حالا دستگاه توالی‌یاب باید ترتیب بازهای A، C، G و T را از مولکول‌های کتابخانه تشخیص دهد. خروجی هر بار خواندن یک قطعه، یک توالی متنی است که آن را «خوانش» می‌نامیم.",
+    flow: ["کتابخانه", "توالی‌یابی", "تشخیص بازها", "خوانش", "FASTQ"],
+    terms: [
+      {
+        term: "read",
+        persianLabel: "خوانش",
+        explanation:
+          "توالی کوتاهی از بازهاست که دستگاه از یک مولکول یا یک انتهای قطعه کتابخانه گزارش می‌کند. خوانش خود RNA کامل یا ژن کامل نیست؛ فقط بخشی از اطلاعات یک قطعه را ثبت می‌کند.",
+        example: "ACGTTGCA... یک خوانش است، نه یک ژن و نه یک نمونه.",
+      },
+      {
+        term: "base",
+        persianLabel: "باز",
+        explanation:
+          "هر حرف A، C، G یا T یک باز نوکلئوتیدی را نشان می‌دهد. در FASTQ، توالی خوانش به‌صورت رشته‌ای از همین حروف ذخیره می‌شود.",
+      },
+    ],
+    question: {
+      question: "یک خوانش در RNA-seq چیست؟",
+      options: [
+        "یک توالی کوتاه تولیدشده از بخشی از یک مولکول کتابخانه.",
+        "کل RNA موجود در یک نمونه.",
+        "ماتریس نهایی بیان ژن.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "دقیقاً. میلیون‌ها خوانش کوچک بعداً کنار هم تفسیر می‌شوند تا درباره رونوشت‌ها و بیان ژن نتیجه بگیریم.",
+      incorrectFeedback:
+        "خوانش را در مقیاس کوچک ببینید: یک قطعه توالی از یک مولکول کتابخانه، نه کل نمونه و نه نتیجه نهایی تحلیل.",
+    },
+    bridge: {
+      openQuestion: "آیا از هر قطعه کتابخانه فقط یک سمت را می‌خوانیم یا می‌توانیم هر دو سمت را بخوانیم؟",
+      nextStep:
+        "بخش بعد تفاوت توالی‌یابی تک‌انتها و جفت‌انتها را روشن می‌کند و نشان می‌دهد چرا یک قطعه و یک خوانش یک چیز نیستند.",
+    },
   },
   {
-    label: "خط ۲",
-    value: demoSequence,
-    title: "توالی بازها",
-    explanation:
-      "رشته‌ای از A، C، G، T و گاهی N که نتیجه base calling برای این خوانش است. این رشته یک خوانش است، نه کل RNA و نه کل رونوشت.",
+    title: "تک‌انتها و جفت‌انتها",
+    eyebrow: "چند نگاه به یک قطعه؟",
+    headline: "در توالی‌یابی تک‌انتها یک سمت قطعه و در جفت‌انتها دو سمت همان قطعه خوانده می‌شود.",
+    lead:
+      "کتابخانه از قطعات DNA تشکیل شده است. سامانه توالی‌یابی می‌تواند فقط از یک انتهای هر قطعه اطلاعات بگیرد یا از هر دو انتها. این انتخاب روی مقدار اطلاعات مکانی درباره قطعه اثر دارد، اما تعداد نمونه‌های زیستی را تغییر نمی‌دهد.",
+    connection:
+      "حالا می‌دانیم خوانش چیست. باید آن را از «قطعه کتابخانه» جدا کنیم؛ چون در حالت جفت‌انتها یک قطعه می‌تواند دو خوانش تولید کند.",
+    terms: [
+      {
+        term: "single-end",
+        persianLabel: "توالی‌یابی تک‌انتها",
+        explanation:
+          "از یک انتهای هر قطعه کتابخانه یک خوانش تولید می‌شود.",
+      },
+      {
+        term: "paired-end",
+        persianLabel: "توالی‌یابی جفت‌انتها",
+        explanation:
+          "از دو انتهای یک قطعه کتابخانه دو خوانش مرتبط تولید می‌شود. این دو خوانش معمولاً در فایل‌های جداگانه R1 و R2 ذخیره می‌شوند.",
+      },
+      {
+        term: "fragment",
+        persianLabel: "قطعه",
+        explanation:
+          "مولکول DNA کتابخانه که بین آداپتورها قرار دارد. در حالت جفت‌انتها، دو خوانش از دو سمت همین یک قطعه تولید می‌شوند.",
+      },
+    ],
+    insight:
+      "جفت‌انتها یعنی دو خوانش از یک قطعه؛ به معنی دو نمونه، دو بیمار یا دو تکرار زیستی نیست.",
+    question: {
+      question: "یک قطعه در توالی‌یابی جفت‌انتها معمولاً چه چیزی تولید می‌کند؟",
+      options: [
+        "دو خوانش مرتبط از دو انتهای همان قطعه.",
+        "دو تکرار زیستی مستقل.",
+        "دو ژن متفاوت به‌طور اجباری.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "درست است. این دو خوانش درباره یک قطعه اطلاعات مکمل می‌دهند، ولی استقلال زیستی جدید ایجاد نمی‌کنند.",
+      incorrectFeedback:
+        "قطعه واحد فنی کتابخانه است. جفت‌انتها فقط دو سمت همان قطعه را می‌خواند.",
+    },
+    bridge: {
+      openQuestion: "دستگاه وقتی حرف A یا C را گزارش می‌کند، آیا همیشه صددرصد مطمئن است؟",
+      nextStep:
+        "نه. هر تشخیص باز با مقداری عدم‌قطعیت همراه است. بخش بعد ابتدا خود مفهوم «تشخیص باز» را توضیح می‌دهد تا بعد Phred معنا پیدا کند.",
+    },
   },
   {
-    label: "خط ۳",
-    value: "+",
-    title: "جداکننده",
-    explanation:
-      "خط سوم با علامت + آغاز می‌شود و بخش توالی را از رشته کیفیت جدا می‌کند. در برخی فایل‌ها اطلاعات بیشتری هم ممکن است در این خط دیده شود.",
+    title: "تشخیص باز و عدم‌قطعیت",
+    eyebrow: "از سیگنال به حرف",
+    headline: "دستگاه فقط توالی نمی‌دهد؛ برای هر باز تخمینی از میزان اطمینان هم دارد.",
+    lead:
+      "در بسیاری از سامانه‌های توالی‌یابی کوتاه‌خوان، دستگاه از یک سیگنال فیزیکی یا شیمیایی نتیجه می‌گیرد که در هر موقعیت کدام باز حضور داشته است. این تصمیم را تشخیص باز می‌نامیم. چون سیگنال همیشه کامل نیست، هر تشخیص احتمال خطا دارد.",
+    connection:
+      "اکنون می‌دانیم هر قطعه چگونه یک یا دو خوانش می‌دهد. مرحله بعد این است که بفهمیم هر حرف در خوانش با چه اطمینانی گزارش شده است.",
+    terms: [
+      {
+        term: "base calling",
+        persianLabel: "تشخیص باز",
+        explanation:
+          "فرایندی که در آن نرم‌افزار دستگاه از سیگنال اندازه‌گیری‌شده نتیجه می‌گیرد باز آن موقعیت A، C، G یا T بوده است.",
+      },
+      {
+        term: "N",
+        explanation:
+          "اگر سامانه نتواند با اطمینان کافی یکی از بازهای A/C/G/T را تعیین کند، ممکن است حرف N گزارش شود؛ یعنی هویت دقیق باز نامشخص است.",
+      },
+    ],
+    concepts: [
+      {
+        title: "توالی",
+        text: "به ما می‌گوید دستگاه در هر موقعیت چه بازی را تشخیص داده است.",
+      },
+      {
+        title: "کیفیت",
+        text: "به ما می‌گوید تخمین خطا برای آن تشخیص چقدر بوده است. کیفیت یک ویژگی جدا از خود حرف است.",
+        emphasized: true,
+      },
+    ],
+    question: {
+      question: "چرا فقط دانستن رشته A/C/G/T برای FASTQ کافی نیست؟",
+      options: [
+        "چون باید بدانیم هر تشخیص باز با چه میزان اطمینانی انجام شده است.",
+        "چون FASTQ باید نام ژن را هم داخل هر خوانش بنویسد.",
+        "چون هر خوانش حتماً باید طول متفاوتی داشته باشد.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "دقیقاً. حالا آماده‌ایم بفهمیم این اطمینان چگونه با عددی به نام امتیاز Phred خلاصه می‌شود.",
+      incorrectFeedback:
+        "توالی و کیفیت دو لایه جدا هستند: یک لایه می‌گوید چه بازی گزارش شده و لایه دیگر میزان اطمینان به آن را بیان می‌کند.",
+    },
+    bridge: {
+      openQuestion: "چطور احتمال خطای یک باز را در یک عدد کوچک و قابل مقایسه خلاصه می‌کنیم؟",
+      nextStep:
+        "اینجاست که Phred وارد می‌شود. این بار آن را حفظ نمی‌کنیم؛ رابطه‌اش با احتمال خطا را قدم‌به‌قدم می‌فهمیم.",
+    },
   },
   {
-    label: "خط ۴",
-    value: demoQuality,
-    title: "کیفیت هر باز",
-    explanation:
-      "هر نویسه به یک مقدار کیفیت برای باز متناظر در خط دوم کد می‌شود. طول خط کیفیت باید با طول توالی همان رکورد برابر باشد.",
+    title: "Phred یعنی چه؟",
+    eyebrow: "امتیاز کیفیت، نه جادوی کیفیت",
+    headline: "Phred نام یک مقیاس لگاریتمی برای بیان احتمال خطای تشخیص باز است.",
+    lead:
+      "به‌جای نوشتن احتمال‌های کوچک مثل ۰٫۰۰۱ برای هر باز، از امتیاز Q استفاده می‌شود. در این مقیاس، هرچه Q بزرگ‌تر باشد احتمال خطای تخمینی کمتر است. Phred یک «نام مقیاس» است، بنابراین ترجمه نمی‌شود؛ مهم این است که معنی عدد را بفهمیم.",
+    connection:
+      "در بخش قبل فهمیدیم هر باز احتمال خطا دارد. Phred فقط راه فشرده‌ای برای نمایش همان احتمال است.",
+    terms: [
+      {
+        term: "Phred",
+        explanation:
+          "نام مقیاسی برای تبدیل احتمال خطای تشخیص باز به امتیاز کیفیت Q است. رابطه اصلی آن Q = -10 log10(Perror) است. لازم نیست فرمول را حفظ کنید؛ کافی است بدانید افزایش ۱۰ واحدی Q یعنی احتمال خطا تقریباً ۱۰ برابر کمتر می‌شود.",
+      },
+      {
+        term: "Q20",
+        explanation:
+          "برای یک باز، Q20 یعنی احتمال خطای تخمینی حدود ۱ در ۱۰۰ است؛ یعنی حدود ۱٪.",
+      },
+      {
+        term: "Q30",
+        explanation:
+          "برای یک باز، Q30 یعنی احتمال خطای تخمینی حدود ۱ در ۱۰۰۰ است؛ یعنی حدود ۰٫۱٪. این تعریف در سطح هر باز است، نه تضمین اینکه کل خوانش بدون خطا باشد.",
+      },
+      {
+        term: "Q10",
+        explanation:
+          "برای یک باز، Q10 یعنی احتمال خطای تخمینی حدود ۱ در ۱۰ است؛ یعنی حدود ۱۰٪.",
+      },
+    ],
+    insight:
+      "نکته کلیدی: Q30 درباره احتمال خطای یک تشخیص باز حرف می‌زند. نباید آن را به‌سادگی به «این خوانش قطعاً عالی است» تبدیل کنیم؛ کیفیت را در سطح مجموعه خوانش‌ها و موقعیت‌های مختلف هم بررسی می‌کنیم.",
+    question: {
+      question: "کدام باز از نظر احتمال خطای تخمینی قابل اعتمادتر است؟",
+      options: ["بازی با Q10", "بازی با Q20", "بازی با Q30"],
+      correctIndex: 2,
+      correctFeedback:
+        "درست است. Q30 احتمال خطای کمتری از Q20 و Q10 دارد. در درس بعد می‌بینیم توزیع این امتیازها در طول میلیون‌ها خوانش چگونه بررسی می‌شود.",
+      incorrectFeedback:
+        "در مقیاس Phred، عدد بزرگ‌تر یعنی احتمال خطای کمتر. Q30 از Q20 و Q10 قابل اعتمادتر است.",
+    },
+    bridge: {
+      openQuestion: "توالی و امتیاز کیفیت هر باز را داریم؛ FASTQ دقیقاً این دو را چگونه کنار هم ذخیره می‌کند؟",
+      nextStep:
+        "بخش بعد چهار خط یک رکورد FASTQ را باز می‌کند تا هر خط نقش مشخصی داشته باشد.",
+    },
+  },
+  {
+    title: "چهار خط FASTQ",
+    eyebrow: "کالبدشکافی فایل خام",
+    headline: "هر رکورد FASTQ چهار خط دارد: شناسه، توالی، جداکننده و رشته کیفیت.",
+    lead:
+      "FASTQ یک قالب متنی است. برای هر خوانش، یک رکورد چهارخطی ذخیره می‌شود. تعداد نویسه‌های رشته کیفیت باید با تعداد بازهای توالی برابر باشد، چون برای هر موقعیت توالی یک کیفیت متناظر داریم.",
+    connection:
+      "اکنون هم توالی را می‌شناسیم و هم Phred را. FASTQ این دو لایه را برای هر خوانش در یک رکورد کنار هم قرار می‌دهد.",
+    scenario: {
+      title: "یک رکورد ساده FASTQ",
+      description: "این چهار خط را به‌عنوان یک بسته اطلاعاتی واحد ببینید.",
+      items: [
+        "خط ۱: @read_001 — شناسه خوانش و اطلاعات توصیفی احتمالی.",
+        "خط ۲: ACGTTGCA — توالی بازهای خوانش.",
+        "خط ۳: + — جداکننده بین توالی و کیفیت.",
+        "خط ۴: IIIHGFED — نویسه‌های کدشده کیفیت، یک نویسه برای هر باز.",
+      ],
+    },
+    question: {
+      question: "اگر توالی یک رکورد ۱۵۰ باز داشته باشد، رشته کیفیت همان رکورد باید چه رابطه‌ای با آن داشته باشد؟",
+      options: [
+        "باید ۱۵۰ نویسه کیفیت متناظر داشته باشد.",
+        "می‌تواند هر طول دلخواهی داشته باشد.",
+        "باید فقط یک عدد Q30 داشته باشد.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "دقیقاً. هر موقعیت توالی یک مقدار کیفیت متناظر دارد؛ FASTQ کیفیت را در سطح هر باز ذخیره می‌کند.",
+      incorrectFeedback:
+        "رشته کیفیت باید موقعیت‌به‌موقعیت با توالی متناظر باشد؛ طول آن با طول توالی برابر است.",
+    },
+    bridge: {
+      openQuestion: "اما چرا در خط کیفیت به‌جای عددهایی مثل ۳۰ و ۳۵، حروف و علامت می‌بینیم؟",
+      nextStep:
+        "بخش بعد فقط به‌اندازه لازم Phred+33 را توضیح می‌دهد تا رشته کیفیت از حالت رمزآلود خارج شود؛ بدون اینکه تبدیل نویسه‌ها هدف اصلی درس شود.",
+    },
+  },
+  {
+    title: "رشته کیفیت و Phred+33",
+    eyebrow: "عددهایی که به شکل نویسه ذخیره می‌شوند",
+    headline: "در FASTQ رایج، امتیازهای کیفیت برای ذخیره فشرده‌تر به نویسه‌های متنی تبدیل می‌شوند.",
+    lead:
+      "در بسیاری از FASTQهای امروزی از شیوه Phred+33 استفاده می‌شود. در این شیوه، عدد کیفیت با یک نویسه ASCII نمایش داده می‌شود. بنابراین حرف I در خط کیفیت «باز» نیست؛ فقط یک کد برای یک امتیاز کیفیت است.",
+    connection:
+      "چهار خط FASTQ را شناختیم. تنها بخش مبهم، رشته کیفیت بود که حالا می‌دانیم مجموعه‌ای از کدهای کیفیت است.",
+    terms: [
+      {
+        term: "Phred+33",
+        explanation:
+          "یک روش کدگذاری متنی برای امتیاز Phred است: به عدد Q مقدار ۳۳ اضافه می‌شود و نویسه ASCII متناظر ذخیره می‌شود. برای تحلیل روزمره معمولاً نرم‌افزار این تبدیل را انجام می‌دهد و لازم نیست آن را دستی حساب کنید.",
+      },
+      {
+        term: "ASCII",
+        explanation:
+          "یک استاندارد برای نگاشت عددها به نویسه‌های متنی است. در FASTQ از این نگاشت برای ذخیره فشرده امتیازهای کیفیت استفاده می‌شود.",
+      },
+    ],
+    insight:
+      "هدف این بخش تبدیل دستی نویسه‌ها نیست. کافی است وقتی خط کیفیت را می‌بینید بدانید هر نویسه یک امتیاز کیفیت برای باز متناظر در خط توالی است.",
+    question: {
+      question: "در یک FASTQ با کدگذاری Phred+33، نویسه‌های خط چهارم چه چیزی را نشان می‌دهند؟",
+      options: [
+        "امتیاز کیفیت بازهای متناظر در خط توالی.",
+        "نام ژن‌ها.",
+        "تعداد تکرارهای زیستی.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "درست است. حالا رشته کیفیت دیگر یک ردیف علامت تصادفی نیست؛ نقشه کیفیت موقعیت‌به‌موقعیت خوانش است.",
+      incorrectFeedback:
+        "خط چهارم به توالی خط دوم وصل است: هر نویسه کیفیت برای باز همان موقعیت ذخیره شده است.",
+    },
+    bridge: {
+      openQuestion: "در یک پروژه واقعی، فایل‌های R1 و R2 و پسوند .fastq.gz دقیقاً چه معنایی دارند؟",
+      nextStep:
+        "بخش بعد ساختار فایل‌های واقعی پروژه را روشن می‌کند تا هنگام دریافت داده، نام فایل‌ها را به طراحی توالی‌یابی وصل کنید.",
+    },
+  },
+  {
+    title: "R1، R2 و فایل فشرده",
+    eyebrow: "شکل واقعی داده تحویلی",
+    headline: "R1 و R2 دو سمت خواندن در جفت‌انتها هستند؛ .gz فقط فشرده‌سازی فایل است.",
+    lead:
+      "در توالی‌یابی جفت‌انتها معمولاً برای هر نمونه دو فایل داریم. R1 شامل خوانش‌های انتهای اول و R2 شامل خوانش‌های انتهای دوم همان قطعات است. فایل‌ها اغلب با gzip فشرده می‌شوند و پسوند .fastq.gz می‌گیرند.",
+    connection:
+      "اکنون داخل رکورد FASTQ را می‌شناسیم. آخرین قدم این است که بفهمیم این رکوردها در پروژه واقعی چگونه بین فایل‌ها سازمان‌دهی می‌شوند.",
+    terms: [
+      {
+        term: "R1",
+        explanation:
+          "فایل خوانش‌های سمت اول در یک داده جفت‌انتها. ترتیب رکوردها معمولاً با R2 متناظر است تا هر جفت خوانش به یک قطعه مرتبط باشد.",
+      },
+      {
+        term: "R2",
+        explanation:
+          "فایل خوانش‌های سمت دوم همان قطعات در داده جفت‌انتها. R2 یک نمونه جدید یا تکرار زیستی جدید نیست.",
+      },
+      {
+        term: ".fastq.gz",
+        explanation:
+          "FASTQ فشرده‌شده با gzip است. فشرده‌سازی برای کاهش حجم ذخیره‌سازی است و معنای زیستی داده را تغییر نمی‌دهد.",
+      },
+    ],
+    question: {
+      question: "sample_A_R1.fastq.gz و sample_A_R2.fastq.gz معمولاً چه رابطه‌ای دارند؟",
+      options: [
+        "دو فایل خوانش از دو انتهای قطعات همان نمونه در توالی‌یابی جفت‌انتها هستند.",
+        "دو بیمار مستقل‌اند.",
+        "یکی فایل RNA و دیگری فایل DNA است.",
+      ],
+      correctIndex: 0,
+      correctFeedback:
+        "دقیقاً. حالا نام فایل را می‌توانید به طراحی توالی‌یابی وصل کنید، بدون اینکه R1/R2 را با تکرار زیستی اشتباه بگیرید.",
+      incorrectFeedback:
+        "R1 و R2 درباره جهت خواندن یک قطعه‌اند، نه درباره تعداد نمونه‌های زیستی.",
+    },
+    bridge: {
+      openQuestion: "یک رکورد FASTQ را می‌فهمیم؛ اما از کجا بفهمیم میلیون‌ها خوانش یک فایل در مجموع کیفیت مناسبی دارند؟",
+      nextStep:
+        "این سؤال دقیقاً نقطه شروع درس ۵ است: کنترل کیفیت داده خام یعنی نگاه‌کردن به الگوهای کیفیت در کل مجموعه خوانش‌ها، نه قضاوت از روی یک رکورد.",
+    },
+  },
+  {
+    title: "جمع‌بندی فعال",
+    eyebrow: "ایستگاه تسلط",
+    headline: "FASTQ را باید به‌عنوان «توالی + عدم‌قطعیت» برای هر خوانش ببینید.",
+    lead:
+      "اگر بتوانید تفاوت قطعه و خوانش، تک‌انتها و جفت‌انتها، تشخیص باز، Phred و چهار خط FASTQ را توضیح دهید، برای تفسیر کنترل کیفیت آماده‌اید.",
+    connection:
+      "تمام مفاهیم این درس حالا به هم وصل شده‌اند: کتابخانه به خوانش تبدیل شد و هر خوانش هم توالی و هم کیفیت دارد.",
+    flow: ["قطعه کتابخانه", "تشخیص باز", "خوانش", "امتیاز Phred", "رکورد FASTQ", "فایل R1/R2"],
+    question: {
+      question: "کدام جمله دقیق‌ترین جمع‌بندی این درس است؟",
+      options: [
+        "FASTQ فقط فهرستی از ژن‌هاست.",
+        "FASTQ برای هر خوانش، توالی و کیفیت متناظر بازها را همراه با شناسه ذخیره می‌کند.",
+        "Q30 یعنی کل خوانش صددرصد بدون خطاست.",
+      ],
+      correctIndex: 1,
+      correctFeedback:
+        "عالی. حالا می‌توانیم از فهم یک رکورد به ارزیابی الگوی میلیون‌ها رکورد برویم.",
+      incorrectFeedback:
+        "به سه لایه برگردید: خوانش چیست، کیفیت هر باز چیست، و FASTQ این دو را چگونه ذخیره می‌کند.",
+    },
+    bridge: {
+      openQuestion: "آیا کیفیت در همه موقعیت‌های همه خوانش‌ها یکسان است؟ آداپتور و ترکیب بازها چه الگوهایی ایجاد می‌کنند؟",
+      nextStep:
+        "درس ۵ این الگوها را به تصمیم‌های واقعی کنترل کیفیت و پیش‌پردازش تبدیل می‌کند.",
+    },
   },
 ];
 
 export function RnaSeqSequencingFastqLesson() {
-  const [scene, setScene] = useState(0);
-  const [flowAnswer, setFlowAnswer] = useState<number | null>(null);
-  const [mode, setMode] = useState<"single" | "paired">("paired");
-  const [modeAnswer, setModeAnswer] = useState<number | null>(null);
-  const [cycle, setCycle] = useState(0);
-  const [qualityAnswer, setQualityAnswer] = useState<number | null>(null);
-  const [fastqLine, setFastqLine] = useState(1);
-  const [fastqAnswer, setFastqAnswer] = useState<number | null>(null);
-  const [selectedBase, setSelectedBase] = useState(5);
-  const [phredAnswer, setPhredAnswer] = useState<number | null>(null);
-  const [pairAnswer, setPairAnswer] = useState<number | null>(null);
-  const [challengeRead, setChallengeRead] = useState<number | null>(null);
-  const [masteryAnswer, setMasteryAnswer] = useState<number | null>(null);
-
-  const currentBase = demoSequence[cycle];
-  const currentScore = demoScores[selectedBase];
-  const estimatedError = useMemo(
-    () => Math.pow(10, -currentScore / 10) * 100,
-    [currentScore],
-  );
-
-  function goToScene(nextScene: number) {
-    setScene(nextScene);
-
-    window.setTimeout(() => {
-      document.getElementById("rna-seq-sequencing-fastq")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 20);
-  }
-
   return (
-    <SpecialistLessonShell
-      domainId="transcriptomics"
-      trackId="bulk-rna-seq"
+    <GuidedConceptLesson
       lessonIndex={4}
       title="توالی‌یابی و FASTQ"
-      subtitle="در این درس کتابخانه آزمایشگاهی به داده محاسباتی تبدیل می‌شود: از تولید خوانش و تفاوت تک‌انتها/جفت‌انتها تا base calling، امتیاز Phred و چهار خط یک رکورد FASTQ."
-      currentScene={scene}
-      sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
-    >
-      <section
-        id="rna-seq-sequencing-fastq"
-        className="scroll-mt-6"
-      >
-        <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
-          <div className="mb-6 flex flex-wrap gap-2">
-            {sceneTitles.map((title, index) => (
-              <button
-                key={title}
-                type="button"
-                onClick={() => goToScene(index)}
-                className={[
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                  index === scene
-                    ? "border-teal-600 bg-teal-600 text-white"
-                    : index < scene
-                      ? "border-teal-200 bg-teal-50 text-teal-700"
-                      : "border-slate-200 bg-white text-slate-400",
-                ].join(" ")}
-              >
-                {new Intl.NumberFormat("fa-IR").format(index + 1)}. {title}
-              </button>
-            ))}
-          </div>
-
-          {scene === 0 && (
-            <SceneCard
-              eyebrow="لحظه تبدیل آزمایش به داده"
-              title="دستگاه توالی‌یاب خودِ RNA را به جدول بیان تبدیل نمی‌کند؛ ابتدا میلیون‌ها خوانش تولید می‌کند."
-              description="در پایان آماده‌سازی کتابخانه، مولکول‌هایی داریم که برای خوانده‌شدن آماده‌اند. توالی‌یابی از این مولکول‌ها سیگنال می‌گیرد، بازها را فراخوانی می‌کند و در نهایت داده‌ای تولید می‌شود که می‌تواند به FASTQ تبدیل شود."
-            >
-              <Flow
-                items={[
-                  "کتابخانه",
-                  "توالی‌یابی",
-                  "سیگنال",
-                  "Base calling",
-                  "خوانش + کیفیت",
-                  "FASTQ",
-                ]}
-              />
-
-              <div className="mt-6 grid gap-4 md:grid-cols-3">
-                <ConceptCard
-                  icon={<Dna className="size-5" />}
-                  title="مولکول کتابخانه"
-                  text="محصول فیزیکی آزمایشگاهی است که از RNA هدف ساخته شده و هنوز فایل محاسباتی نیست."
-                />
-                <ConceptCard
-                  icon={<Gauge className="size-5" />}
-                  title="خوانش"
-                  text="توالی کوتاه یا بلند بازهاست که دستگاه از بخشی از یک مولکول کتابخانه گزارش می‌کند."
-                  emphasized
-                />
-                <ConceptCard
-                  icon={<FileText className="size-5" />}
-                  title="FASTQ"
-                  text="نمایش متنی رکوردهای خوانش به‌همراه کیفیت بازهاست؛ نه ماتریس بیان ژن."
-                />
-              </div>
-
-              <DecisionQuestion
-                question="کدام زنجیره از نظر مفهومی درست‌تر است؟"
-                options={[
-                  "کتابخانه ← FASTQ ← توالی‌یابی ← ماتریس بیان",
-                  "کتابخانه ← توالی‌یابی ← خوانش و کیفیت ← FASTQ",
-                  "FASTQ ← RNA استخراج‌شده ← کتابخانه",
-                ]}
-                selected={flowAnswer}
-                correctIndex={1}
-                onSelect={setFlowAnswer}
-                correctFeedback="دقیقاً. FASTQ نتیجه تبدیل خوانش‌ها و کیفیت‌های تولیدشده به یک قالب داده است."
-                incorrectFeedback="ترتیب را از ماده آزمایشگاهی به داده محاسباتی دنبال کنید: کتابخانه، توالی‌یابی، خوانش، سپس FASTQ."
-              />
-
-              <InsightBox>
-                از این لحظه به بعد وارد بخش محاسباتی پروژه شده‌ایم؛ اما منشأ هر خط داده هنوز به تصمیم‌های آزمایشگاهی درس‌های قبلی متصل است.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 1 && (
-            <SceneCard
-              eyebrow="شیوه خواندن قطعه"
-              title="در تک‌انتها یک سر قطعه را می‌خوانیم؛ در جفت‌انتها هر دو سر همان قطعه اطلاعات می‌دهند."
-              description="paired-end دو نمونه یا دو تکرار زیستی نیست. دو خوانش به یک قطعه کتابخانه‌ای مربوط‌اند و معمولاً اطلاعات بیشتری درباره جایگاه یا ساختار آن قطعه می‌دهند."
-            >
-              <div className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMode("single")}
-                    className={[
-                      "rounded-xl px-4 py-2 text-sm font-bold transition",
-                      mode === "single"
-                        ? "bg-teal-500 text-slate-950"
-                        : "bg-white/10 text-slate-300",
-                    ].join(" ")}
-                  >
-                    تک‌انتها
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMode("paired")}
-                    className={[
-                      "rounded-xl px-4 py-2 text-sm font-bold transition",
-                      mode === "paired"
-                        ? "bg-teal-500 text-slate-950"
-                        : "bg-white/10 text-slate-300",
-                    ].join(" ")}
-                  >
-                    جفت‌انتها
-                  </button>
-                </div>
-
-                <div className="mt-8 rounded-2xl border border-white/10 bg-white/[0.04] p-5">
-                  <div className="mx-auto max-w-3xl">
-                    <div className="relative h-20 rounded-2xl border border-cyan-300/30 bg-cyan-300/10">
-                      <div className="absolute inset-x-8 top-1/2 h-2 -translate-y-1/2 rounded-full bg-white/25" />
-                      <div className="absolute right-8 top-1/2 h-3 w-28 -translate-y-1/2 rounded-full bg-teal-300" />
-                      <span className="absolute right-8 top-3 text-[11px] font-bold text-teal-200">
-                        R1 ←
-                      </span>
-
-                      {mode === "paired" && (
-                        <>
-                          <div className="absolute left-8 top-1/2 h-3 w-28 -translate-y-1/2 rounded-full bg-cyan-300" />
-                          <span className="absolute left-8 top-3 text-[11px] font-bold text-cyan-200">
-                            → R2
-                          </span>
-                        </>
-                      )}
-                    </div>
-
-                    <p className="mt-4 text-center text-sm leading-7 text-slate-300">
-                      {mode === "single"
-                        ? "یک خوانش از یک سمت قطعه گزارش می‌شود."
-                        : "دو خوانش از دو سر یک قطعه گزارش می‌شوند و باید به‌عنوان یک جفت شناخته شوند."}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <DecisionQuestion
-                question="اگر یک نمونه paired-end باشد، کدام جمله درست است؟"
-                options={[
-                  "یعنی دو تکرار زیستی مستقل از همان نمونه داریم.",
-                  "برای هر قطعه می‌توان اطلاعات خواندن از دو سر را داشت؛ این موضوع با تعداد نمونه‌های زیستی فرق دارد.",
-                  "یعنی FASTQ دیگر کیفیت بازها را نگه نمی‌دارد.",
-                ]}
-                selected={modeAnswer}
-                correctIndex={1}
-                onSelect={setModeAnswer}
-                correctFeedback="دقیقاً. paired-end ویژگی راهبرد توالی‌یابی است، نه تعریف تکرار زیستی."
-                incorrectFeedback="تعداد readها یا جهت‌های خواندن را با تعداد واحدهای مستقل زیستی یکی ندانید."
-              />
-            </SceneCard>
-          )}
-
-          {scene === 2 && (
-            <SceneCard
-              eyebrow="از سیگنال تا حرف"
-              title="Base calling یعنی تبدیل سیگنال دستگاه به یک باز گزارش‌شده همراه با برآورد اطمینان."
-              description="دستگاه مستقیماً یک رشته بی‌خطا از حروف تحویل نمی‌دهد. الگوریتم base calling از سیگنال مشاهده‌شده برای هر چرخه یک باز را انتخاب می‌کند و کیفیتی برای آن گزارش می‌شود."
-            >
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold text-teal-700">
-                      شبیه‌ساز چرخه توالی‌یابی
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">
-                      روی چرخه‌ها بزنید و ببینید رشته خوانش چگونه قدم‌به‌قدم ساخته می‌شود.
-                    </p>
-                  </div>
-                  <MousePointerClick className="size-5 text-slate-400" />
-                </div>
-
-                <div className="mt-6 grid grid-cols-6 gap-2 sm:grid-cols-12">
-                  {demoSequence.split("").map((base, index) => (
-                    <button
-                      key={`${base}-${index}`}
-                      type="button"
-                      onClick={() => setCycle(index)}
-                      className={[
-                        "flex aspect-square items-center justify-center rounded-xl border font-mono text-sm font-black transition",
-                        cycle === index
-                          ? "border-teal-600 bg-teal-600 text-white"
-                          : index < cycle
-                            ? "border-teal-200 bg-teal-50 text-teal-800"
-                            : "border-slate-200 bg-slate-50 text-slate-500",
-                      ].join(" ")}
-                    >
-                      {index <= cycle ? base : "?"}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  <MetricCard label="چرخه" value={String(cycle + 1)} />
-                  <MetricCard label="باز فراخوانی‌شده" value={currentBase} />
-                  <MetricCard label="کیفیت نمونه" value={`Q${demoScores[cycle]}`} />
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
-                <p className="text-sm font-black">Phred چه می‌گوید؟</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <DarkMetric label="Q10" value="≈ ۱۰٪ احتمال خطا" />
-                  <DarkMetric label="Q20" value="≈ ۱٪ احتمال خطا" />
-                  <DarkMetric label="Q30" value="≈ ۰٫۱٪ احتمال خطا" />
-                </div>
-                <p className="mt-4 text-xs leading-6 text-slate-400">
-                  این‌ها برآورد احتمالی خطای base call هستند؛ کیفیت بالا تضمین مطلق درستی یک باز نیست.
-                </p>
-              </div>
-
-              <DecisionQuestion
-                question="Q30 تقریباً چه برداشتی می‌دهد؟"
-                options={[
-                  "احتمال خطای برآوردشده حدود ۰٫۱٪ برای آن base call است.",
-                  "یعنی آن باز قطعاً بدون خطاست.",
-                  "یعنی ۳۰٪ از خوانش خراب است.",
-                ]}
-                selected={qualityAnswer}
-                correctIndex={0}
-                onSelect={setQualityAnswer}
-                correctFeedback="درست است. Phred یک مقیاس لگاریتمی از احتمال خطای برآوردشده است."
-                incorrectFeedback="Q30 را به‌عنوان احتمال خطای تقریبی ۱ در ۱۰۰۰ برای آن base call تفسیر کنید، نه تضمین مطلق."
-              />
-            </SceneCard>
-          )}
-
-          {scene === 3 && (
-            <SceneCard
-              eyebrow="چهار خط که باید برای همیشه بشناسید"
-              title="هر رکورد FASTQ معمولاً چهار خط دارد: شناسه، توالی، جداکننده و کیفیت."
-              description="روی هر خط کلیک کنید. هدف این نیست که FASTQ را حفظ کنید؛ باید بتوانید وقتی یک فایل واقعی باز می‌کنید، فوراً بدانید هر بخش چه نقشی دارد."
-            >
-              <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-                <div dir="ltr" className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-950 p-4 font-mono text-sm text-white sm:p-6">
-                  {fastqLines.map((line, index) => (
-                    <button
-                      key={line.label}
-                      type="button"
-                      onClick={() => setFastqLine(index)}
-                      className={[
-                        "mb-2 block w-full rounded-xl border px-4 py-3 text-left transition last:mb-0",
-                        fastqLine === index
-                          ? "border-teal-400 bg-teal-400/10"
-                          : "border-white/10 bg-white/[0.03] hover:border-white/20",
-                      ].join(" ")}
-                    >
-                      <span className="mr-4 inline-block w-12 text-[10px] text-slate-500">
-                        {index + 1}
-                      </span>
-                      {line.value}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="rounded-3xl border border-teal-200 bg-teal-50 p-6">
-                  <p className="text-xs font-bold text-teal-700">
-                    {fastqLines[fastqLine].label}
-                  </p>
-                  <h3 className="mt-2 text-xl font-black text-slate-950">
-                    {fastqLines[fastqLine].title}
-                  </h3>
-                  <p className="mt-3 text-sm leading-8 text-slate-700">
-                    {fastqLines[fastqLine].explanation}
-                  </p>
-                </div>
-              </div>
-
-              <DecisionQuestion
-                question="اگر طول خط توالی ۱۵۰ باز باشد، درباره خط کیفیت همان رکورد چه انتظاری داریم؟"
-                options={[
-                  "باید ۱۵۰ نویسه کیفیت متناظر داشته باشد.",
-                  "می‌تواند هر طولی داشته باشد چون کیفیت مستقل از توالی است.",
-                  "فقط یک عدد کیفیت برای کل خوانش کافی است.",
-                ]}
-                selected={fastqAnswer}
-                correctIndex={0}
-                onSelect={setFastqAnswer}
-                correctFeedback="دقیقاً. هر موقعیت توالی یک نویسه کیفیت متناظر دارد."
-                incorrectFeedback="در FASTQ، کیفیت در سطح باز ذخیره می‌شود؛ بنابراین طول توالی و رشته کیفیت باید متناظر باشند."
-              />
-            </SceneCard>
-          )}
-
-          {scene === 4 && (
-            <SceneCard
-              eyebrow="کیفیت فقط یک رشته عجیب نیست"
-              title="هر نویسه در خط چهارم نماینده یک امتیاز کیفیت برای همان موقعیت در خط دوم است."
-              description="در FASTQهای رایج امروزی، امتیاز Phred با کد ASCII و offset متداول ۳۳ نمایش داده می‌شود. لازم نیست جدول ASCII را حفظ کنید؛ مهم این است که ارتباط موقعیت‌به‌موقعیت توالی و کیفیت را بفهمید."
-            >
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <div className="overflow-x-auto">
-                  <div dir="ltr" className="min-w-[720px]">
-                    <div className="grid grid-cols-12 gap-2">
-                      {demoSequence.split("").map((base, index) => (
-                        <button
-                          key={`base-${index}`}
-                          type="button"
-                          onClick={() => setSelectedBase(index)}
-                          className={[
-                            "rounded-xl border p-3 text-center font-mono transition",
-                            selectedBase === index
-                              ? "border-teal-600 bg-teal-50"
-                              : "border-slate-200 bg-slate-50 hover:border-teal-300",
-                          ].join(" ")}
-                        >
-                          <span className="block text-base font-black text-slate-950">
-                            {base}
-                          </span>
-                          <span className="mt-1 block text-xs text-slate-400">
-                            {demoQuality[index]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-4">
-                  <MetricCard label="موقعیت" value={String(selectedBase + 1)} />
-                  <MetricCard label="باز" value={demoSequence[selectedBase]} />
-                  <MetricCard label="نویسه کیفیت" value={demoQuality[selectedBase]} />
-                  <MetricCard label="Phred" value={`Q${currentScore}`} />
-                </div>
-
-                <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">
-                    احتمال خطای برآوردشده برای این base call
-                  </p>
-                  <p className="mt-2 text-lg font-black text-slate-950">
-                    حدود {formatPercent(estimatedError)}٪
-                  </p>
-                </div>
-              </div>
-
-              <DecisionQuestion
-                question="در رشته کیفیت بالا، نویسه‌های انتهایی ضعیف‌تر چه مفهومی دارند؟"
-                options={[
-                  "اطمینان base calling در آن موقعیت‌ها کمتر برآورد شده است.",
-                  "یعنی آن بازها حتماً متعلق به آداپتور هستند.",
-                  "یعنی نمونه زیستی دیگری به فایل اضافه شده است.",
-                ]}
-                selected={phredAnswer}
-                correctIndex={0}
-                onSelect={setPhredAnswer}
-                correctFeedback="درست است. کیفیت پایین فقط می‌گوید اعتماد به base call کمتر است؛ علت باید در کنترل کیفیت بررسی شود."
-                incorrectFeedback="Phred درباره اعتماد به فراخوانی باز صحبت می‌کند، نه اینکه مستقیماً علت مشکل را مشخص کند."
-              />
-            </SceneCard>
-          )}
-
-          {scene === 5 && (
-            <SceneCard
-              eyebrow="وقتی paired-end را در پوشه می‌بینید"
-              title="در داده paired-end معمولاً برای یک نمونه، خوانش‌های R1 و R2 در فایل‌های متناظر نگه‌داری می‌شوند."
-              description="نام‌گذاری دقیق فایل‌ها می‌تواند بین مراکز و مسیرهای پردازش متفاوت باشد، اما الگوی R1/R2 بسیار رایج است. مهم‌تر از نام فایل، حفظ رابطه جفت‌ها و فراداده نمونه است."
-            >
-              <div className="grid gap-4 md:grid-cols-2">
-                <FileCard
-                  badge="Read 1"
-                  name="PDAC01_R1.fastq.gz"
-                  text="خوانش از یک سمت قطعات کتابخانه‌ای نمونه PDAC01"
-                  emphasized
-                />
-                <FileCard
-                  badge="Read 2"
-                  name="PDAC01_R2.fastq.gz"
-                  text="خوانش متناظر از سمت دیگر همان جفت قطعات"
-                />
-              </div>
-
-              <div className="mt-5 rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
-                <p className="text-xs font-bold text-teal-300">
-                  چیزی که نباید قاطی شود
-                </p>
-                <div className="mt-4 flex flex-wrap items-center gap-2 text-sm font-black">
-                  <span className="rounded-xl bg-white/10 px-3 py-2">R1 + R2</span>
-                  <span className="text-slate-500">≠</span>
-                  <span className="rounded-xl bg-white/10 px-3 py-2">دو نمونه زیستی</span>
-                  <span className="text-slate-500">≠</span>
-                  <span className="rounded-xl bg-white/10 px-3 py-2">دو تکرار زیستی</span>
-                </div>
-              </div>
-
-              <DecisionQuestion
-                question="اگر PDAC01_R1.fastq.gz و PDAC01_R2.fastq.gz داشته باشیم، دقیق‌ترین برداشت چیست؟"
-                options={[
-                  "دو بیمار مستقل داریم.",
-                  "احتمالاً دو فایل خوانش جفت‌انتها برای یک نمونه داریم و باید آن‌ها را در تحلیل به‌عنوان pair نگه داریم.",
-                  "دو ماتریس بیان آماده داریم.",
-                ]}
-                selected={pairAnswer}
-                correctIndex={1}
-                onSelect={setPairAnswer}
-                correctFeedback="دقیقاً. R1/R2 درباره جفت خوانش‌هاست؛ هویت نمونه باید از فراداده و نام‌گذاری معتبر مشخص شود."
-                incorrectFeedback="R1 و R2 را با تعداد نمونه یا تکرار زیستی اشتباه نگیرید."
-              />
-
-              <InsightBox>
-                فایل‌های <strong>.fastq.gz</strong> معمولاً FASTQ فشرده‌شده‌اند. فشرده بودن فایل ماهیت داده را تغییر نمی‌دهد؛ فقط فضای ذخیره‌سازی را کاهش می‌دهد.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 6 && (
-            <SceneCard
-              eyebrow="قبل از اینکه FastQC را باز کنیم"
-              title="آیا می‌توانید فقط با نگاه به چند خوانش، یک هشدار اولیه درباره کیفیت بسازید؟"
-              description="این یک کنترل کیفیت واقعی نیست؛ یک تمرین ذهنی است تا یاد بگیرید کیفیت بازها در FASTQ کجا زندگی می‌کند. درس بعدی همین ایده را در مقیاس میلیون‌ها خوانش بررسی می‌کند."
-            >
-              <div className="grid gap-4 lg:grid-cols-3">
-                <ReadChallengeCard
-                  index={0}
-                  selected={challengeRead === 0}
-                  onSelect={() => setChallengeRead(0)}
-                  title="خوانش A"
-                  sequence="ACGTTGCAACGT"
-                  quality="IIIIIIIIIIII"
-                  note="کیفیت یکنواخت بالا در این مثال آموزشی"
-                />
-                <ReadChallengeCard
-                  index={1}
-                  selected={challengeRead === 1}
-                  onSelect={() => setChallengeRead(1)}
-                  title="خوانش B"
-                  sequence="ACGTTGCAACGT"
-                  quality="IIIII?5+&&&&"
-                  note="افت محسوس کیفیت در انتهای خوانش"
-                />
-                <ReadChallengeCard
-                  index={2}
-                  selected={challengeRead === 2}
-                  onSelect={() => setChallengeRead(2)}
-                  title="خوانش C"
-                  sequence="ACGTTGCAACGT"
-                  quality="????????????"
-                  note="کیفیت متوسط و تقریباً یکنواخت در این مثال"
-                />
-              </div>
-
-              {challengeRead !== null && (
-                <div
-                  className={[
-                    "mt-5 rounded-2xl border p-5",
-                    challengeRead === 1
-                      ? "border-emerald-200 bg-emerald-50"
-                      : "border-amber-200 bg-amber-50",
-                  ].join(" ")}
-                >
-                  <p className="font-black text-slate-950">
-                    {challengeRead === 1
-                      ? "انتخاب خوبی برای بررسی بیشتر ✓"
-                      : "یک بار دیگر رشته کیفیت‌ها را مقایسه کنید"}
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-slate-700">
-                    {challengeRead === 1
-                      ? "در خوانش B افت کیفیت انتهایی واضح‌تر است. اما از یک یا چند خوانش نمی‌توان درباره کیفیت کل فایل نتیجه‌گیری کرد؛ باید توزیع میلیون‌ها خوانش را بررسی کنیم."
-                      : "هدف تمرین پیدا کردن خوانشی است که در انتهای آن اعتماد base calling افت آشکارتری دارد."}
-                  </p>
-                </div>
-              )}
-
-              <InsightBox>
-                درس بعدی از «یک رکورد FASTQ» به «الگوهای کل فایل» می‌رود: کیفیت بر حسب موقعیت، آداپتور، GC، طول خوانش و سایر نشانه‌ها.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          {scene === 7 && (
-            <SceneCard
-              eyebrow="ایستگاه تسلط"
-              title="اگر یک FASTQ واقعی جلوی شما باز شود، باید بتوانید بدون ترس ساختارش را بخوانید."
-              description="پیش از ورود به کنترل کیفیت داده خام، مطمئن شویم مرز بین نمونه، کتابخانه، خوانش و FASTQ کاملاً روشن است."
-            >
-              <DecisionQuestion
-                question="کدام جمله دقیق‌ترین جمع‌بندی این درس است؟"
-                options={[
-                  "FASTQ یک جدول ژن × نمونه است که بیان ژن را مستقیماً نشان می‌دهد.",
-                  "FASTQ رکوردهای خوانش را به‌همراه کیفیت بازها نگه می‌دارد؛ در paired-end خوانش‌های دو سر قطعه نیز باید به‌صورت جفت مدیریت شوند.",
-                  "هر فایل R1 و R2 دو تکرار زیستی مستقل محسوب می‌شوند.",
-                ]}
-                selected={masteryAnswer}
-                correctIndex={1}
-                onSelect={setMasteryAnswer}
-                correctFeedback="عالی. حالا FASTQ برای شما یک فایل ناشناخته نیست؛ می‌دانید چه داده‌ای در آن وجود دارد و چه چیزی هنوز وجود ندارد."
-                incorrectFeedback="به سه مرز برگردید: FASTQ ≠ ماتریس بیان، paired-end ≠ تکرار زیستی، کیفیت ≠ تضمین مطلق."
-              />
-
-              <div className="mt-7 rounded-3xl bg-slate-950 p-6 text-white">
-                <p className="text-xs font-bold text-teal-300">
-                  نقشه‌ای که باید با خودتان ببرید
-                </p>
-                <div dir="rtl" className="mt-4 flex flex-wrap items-center gap-2 text-sm font-black">
-                  {[
-                    "کتابخانه",
-                    "توالی‌یابی",
-                    "خوانش",
-                    "Base + Phred",
-                    "FASTQ",
-                    "کنترل کیفیت",
-                  ].map((item, index, items) => (
-                    <div key={item} className="flex items-center gap-2">
-                      <span className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                        {item}
-                      </span>
-                      {index < items.length - 1 && (
-                        <span className="text-teal-300">←</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <InsightBox>
-                درس ۵ وارد <strong>کنترل کیفیت داده خام</strong> می‌شود؛ جایی که دیگر یک خوانش را نگاه نمی‌کنیم و رفتار میلیون‌ها خوانش را به‌صورت جمعی می‌سنجیم.
-              </InsightBox>
-            </SceneCard>
-          )}
-
-          <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              disabled={scene === 0}
-              onClick={() => goToScene(scene - 1)}
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <ArrowRight className="size-4" />
-              بخش قبل
-            </button>
-
-            {scene < sceneTitles.length - 1 && (
-              <button
-                type="button"
-                onClick={() => goToScene(scene + 1)}
-                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-              >
-                بخش بعد
-                <ArrowLeft className="size-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </section>
-    </SpecialistLessonShell>
+      subtitle="از قطعه کتابخانه به خوانش، تشخیص باز، Phred و چهار خط FASTQ می‌رسیم تا داده خام دیگر یک فایل رمزآلود نباشد."
+      sectionId="rna-seq-sequencing-fastq"
+      sections={sections}
+    />
   );
-}
-
-function SceneCard({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children: ReactNode;
-}) {
-  return (
-    <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
-      <div className="border-b border-slate-200 bg-gradient-to-l from-teal-50 via-white to-white p-6 sm:p-8">
-        <p className="text-xs font-bold text-teal-700">{eyebrow}</p>
-        <h2 className="mt-2 text-2xl font-black leading-10 text-slate-950 sm:text-3xl">
-          {title}
-        </h2>
-        <p className="mt-3 max-w-4xl text-sm leading-8 text-slate-600">
-          {description}
-        </p>
-      </div>
-      <div className="p-6 sm:p-8">{children}</div>
-    </article>
-  );
-}
-
-function Flow({ items }: { items: string[] }) {
-  return (
-    <div dir="rtl" className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
-      <div className="flex flex-wrap items-center gap-2 text-sm font-black">
-        {items.map((item, index) => (
-          <div key={item} className="flex items-center gap-2">
-            <span className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-              {item}
-            </span>
-            {index < items.length - 1 && (
-              <span className="text-teal-300">←</span>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function ConceptCard({
-  icon,
-  title,
-  text,
-  emphasized = false,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-3xl border p-5",
-        emphasized
-          ? "border-teal-300 bg-teal-50"
-          : "border-slate-200 bg-slate-50",
-      ].join(" ")}
-    >
-      <div className="flex items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-xl bg-white text-teal-700 shadow-sm">
-          {icon}
-        </span>
-        <p className="font-black text-slate-950">{title}</p>
-      </div>
-      <p className="mt-4 text-sm leading-8 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function MetricCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs text-slate-500">{label}</p>
-      <p dir="ltr" className="mt-2 text-lg font-black text-slate-950">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function DarkMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-      <p dir="ltr" className="text-lg font-black text-teal-300">{label}</p>
-      <p className="mt-2 text-xs leading-6 text-slate-300">{value}</p>
-    </div>
-  );
-}
-
-function FileCard({
-  badge,
-  name,
-  text,
-  emphasized = false,
-}: {
-  badge: string;
-  name: string;
-  text: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-3xl border p-5",
-        emphasized
-          ? "border-teal-300 bg-teal-50"
-          : "border-slate-200 bg-white",
-      ].join(" ")}
-    >
-      <span className="rounded-full bg-slate-950 px-3 py-1 text-[11px] font-bold text-white">
-        {badge}
-      </span>
-      <p dir="ltr" className="mt-4 break-all font-mono text-sm font-black text-slate-950">
-        {name}
-      </p>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{text}</p>
-    </div>
-  );
-}
-
-function ReadChallengeCard({
-  selected,
-  onSelect,
-  title,
-  sequence,
-  quality,
-  note,
-}: {
-  index: number;
-  selected: boolean;
-  onSelect: () => void;
-  title: string;
-  sequence: string;
-  quality: string;
-  note: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onSelect}
-      className={[
-        "rounded-3xl border p-5 text-right transition",
-        selected
-          ? "border-teal-500 bg-teal-50 shadow-md"
-          : "border-slate-200 bg-white hover:border-teal-300",
-      ].join(" ")}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <p className="font-black text-slate-950">{title}</p>
-        {selected && <CheckCircle2 className="size-5 text-teal-700" />}
-      </div>
-      <div dir="ltr" className="mt-4 rounded-2xl bg-slate-950 p-4 font-mono text-xs text-white">
-        <p>{sequence}</p>
-        <p className="mt-2 text-teal-300">{quality}</p>
-      </div>
-      <p className="mt-3 text-xs leading-6 text-slate-500">{note}</p>
-    </button>
-  );
-}
-
-function DecisionQuestion({
-  question,
-  options,
-  selected,
-  correctIndex,
-  onSelect,
-  correctFeedback,
-  incorrectFeedback,
-}: {
-  question: string;
-  options: string[];
-  selected: number | null;
-  correctIndex: number;
-  onSelect: (index: number) => void;
-  correctFeedback: string;
-  incorrectFeedback: string;
-}) {
-  const answered = selected !== null;
-  const correct = selected === correctIndex;
-
-  return (
-    <section className="mt-7 rounded-3xl border border-slate-200 bg-slate-50 p-5 sm:p-6">
-      <div className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-sm font-black text-white">
-          ؟
-        </span>
-        <p className="font-bold leading-8 text-slate-950">{question}</p>
-      </div>
-
-      <div className="mt-5 grid gap-3">
-        {options.map((option, index) => {
-          const active = selected === index;
-          const className = active
-            ? index === correctIndex
-              ? "border-emerald-500 bg-emerald-50"
-              : "border-amber-400 bg-amber-50"
-            : "border-slate-200 bg-white hover:border-teal-300";
-
-          return (
-            <button
-              key={option}
-              type="button"
-              onClick={() => onSelect(index)}
-              className={`rounded-2xl border p-4 text-right text-sm font-medium leading-7 text-slate-700 transition ${className}`}
-            >
-              {option}
-            </button>
-          );
-        })}
-      </div>
-
-      {answered && (
-        <div
-          className={[
-            "mt-4 rounded-2xl border p-4",
-            correct
-              ? "border-emerald-200 bg-emerald-50"
-              : "border-amber-200 bg-amber-50",
-          ].join(" ")}
-        >
-          <p
-            className={
-              correct
-                ? "text-sm font-bold text-emerald-900"
-                : "text-sm font-bold text-amber-950"
-            }
-          >
-            {correct
-              ? "مسیر فکری درست ✓"
-              : "این برداشت را دوباره بررسی کنید"}
-          </p>
-          <p className="mt-2 text-sm leading-7 text-slate-700">
-            {correct ? correctFeedback : incorrectFeedback}
-          </p>
-        </div>
-      )}
-    </section>
-  );
-}
-
-function InsightBox({ children }: { children: ReactNode }) {
-  return (
-    <div className="mt-6 flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-5">
-      <Lightbulb className="mt-1 size-5 shrink-0 text-teal-700" />
-      <p className="text-sm leading-8 text-teal-950">{children}</p>
-    </div>
-  );
-}
-
-function formatPercent(value: number) {
-  if (value >= 10) return value.toFixed(1);
-  if (value >= 1) return value.toFixed(2);
-  return value.toFixed(3);
 }
