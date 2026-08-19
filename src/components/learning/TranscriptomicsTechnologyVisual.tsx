@@ -47,19 +47,19 @@ const technologyContent: Record<
       },
       {
         title: "توالی‌یابی",
-        description: "کتابخانه در دستگاه توالی‌یاب خوانده می‌شود و Reads تولید می‌شوند.",
+        description: "کتابخانه در دستگاه توالی‌یاب خوانده می‌شود و خوانش‌ها تولید می‌شوند.",
       },
       {
         title: "تحلیل بیوانفورماتیکی",
-        description: "Reads پردازش و کمی‌سازی می‌شوند تا به نتایج بیان ژن برسیم.",
+        description: "خوانش‌ها پردازش و کمی‌سازی می‌شوند تا به نتایج بیان ژن برسیم.",
       },
     ],
   },
 
   microarray: {
-    label: "Microarray",
+    label: "میکروآرایه",
     image: "/images/learning/microarray-workflow.png",
-    alt: "نمای شماتیک مراحل فناوری Microarray",
+    alt: "نمای شماتیک مراحل فناوری میکروآرایه",
     principle: "سنجش اتصال به پروب و شدت سیگنال",
     subtitle: "مبتنی بر پروب و سیگنال",
     stages: [
@@ -113,7 +113,7 @@ export function TranscriptomicsTechnologyVisual() {
         <TechnologyTab
           active={technology === "microarray"}
           onClick={() => setTechnology("microarray")}
-          title="Microarray"
+          title="میکروآرایه"
           subtitle="مبتنی بر پروب و سیگنال"
         />
       </div>
