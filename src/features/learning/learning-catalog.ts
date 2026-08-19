@@ -178,10 +178,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "raw-data-qc",
     title: "کنترل کیفیت داده خام",
     summary:
-      "کیفیت بازها، آداپتور، الگوهای غیرعادی و منطق استفاده از گزارش‌های کنترل کیفیت را یاد بگیرید.",
+      "کیفیت بازها، آداپتور، GC، ترکیب بازها و توالی‌های غالب را تفسیر کنید و برای preprocessing تصمیم بگیرید.",
     principle:
       "هشدار کنترل کیفیت باید تفسیر شود؛ هر هشدار به معنی خراب بودن داده نیست.",
-    status: "planned",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/raw-data-qc",
   },
   {
     index: 6,
