@@ -167,10 +167,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "sequencing-fastq",
     title: "توالی‌یابی و FASTQ",
     summary:
-      "خوانش، توالی‌یابی تک‌انتها و جفت‌انتها و ساختار فایل FASTQ را مرحله‌به‌مرحله بررسی کنید.",
+      "خوانش، توالی‌یابی تک‌انتها و جفت‌انتها، کیفیت بازها و ساختار فایل FASTQ را مرحله‌به‌مرحله بررسی کنید.",
     principle:
       "FASTQ داده خام محاسباتی است، نه خود نمونه زیستی و نه ماتریس بیان.",
-    status: "planned",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/sequencing-fastq",
   },
   {
     index: 5,
