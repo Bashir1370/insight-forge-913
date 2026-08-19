@@ -11,6 +11,12 @@ import {
 } from "lucide-react";
 
 import { SpecialistLessonShell } from "@/features/learning/components/SpecialistLessonShell";
+import {
+  GuidedLessonCmsAdmin,
+  LearningMediaBlocks,
+  useGuidedLessonCms,
+} from "@/features/learning/cms/GuidedLessonCms";
+import type { LearningMedia } from "@/features/learning/cms/learning-content-service";
 import { normalizeLearningText } from "@/features/learning/learning-terminology";
 import { usePersistentLessonProgress } from "@/features/learning/usePersistentLessonProgress";
 
@@ -57,6 +63,7 @@ export type GuidedLessonSection = {
   terms?: LearningTerm[];
   scenario?: GuidedScenario;
   insight?: ReactNode;
+  media?: LearningMedia[];
   question: GuidedQuestion;
   bridge: ConceptBridge;
 };
@@ -74,9 +81,21 @@ export function GuidedConceptLesson({
   sectionId: string;
   sections: GuidedLessonSection[];
 }) {
-  const normalizedSections = useMemo(
+  const baseSections = useMemo(
     () => sections.map(normalizeSection),
     [sections],
+  );
+
+  const cms = useGuidedLessonCms({
+    pageKey: `guided:${sectionId}`,
+    title: normalizeLearningText(title),
+    subtitle: normalizeLearningText(subtitle),
+    sections: baseSections,
+  });
+
+  const normalizedSections = useMemo(
+    () => cms.sections.map(normalizeSection),
+    [cms.sections],
   );
 
   const {
@@ -86,6 +105,8 @@ export function GuidedConceptLesson({
     setAnswers,
     maxUnlocked,
     setMaxUnlocked,
+    syncMode,
+    syncing,
   } = usePersistentLessonProgress({
     storageId: `guided:${sectionId}`,
     itemCount: normalizedSections.length,
@@ -140,18 +161,30 @@ export function GuidedConceptLesson({
       domainId="transcriptomics"
       trackId="bulk-rna-seq"
       lessonIndex={lessonIndex}
-      title={normalizeLearningText(title)}
-      subtitle={normalizeLearningText(subtitle)}
+      title={normalizeLearningText(cms.title)}
+      subtitle={normalizeLearningText(cms.subtitle)}
       currentScene={sectionIndex}
       sceneCount={normalizedSections.length}
       sceneLabel={section.title}
     >
       <section id={sectionId} className="scroll-mt-6" dir="rtl">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+          {cms.isAdmin && (
+            <GuidedLessonCmsAdmin
+              pageKey={cms.pageKey}
+              document={cms.document}
+              currentSectionIndex={sectionIndex}
+              onPreview={cms.setPreviewDocument}
+              onPublished={cms.reloadPublished}
+            />
+          )}
+
           <LessonProgress
             completedCount={completedCount}
             total={normalizedSections.length}
             progress={progress}
+            syncMode={syncMode}
+            syncing={syncing}
           />
 
           <SectionNavigator
@@ -211,6 +244,8 @@ export function GuidedConceptLesson({
                 </div>
               )}
 
+              <LearningMediaBlocks items={section.media} />
+
               <DecisionQuestion
                 question={section.question}
                 selected={selected}
@@ -256,10 +291,14 @@ function LessonProgress({
   completedCount,
   total,
   progress,
+  syncMode,
+  syncing,
 }: {
   completedCount: number;
   total: number;
   progress: number;
+  syncMode: "account" | "device";
+  syncing: boolean;
 }) {
   return (
     <div className="mb-5 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -275,7 +314,11 @@ function LessonProgress({
             {progress.toLocaleString("fa-IR")}٪
           </span>
           <p className="mt-1 text-[11px] font-bold text-emerald-700">
-            پیشرفت این درس روی همین دستگاه ذخیره می‌شود
+            {syncMode === "account"
+              ? syncing
+                ? "در حال همگام‌سازی پیشرفت…"
+                : "پیشرفت با حساب کاربری همگام است"
+              : "پیشرفت روی همین دستگاه ذخیره می‌شود"}
           </p>
         </div>
       </div>
@@ -615,6 +658,13 @@ function normalizeSection(section: GuidedLessonSection): GuidedLessonSection {
       typeof section.insight === "string"
         ? normalizeLearningText(section.insight)
         : section.insight,
+    media: section.media?.map((media) => ({
+      ...media,
+      alt: media.alt ? normalizeLearningText(media.alt) : media.alt,
+      caption: media.caption
+        ? normalizeLearningText(media.caption)
+        : media.caption,
+    })),
     question: {
       ...section.question,
       question: normalizeLearningText(section.question.question),
