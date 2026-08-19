@@ -134,7 +134,7 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "study-design",
     title: "از سؤال پژوهشی تا طراحی مطالعه",
     summary:
-      "سؤال، گروه‌های مقایسه، تکرارهای زیستی و فراداده را قبل از ورود به FASTQ مشخص کنید.",
+      "از سؤال و مقایسه زیستی تا واحد مستقل، تکرار زیستی، فراداده و کنترل اثرهای فنی پیش بروید.",
     principle:
       "تحلیل خوب نمی‌تواند یک طراحی زیستی نامناسب را بعداً جبران کند.",
     status: "active",
@@ -145,7 +145,7 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "sample-to-rna",
     title: "از نمونه زیستی تا RNA",
     summary:
-      "منبع نمونه، نگهداری، استخراج RNA و کیفیت ماده اولیه‌ای را که وارد آزمایش می‌شود بشناسید.",
+      "منبع نمونه، نگهداری، استخراج و تفاوت کمیت، خلوص و یکپارچگی RNA را قدم‌به‌قدم بررسی کنید.",
     principle:
       "کیفیت داده محاسباتی از کیفیت نمونه زیستی جدا نیست.",
     status: "active",
@@ -156,7 +156,7 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "library-preparation",
     title: "آماده‌سازی کتابخانه",
     summary:
-      "غنی‌سازی mRNA، حذف rRNA، قطعه‌قطعه‌سازی، cDNA، جهت‌داری و منطق ساخت کتابخانه را بفهمید.",
+      "انتخاب RNA هدف، قطعه‌قطعه‌سازی، cDNA، جهت‌داری، آداپتور، شاخص نمونه و نقش PCR را بفهمید.",
     principle:
       "طراحی کتابخانه تعیین می‌کند چه بخش‌هایی از RNA فرصت دیده‌شدن پیدا کنند.",
     status: "active",
@@ -167,7 +167,7 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "sequencing-fastq",
     title: "توالی‌یابی و FASTQ",
     summary:
-      "خوانش، توالی‌یابی تک‌انتها و جفت‌انتها، کیفیت بازها و ساختار فایل FASTQ را مرحله‌به‌مرحله بررسی کنید.",
+      "خوانش، تک‌انتها و جفت‌انتها، تشخیص باز، Phred و ساختار چهارخطی FASTQ را از پایه یاد بگیرید.",
     principle:
       "FASTQ داده خام محاسباتی است، نه خود نمونه زیستی و نه ماتریس بیان.",
     status: "active",
@@ -178,7 +178,7 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "raw-data-qc",
     title: "کنترل کیفیت داده خام",
     summary:
-      "کیفیت بازها، آداپتور، GC، ترکیب بازها و توالی‌های غالب را تفسیر کنید و برای preprocessing تصمیم بگیرید.",
+      "کیفیت در طول خوانش، آداپتور، درصد GC، خوانش‌های تکراری و تصمیم‌های پیش‌پردازش را در زمینه پروژه تفسیر کنید.",
     principle:
       "هشدار کنترل کیفیت باید تفسیر شود؛ هر هشدار به معنی خراب بودن داده نیست.",
     status: "active",
@@ -189,7 +189,7 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "alignment-quantification",
     title: "هم‌ترازی و کمی‌سازی",
     summary:
-      "مرجع ژنومی و ترنسکریپتومی، نگاشت یکتا و چندمکانی، splice junction و منطق برآورد فراوانی ژن و رونوشت را بفهمید.",
+      "مرجع ژنومی و ترنسکریپتومی، حاشیه‌نویسی، نگاشت، محل اتصال اگزون‌ها، ابهام ایزوفرم و کمی‌سازی را بفهمید.",
     principle:
       "نام ابزار مهم‌تر از فهم تبدیلی نیست که روی داده انجام می‌دهد.",
     status: "active",
@@ -320,8 +320,7 @@ export const transcriptomicsSpecialistTracks: SpecialistTrack[] = [
     id: "small-rna-seq",
     slug: "small-rna-seq",
     title: "RNA-seq برای RNAهای کوچک",
-    description:
-      "طراحی و تحلیل مناسب برای miRNA و سایر RNAهای کوچک.",
+    description: "طراحی و تحلیل مناسب برای miRNA و سایر RNAهای کوچک.",
     guidingQuestion:
       "برای مطالعه RNAهای کوچک چه تفاوت‌هایی در طراحی آزمایش و تحلیل لازم است؟",
     status: "developing",
@@ -419,15 +418,10 @@ export function getLearningCurriculum(domainId: string) {
 }
 
 export function getTranscriptomicsFoundationLesson(index: number) {
-  return transcriptomicsFoundationLessons.find(
-    (lesson) => lesson.index === index,
-  );
+  return transcriptomicsFoundationLessons.find((lesson) => lesson.index === index);
 }
 
-export function getSpecialistTrack(
-  domainId: string,
-  trackId: string,
-) {
+export function getSpecialistTrack(domainId: string, trackId: string) {
   return getLearningCurriculum(domainId)?.specialistTracks.find(
     (track) => track.id === trackId,
   );
