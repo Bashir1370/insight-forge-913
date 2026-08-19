@@ -88,17 +88,18 @@ export function usePersistentLessonProgress({
     if (!hydrated) return;
 
     let mounted = true;
-    const generation = ++syncGenerationRef.current;
 
     async function initializeForUser(nextUserId: string | null) {
-      if (!mounted || generation !== syncGenerationRef.current) return;
+      const requestGeneration = ++syncGenerationRef.current;
 
       setSyncInitialized(false);
       setUserId(nextUserId);
 
       if (!nextUserId) {
-        setSyncing(false);
-        setSyncInitialized(true);
+        if (mounted && requestGeneration === syncGenerationRef.current) {
+          setSyncing(false);
+          setSyncInitialized(true);
+        }
         return;
       }
 
@@ -113,8 +114,7 @@ export function usePersistentLessonProgress({
           .eq("node_id", storageId)
           .maybeSingle();
 
-        if (!mounted || generation !== syncGenerationRef.current) return;
-
+        if (!mounted || requestGeneration !== syncGenerationRef.current) return;
         if (error) throw error;
 
         const localUpdatedAt = parseTimestamp(localUpdatedAtRef.current);
@@ -130,16 +130,12 @@ export function usePersistentLessonProgress({
               ? data.updated_at
               : new Date().toISOString();
         } else if (!data || localUpdatedAt > cloudUpdatedAt) {
-          await upsertCloudProgress(
-            nextUserId,
-            storageId,
-            stateRef.current,
-          );
+          await upsertCloudProgress(nextUserId, storageId, stateRef.current);
         }
       } catch (error) {
         console.warn("[Learning progress] Cloud sync initialization failed", error);
       } finally {
-        if (mounted && generation === syncGenerationRef.current) {
+        if (mounted && requestGeneration === syncGenerationRef.current) {
           setSyncing(false);
           setSyncInitialized(true);
         }
@@ -154,13 +150,13 @@ export function usePersistentLessonProgress({
     const { data: authSubscription } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (!mounted) return;
-        syncGenerationRef.current += 1;
         void initializeForUser(session?.user.id ?? null);
       },
     );
 
     return () => {
       mounted = false;
+      syncGenerationRef.current += 1;
       authSubscription.subscription.unsubscribe();
     };
   }, [hydrated, itemCount, storageId]);
