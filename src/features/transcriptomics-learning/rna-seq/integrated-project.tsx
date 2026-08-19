@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { SpecialistLessonShell } from "@/features/learning/components/SpecialistLessonShell";
+import { usePersistentLessonProgress } from "@/features/learning/usePersistentLessonProgress";
 
 const sampleRows = [
   { id: "C1", group: "مرجع", batch: "A", rin: 8.4, stroma: 34 },
@@ -251,9 +252,18 @@ const missions: Mission[] = [
 ];
 
 export function RnaSeqIntegratedProjectLesson() {
-  const [missionIndex, setMissionIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
-  const [maxUnlocked, setMaxUnlocked] = useState(0);
+  const {
+    currentIndex: missionIndex,
+    setCurrentIndex: setMissionIndex,
+    answers,
+    setAnswers,
+    maxUnlocked,
+    setMaxUnlocked,
+    resetProgress,
+  } = usePersistentLessonProgress({
+    storageId: "integrated:rna-seq:pancreatic-cancer-project",
+    itemCount: missions.length,
+  });
   const [dossierOpen, setDossierOpen] = useState(true);
 
   const mission = missions[missionIndex];
@@ -294,9 +304,8 @@ export function RnaSeqIntegratedProjectLesson() {
   }
 
   function resetProject() {
-    setMissionIndex(0);
-    setAnswers({});
-    setMaxUnlocked(0);
+    resetProgress();
+    setDossierOpen(true);
   }
 
   return (
@@ -469,9 +478,12 @@ function ProjectHeader({
           style={{ width: `${score}%` }}
         />
       </div>
-      <p className="mt-2 text-xs text-slate-400">
-        {completed.toLocaleString("fa-IR")} تصمیم از {missions.length.toLocaleString("fa-IR")} تصمیم ثبت شده است.
-      </p>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+        <p>
+          {completed.toLocaleString("fa-IR")} تصمیم از {missions.length.toLocaleString("fa-IR")} تصمیم ثبت شده است.
+        </p>
+        <p className="font-bold text-emerald-300">پیشرفت پروژه روی همین دستگاه ذخیره می‌شود</p>
+      </div>
     </section>
   );
 }
