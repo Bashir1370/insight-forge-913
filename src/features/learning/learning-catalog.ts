@@ -189,10 +189,11 @@ export const bulkRnaSeqLessons: SpecialistLesson[] = [
     slug: "alignment-quantification",
     title: "هم‌ترازی و کمی‌سازی",
     summary:
-      "بفهمید خوانش‌ها چگونه به ژنوم یا رونوشت‌ها مرتبط می‌شوند و مقدار بیان چگونه برآورد می‌شود.",
+      "مرجع ژنومی و ترنسکریپتومی، نگاشت یکتا و چندمکانی، splice junction و منطق برآورد فراوانی ژن و رونوشت را بفهمید.",
     principle:
       "نام ابزار مهم‌تر از فهم تبدیلی نیست که روی داده انجام می‌دهد.",
-    status: "planned",
+    status: "active",
+    href: "/learn/transcriptomics/rna-seq/alignment-quantification",
   },
   {
     index: 7,
