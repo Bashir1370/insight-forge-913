@@ -3,7 +3,7 @@
 **Updated:** 2026-08-23  
 **Repository:** `Bashir1370/insight-forge-913`  
 **Primary branch:** `main`  
-**Purpose:** the single Markdown source for HubGene product decisions, scientific learning standards, architecture, recovery notes, stabilization status, and the next development direction.
+**Purpose:** the single Markdown source for HubGene product decisions, scientific-learning standards, architecture, recovery notes, stabilization status, and the current development direction.
 
 > GitHub source code is the implementation source of truth. This file is the single human-readable project context intentionally kept in the repository.
 
@@ -25,7 +25,7 @@ Core scientific principles:
 
 > **Clarity = Trust**
 
-HubGene should help a researcher understand the scientific problem, evidence, limitations, and analysis structure before presenting software as the solution.
+HubGene should help a researcher understand the scientific problem, evidence, limitations, data source, and analysis structure before presenting software as the solution.
 
 Primary early persona:
 
@@ -40,9 +40,45 @@ Educational default:
 
 ---
 
-## 2. Approved scientific information architecture
+## 2. Approved top-level product architecture
 
-The approved top-level Learn architecture separates **scientific domains**, **measurement modalities**, and **analysis paths**.
+HubGene now separates three different questions that should not be forced into one hierarchy:
+
+1. **Learning Domains** — what scientific area am I learning?
+2. **Data Resources** — where do I find and understand biological data/resources?
+3. **Analysis & Tools** — what do I do with the data?
+
+Conceptual model:
+
+```text
+HubGene
+├── Learning Domains
+│   ├── Transcriptomics
+│   ├── Genomics
+│   ├── Epigenomics
+│   ├── Proteomics
+│   └── Metabolomics
+├── Data Resources
+│   ├── Databases
+│   ├── Repositories
+│   ├── Archives
+│   ├── Data Portals
+│   ├── Browsers
+│   └── Knowledgebases
+└── Analysis & Tools
+    ├── R
+    ├── Python
+    ├── Statistical analysis
+    └── Reproducible workflows
+```
+
+### Architectural principle: one canonical resource, many entry points
+
+A resource such as GDC/TCGA must have **one canonical educational home** under Data Resources. It can then be linked contextually from RNA-seq, Genomics, Cancer Biology, future project modules, and other relevant places.
+
+Do not duplicate the same GDC/GEO/PRIDE tutorial inside several Omics trees.
+
+This is a graph-like learning architecture rather than a rigid parent/child tree.
 
 ### Main Omics pillars
 
@@ -72,42 +108,294 @@ Examples:
 - **Bulk RNA-seq is not a top-level Omics pillar.** It is a measurement/learning path inside Transcriptomics.
 - **Single-cell RNA-seq** is fundamentally a Transcriptomics modality, while a future cross-omics Single-cell hub may also connect scATAC-seq/Multiome.
 - **Network Biology, Biomarker Discovery, and Public Data Research are cross-cutting paths**, not Omics pillars.
-- **Microbiome is a research domain**, not simply another item at the same level as the five Omics pillars. It can include 16S, shotgun metagenomics, metatranscriptomics, and related modalities.
-
-Long-term mental model:
-
-```text
-Omics
-├── Transcriptomics
-│   ├── Foundations
-│   ├── Bulk RNA-seq
-│   ├── Single-cell RNA-seq
-│   ├── Spatial Transcriptomics
-│   ├── Long-read Transcriptomics
-│   └── Advanced Topics
-├── Genomics
-├── Epigenomics
-├── Proteomics
-└── Metabolomics
-
-Cross-cutting
-├── Experimental Design
-├── Statistics
-├── Public Data Research
-├── Functional Analysis
-├── Network Biology
-├── Biomarker Discovery
-├── Visualization
-└── Biological Interpretation
-```
+- **Microbiome is a research domain**, not simply another item at the same level as the five Omics pillars.
+- A resource may belong to several scientific contexts; ownership is represented by metadata/relations rather than duplicating content.
 
 ---
 
-## 3. Transcriptomics blueprint
+## 3. Data Resources — approved architecture
 
-Transcriptomics is the first major educational pillar of HubGene.
+**Data Resources** is a first-class HubGene pillar, independent from RNA-seq or any single Omics domain.
 
-Its internal architecture has five layers:
+Its purpose is not to become a static directory of links. It should teach researchers:
+
+- what a resource is,
+- what kinds of data/knowledge it contains,
+- when it is useful,
+- how its interface is organized,
+- how to complete realistic research tasks in it,
+- what common mistakes occur,
+- how outputs from the resource connect to downstream analysis.
+
+### Resource types
+
+Current generic types:
+
+```text
+data-portal
+repository
+archive
+browser
+knowledgebase
+database
+```
+
+A resource should also carry relationships such as:
+
+```text
+domains
+modalities
+topics
+relatedLearning
+relatedAnalyses (future)
+```
+
+Examples:
+
+```text
+GDC / TCGA
+  domains: Transcriptomics, Genomics, Cross-omics
+  modalities: Bulk RNA-seq, WXS, WGS, Copy Number, ...
+  topics: Cancer, TCGA, Clinical metadata, Public/Controlled data
+
+PRIDE
+  domains: Proteomics
+  modalities: Mass-spectrometry proteomics
+
+GEO
+  domains: Transcriptomics, Epigenomics
+  modalities: Bulk RNA-seq, Microarray, Single-cell, Functional genomics
+```
+
+### Canonical resource-learning structure
+
+Preferred content progression:
+
+```text
+Overview
+→ What data/knowledge is here?
+→ Interface Tour
+→ Guided Tasks
+→ Data Access
+→ Common Mistakes
+→ Use in Analysis
+→ Related Resources / Learning
+```
+
+### Resource Learning Engine
+
+The UI/runtime must be generic rather than coded separately for each website.
+
+Core content model:
+
+```text
+Resource
+PortalScreen
+Hotspot
+GuidedStep
+GuidedTask
+Relations
+```
+
+Hotspots must use **normalized relative coordinates** (`x`, `y`, `width`, `height`) rather than fixed pixels, so overlays remain aligned as the image scales responsively.
+
+### Interface-training pattern
+
+Default first implementation:
+
+```text
+reference screenshot / visual asset
++ normalized hotspots
++ guided explanation panel
++ previous/next progress
++ why-it-matters
++ common mistake
++ next action
++ task-based mission
++ “open real site” link
+```
+
+Do **not** make live iframe embedding the default architecture. External portals can change, block embedding, or produce unstable learner experiences. HubGene should own the educational state and use a stable visual reference, with a clear link to the official live portal.
+
+### Long-term CMS goal
+
+After the UX is validated, an admin should be able to:
+
+- create/edit a Resource,
+- upload/replace screen captures or approved visual assets,
+- place hotspots visually,
+- write guided steps,
+- define tasks/scenarios,
+- add quizzes/checkpoints,
+- connect the Resource to several scientific learning paths,
+- publish revisions without code deployment.
+
+Do not build a new database schema for this until the first GDC learning experience validates the content/UX model.
+
+---
+
+## 4. Data Resources MVP — implementation checkpoint
+
+Feature branch:
+
+```text
+feature/data-resources-mvp
+```
+
+Base branch:
+
+```text
+stabilization/security-ci-2026-08-23
+```
+
+Current routes:
+
+```text
+/resources
+/resources/$slug
+```
+
+Primary navigation now exposes:
+
+```text
+منابع داده
+```
+
+Current implementation files:
+
+```text
+src/features/data-resources/resource-catalog.ts
+src/features/data-resources/GuidedPortalTour.tsx
+src/routes/resources.tsx
+src/routes/resources.$slug.tsx
+src/components/site/header.tsx
+```
+
+### Resource Explorer
+
+`/resources` currently provides:
+
+- independent Data Resources positioning,
+- text search,
+- Omics/domain filtering,
+- resource-type filtering,
+- active/planned status,
+- reusable resource cards.
+
+Initial catalog:
+
+```text
+GDC / TCGA — active MVP
+GEO — planned
+SRA — planned
+GTEx — planned
+PRIDE — planned
+Ensembl — planned
+cBioPortal — planned
+UniProt — planned
+```
+
+This list is an initial development map, not a claim that these are the final or only important resources.
+
+### Generic GuidedPortalTour
+
+`GuidedPortalTour.tsx` currently supports:
+
+- interactive hotspots,
+- normalized overlay coordinates,
+- selectable guided steps,
+- why-it-matters text,
+- common-mistake callouts,
+- next-action guidance,
+- progress indicator,
+- previous/next controls,
+- external link to the official resource,
+- a wireframe fallback when no screenshot asset is connected.
+
+The user-provided current GDC homepage screenshot is the intended first real visual reference. The MVP currently keeps the engine independent from a specific binary asset; connecting/versioning the approved screenshot is the next visual-content step.
+
+---
+
+## 5. GDC / TCGA — first Resource MVP
+
+GDC is the first resource used to validate the Data Resources architecture.
+
+Official GDC documentation was rechecked on 2026-08-23 before finalizing the teaching model.
+
+Verified current concepts:
+
+- the GDC Data Portal is cohort-centric,
+- **Analysis Center** is the central hub for portal tools and analyses,
+- **Projects** supports project-level exploration,
+- **Cohort Builder** filters **cases** and creates/changes the active cohort,
+- **Repository** browses/downloads files associated with the active cohort and applies **file-level filters**,
+- Repository filters include concepts such as Experimental Strategy, Data Category, and Data Type,
+- a core teaching distinction is **case/cohort filtering vs file filtering**.
+
+This distinction must remain explicit in HubGene because it prevents a common conceptual error.
+
+Initial GDC homepage hotspots:
+
+```text
+Analysis Center
+Projects
+Cohort Builder
+Repository
+Global Search
+Data Portal Summary
+Cases by Major Primary Site
+```
+
+Initial task-based mission:
+
+> **Find RNA-seq data for a TCGA project and explain the path from project/cohort selection to the relevant files.**
+
+Teaching flow:
+
+```text
+project context
+→ define/activate cohort
+→ Repository
+→ Experimental Strategy = RNA-Seq
+→ Data Category / Data Type
+→ inspect files + metadata
+→ downstream analysis handoff
+```
+
+The learner should finish understanding the difference between:
+
+```text
+project
+cohort
+case
+sample/biospecimen
+file
+```
+
+### Relationship to the real RNA-seq case study
+
+GDC education and RNA-seq R analysis are separate canonical modules but should connect tightly.
+
+Recommended learner path:
+
+```text
+Transcriptomics
+→ Bulk RNA-seq
+→ Data Resource: GDC / TCGA
+→ find/understand the source dataset
+→ Real RNA-seq Analysis with R
+→ TCGA-LIHC Golden Template
+```
+
+The GDC module teaches **where the data comes from and how the portal works**. The R module teaches **how the selected/prepared data is analyzed**. HubGene does not need to become a high-cost remote compute server to teach either part well.
+
+---
+
+## 6. Transcriptomics blueprint
+
+Transcriptomics is the first major scientific-learning pillar of HubGene.
+
+Internal architecture:
 
 ```text
 Transcriptomics
@@ -118,9 +406,7 @@ Transcriptomics
 └── E. Project Application
 ```
 
-### Foundations
-
-The approved foundation sequence is:
+Approved Foundation sequence:
 
 | Code | فارسی | English |
 |---|---|---|
@@ -134,9 +420,7 @@ The approved foundation sequence is:
 
 The foundation goal is a usable mental model, not memorized definitions.
 
-### Modality selection starts from the question
-
-Conceptually:
+Conceptual modality selection:
 
 ```text
 What do you need to know about the transcriptome?
@@ -151,9 +435,9 @@ Tool selection comes after the biological question and measurement need.
 
 ---
 
-## 4. Bulk RNA-seq conceptual path vs current implementation
+## 7. Bulk RNA-seq conceptual path vs current implementation
 
-The approved conceptual Bulk RNA-seq backbone is a 12-stage scientific path:
+Approved scientific mental map:
 
 1. Research Question
 2. Experimental Design
@@ -168,7 +452,7 @@ The approved conceptual Bulk RNA-seq backbone is a 12-stage scientific path:
 11. Functional Analysis
 12. Biological Interpretation
 
-The current repository has evolved this into a newer guided learning implementation with Foundation content plus an 11-lesson specialist path:
+Current guided specialist implementation has 11 lessons:
 
 1. Study design
 2. Sample to RNA
@@ -182,19 +466,17 @@ The current repository has evolved this into a newer guided learning implementat
 10. Biological interpretation
 11. Integrated pancreatic cancer project
 
-These are not a contradiction: the 12-stage list is the **scientific mental map**, while the current 11-lesson implementation groups/splits concepts differently for teaching.
+These are not a contradiction: the 12-stage list is the scientific mental map; the 11-lesson implementation groups/splits concepts for teaching.
 
 Lessons 1–10 share `GuidedConceptLesson`; lesson 11 has integrated-project-specific CMS support.
 
-Do not force route/file naming to match the conceptual blueprint until a deliberate content migration is planned.
-
 ---
 
-## 5. Interaction-first learning standard
+## 8. Interaction-first learning standard
 
 HubGene should be **interaction-first**, not text-first.
 
-Every major learning unit should trend toward:
+Preferred learning rhythm:
 
 ```text
 Concept
@@ -216,7 +498,7 @@ Apply to My Project
 Mastery Checkpoint
 ```
 
-Persian learner-facing shorthand:
+Persian shorthand:
 
 1. بفهم
 2. عمیق‌تر شو
@@ -228,11 +510,9 @@ Persian learner-facing shorthand:
 8. به پروژه خودت وصل کن
 9. ایستگاه تسلط
 
-Guideline:
+Aim for meaningful interaction every few minutes where it improves learning. Interaction is not synonymous with quiz.
 
-> Aim for at least one meaningful interaction every 2–3 minutes of study where it improves learning.
-
-Interaction is not synonymous with quiz. Reusable patterns include:
+Reusable patterns include:
 
 - Decision Lab
 - Data Inspector
@@ -241,16 +521,16 @@ Interaction is not synonymous with quiz. Reusable patterns include:
 - Detect the Problem
 - Interpretation Lab
 - What Happens If...?
+- Guided Portal Tour
+- Guided Resource Task
 
 Whenever useful, let the learner make a wrong decision and see its consequence rather than only displaying “wrong”.
 
-Mini Labs are a formal product layer: **HubGene Interactive Labs**.
-
 ---
 
-## 6. Shared concepts
+## 9. Shared concepts
 
-Concepts such as these should eventually be reusable across Omics:
+Concepts that should eventually be reusable across Omics include:
 
 ```text
 Experimental Design
@@ -266,6 +546,8 @@ Clustering
 Statistical Significance
 Reproducibility
 Biological Interpretation
+Data provenance
+Resource/database literacy
 ```
 
 Principle:
@@ -274,7 +556,7 @@ Principle:
 
 ---
 
-## 7. Learning language and writing standard
+## 10. Learning language and writing standard
 
 HubGene is Persian-first and beginner-first without sacrificing scientific correctness.
 
@@ -317,13 +599,11 @@ gene set → مجموعه ژنی
 pathway → مسیر زیستی
 ```
 
-Do not treat scientific names, file formats, software names, or common abbreviations as translation targets when translation creates ambiguity.
+Do not translate scientific names, file formats, software names, or common abbreviations when translation creates ambiguity.
 
 ---
 
-## 8. Locked scientific teaching rules for RNA-seq
-
-The following principles were explicitly scientifically reviewed and should be preserved.
+## 11. Locked scientific teaching rules for RNA-seq
 
 ### Sample-level QC / PCA
 
@@ -355,7 +635,7 @@ The following principles were explicitly scientifically reviewed and should be p
 - GSEA uses a ranked list and is conceptually different from ORA.
 - NES direction/magnitude does not by itself prove mechanistic pathway activation.
 - leading-edge genes are major contributors to an enrichment signal, not proven causal genes.
-- gene-ID mapping, species, database/source version and unmapped genes are part of reproducibility.
+- gene-ID mapping, species, source/database version and unmapped genes are part of reproducibility.
 - overlapping gene sets can create redundant significant results.
 - multiple testing/FDR also applies at gene-set level.
 - in bulk RNA-seq, immune/stromal enrichment may reflect cell-composition change, within-cell expression change, or both.
@@ -365,7 +645,7 @@ The following principles were explicitly scientifically reviewed and should be p
 
 Lesson 11 is a **simulated educational scenario**, not real patient data and not a published study result.
 
-Rules preserved in that scenario:
+Preserved rules:
 
 - the independent biological unit is the patient/sample, not FASTQ files, Read 1/Read 2, or technical replicates,
 - RIN alone is not a universal deletion threshold,
@@ -381,7 +661,7 @@ Numbers in the simulated lesson are examples, not universal thresholds.
 
 ---
 
-## 9. Route strategy
+## 12. Route strategy
 
 Important current routes include:
 
@@ -390,6 +670,8 @@ Important current routes include:
 /learn/rna-seq
 /learn/rna-seq/navigator
 /learn/rna-seq/project
+/resources
+/resources/$slug
 /dashboard
 /admin
 /admin/content
@@ -402,7 +684,7 @@ Although the conceptual hierarchy is now:
 Transcriptomics → Bulk RNA-seq
 ```
 
-existing `/learn/rna-seq...` URLs are already tied to deep links, progress and application state. Do not migrate URLs merely for naming purity.
+existing `/learn/rna-seq...` URLs are tied to deep links, progress and application state. Do not migrate URLs merely for naming purity.
 
 Principle:
 
@@ -414,11 +696,11 @@ Important admin route rule:
 src/routes/admin.tsx
 ```
 
-is the intended operational admin route. Do not create a competing route that maps to the same URL.
+is the intended operational admin route. Do not create a competing route mapping to the same URL.
 
 ---
 
-## 10. Current technology stack
+## 13. Current technology stack
 
 - React 19
 - TypeScript
@@ -443,29 +725,21 @@ bun run typecheck
 bun run format
 ```
 
-`typecheck` runs:
-
-```text
-tsc --noEmit
-```
-
-TypeScript strict mode is enabled.
+`typecheck` runs `tsc --noEmit`. TypeScript strict mode is enabled.
 
 ---
 
-## 11. Lovable / Git history safety
+## 14. Lovable / Git history safety
 
 This repository is connected to Lovable.
 
 **Do not rewrite published Git history.**
 
-Avoid force pushing or rewriting already-pushed shared history through rebase/amend/squash workflows that replace commits.
-
-Commits pushed to connected branches may sync back to Lovable, so keep shared branches in a working state.
+Avoid force pushing or replacing already-pushed shared history through rebase/amend/squash workflows.
 
 Preferred workflow:
 
-1. branch from `main`,
+1. branch from a known safe base,
 2. focused commits,
 3. pull request,
 4. quality checks,
@@ -473,7 +747,7 @@ Preferred workflow:
 
 ---
 
-## 12. Deployment
+## 15. Deployment
 
 Cloudflare project:
 
@@ -507,9 +781,9 @@ Important lesson:
 
 ---
 
-## 13. Environment and repository security
+## 16. Environment and repository security
 
-Expected variable names include:
+Expected public/client configuration names include:
 
 ```text
 SUPABASE_PROJECT_ID
@@ -541,9 +815,9 @@ Removing `.env` from the current tree does **not** erase it from existing Git hi
 
 ---
 
-## 14. Existing production-oriented workflows
+## 17. Existing production-oriented workflows
 
-HubGene already contains real product workflows beyond Learn:
+HubGene contains product workflows beyond Learn:
 
 - authentication/profile,
 - project creation,
@@ -557,7 +831,7 @@ HubGene already contains real product workflows beyond Learn:
 - quotes,
 - invoices/payment state.
 
-Preserve these during Learn refactors.
+Preserve these during learning/resource refactors.
 
 Known project statuses:
 
@@ -604,17 +878,15 @@ There is no known `quote_approved` status.
 
 ---
 
-## 15. Admin and CMS
+## 18. Admin and Learning CMS
 
-### Operational admin
+Operational admin:
 
 ```text
 src/routes/admin.tsx
 ```
 
-Manages projects, profiles, messages, project files, consultations, quotes and invoices. Access requires authenticated admin role.
-
-### Learning content admin
+Learning-content admin:
 
 ```text
 src/routes/admin_.content.tsx
@@ -626,7 +898,7 @@ Rendered URL:
 /admin/content
 ```
 
-Learning CMS supports:
+Learning CMS currently supports:
 
 - draft editing,
 - preview,
@@ -649,11 +921,13 @@ src/features/learning/cms/useStableGuidedLessonCms.ts
 
 Complex React behavior remains in code; editable scientific content is structured CMS data.
 
+The new Data Resources engine is **not yet CMS-backed**. Reuse the proven content/code separation pattern after GDC UX validation rather than prematurely creating a second CMS architecture.
+
 ---
 
-## 16. Learning CMS data model
+## 19. Learning CMS / progress data model
 
-Repository migrations currently create:
+Repository migrations currently create CMS tables:
 
 ```text
 learning_content_drafts
@@ -667,8 +941,6 @@ Storage bucket:
 learning-media
 ```
 
-The current migration allows common image/video formats and sets a 100 MB file limit.
-
 CMS RLS depends on:
 
 ```text
@@ -677,11 +949,7 @@ private.has_role('admin'::text)
 
 The definition of `private.has_role` is not currently present in repository migration history.
 
----
-
-## 17. Learning progress persistence
-
-Current guided lessons use dual persistence:
+Guided lessons use dual progress persistence:
 
 - localStorage as device/offline fallback,
 - Supabase `learning_progress` for authenticated users.
@@ -698,23 +966,13 @@ Guided learning line:
 rna-seq-learning
 ```
 
-Current progress payload version:
+Current progress payload version is `2`.
 
-```text
-version: 2
-```
-
-It stores current position, unlocked range, answer indexes and timestamps. Local and cloud timestamps are compared; newer state wins. Reset clears local and account-backed state.
-
-### Required future fix
-
-Answers are currently persisted by numeric section and option indexes. CMS can reorder sections/options.
-
-Future publishing should bind progress to a published content revision/hash/version and define an explicit reset/migration policy for structural content changes.
+Required future fix: answers are persisted by numeric section/option indexes while CMS can reorder content. Publishing should bind progress to a content revision/hash/version and define explicit migration/reset behavior for structural changes.
 
 ---
 
-## 18. Known database tables and storage
+## 20. Supabase migration/type status
 
 Known application tables include:
 
@@ -741,13 +999,7 @@ project-files
 learning-media
 ```
 
-The historical standard browser project-file upload UI is around 6 MB; this is not a final architecture for large scientific raw data such as FASTQ.
-
----
-
-## 19. Supabase migration/type status
-
-At the 2026-08-23 stabilization checkpoint, repository migrations are:
+Repository migrations at the 2026-08-23 checkpoint:
 
 ```text
 20260819164500_add_cross_device_learning_progress_state.sql
@@ -755,43 +1007,34 @@ At the 2026-08-23 stabilization checkpoint, repository migrations are:
 20260819173349_optimize_learning_content_cms_policies.sql
 ```
 
-Important recovery gap:
+Recovery gap:
 
-- the first migration alters a pre-existing `learning_progress` table,
+- first migration alters a pre-existing `learning_progress` table,
 - CMS policies depend on `private.has_role`,
 - multiple production tables predate repository migration history,
-- generated Supabase types currently contain only `profiles` and `projects`.
+- generated Supabase types contain only part of the live schema.
 
-Therefore this repository is not yet a complete database disaster-recovery source.
+Safe stabilization decision:
 
-### Safe stabilization decision
-
-No guessed production migration was added.
-
-Instead:
-
+- no guessed production migration was added,
 - generated `src/integrations/supabase/types.ts` remains untouched,
-- `src/integrations/supabase/database.ts` was added as a temporary compatibility layer,
-- Supabase client imports the compatibility `Database` type,
-- known generated types remain useful while unrepresented legacy tables/RPCs can compile.
+- `src/integrations/supabase/database.ts` provides temporary compatibility widening.
 
-### Required future database stabilization
+When direct live-schema export is available:
 
-When direct live-schema access/export is available:
-
-1. export the complete Supabase schema,
-2. keep a canonical schema backup,
+1. export complete Supabase schema,
+2. keep canonical schema backup,
 3. reconcile old objects with migrations,
-4. regenerate `src/integrations/supabase/types.ts`,
-5. remove compatibility widening in `database.ts`,
-6. verify all RLS and `private.has_role`,
-7. test a clean replay in a disposable environment.
+4. regenerate Supabase types,
+5. remove compatibility widening,
+6. verify RLS and `private.has_role`,
+7. test clean replay in a disposable environment.
 
-Do not invent security-sensitive schema merely to make migration history look complete.
+Do not invent security-sensitive schema just to make migration history look complete.
 
 ---
 
-## 20. Browser R / WebR proof of concept
+## 21. Browser R PoC and real RNA-seq direction
 
 Current repo includes:
 
@@ -799,19 +1042,11 @@ Current repo includes:
 src/features/transcriptomics-learning/rna-seq/BrowserRnaSeqPoc.tsx
 ```
 
-It loads WebR in the browser and uses **synthetic technical demonstration data**, not TCGA.
+It loads WebR in the browser and uses **synthetic technical demonstration data**, not TCGA. Treat it as a technical experiment, not the scientific case-study product itself.
 
-The PoC explores tasks such as inspection, library-size calculations, log transformation, PCA, reproducibility and a DESeq2-related environment test.
+Preferred real-study architecture uses scientifically curated fixed/precomputed snapshots rather than attempting heavy remote bioinformatics live in the browser.
 
-Treat it as a technical experiment, not as the scientific case-study product itself.
-
----
-
-## 21. Real RNA-seq case-study direction
-
-The next high-value development direction is a scientifically curated real-study learning experience using fixed/precomputed snapshots rather than attempting heavy remote bioinformatics live in the browser.
-
-Preferred first reusable **Golden Template**:
+First reusable Golden Template:
 
 ```text
 TCGA-LIHC
@@ -821,7 +1056,7 @@ Target flow:
 
 ```text
 Research Question
-→ Dataset
+→ Dataset / provenance
 → Metadata
 → Count Matrix
 → QC
@@ -854,20 +1089,24 @@ TCGA-LUAD — more advanced
 
 A later “R for biologists” layer can reuse the same projects.
 
+The Data Resources/GDC module should become the upstream provenance/data-discovery companion to this analysis experience.
+
 ---
 
-## 22. CMS / maintainability debt
+## 22. Known technical debt
 
-Known non-blocking issues:
+Non-blocking issues:
 
-1. CMS publish is not transactional; revision insert, published upsert and draft cleanup are separate client operations.
+1. Learning CMS publish is not transactional.
 2. Removing media from lesson content can leave orphaned Storage files.
 3. Stable CMS hook duplicates a published-content fetch.
-4. Progress is not bound to content revision.
+4. Learning progress is not bound to content revision.
 5. Generated Supabase database types are stale; compatibility widening is temporary.
-6. Several route/components are very large (admin, dashboard, Navigator, Project Mode).
+6. Several routes/components are very large (admin, dashboard, Navigator, Project Mode).
+7. Data Resources MVP is currently code-backed; a CMS authoring layer comes after UX validation.
+8. Versioned screenshot/resource-page maintenance needs a deliberate content policy because external portals evolve.
 
-Refactor when a development milestone benefits from it, not merely because files are long.
+Refactor when a milestone benefits from it, not merely because files are long.
 
 Good decomposition boundaries:
 
@@ -876,13 +1115,12 @@ Good decomposition boundaries:
 - page sections,
 - forms/editors,
 - reusable operational components,
-- learning runtime vs scientific content.
-
-The shared `GuidedConceptLesson` approach is a good pattern to preserve.
+- learning runtime vs scientific content,
+- Resource Learning Engine vs resource-specific content.
 
 ---
 
-## 23. Quality gates added in stabilization
+## 23. Quality gates and stabilization
 
 Workflow:
 
@@ -899,42 +1137,39 @@ bun run typecheck
 bun run build
 ```
 
-Configured for `main`, stabilization branches and pull requests.
-
-Do not assume CI is green until GitHub reports an actual successful run.
-
----
-
-## 24. Stabilization pass — 2026-08-23
-
-Branch:
+Stabilization branch:
 
 ```text
 stabilization/security-ci-2026-08-23
 ```
 
-Pull request:
+PR:
 
 ```text
-#20 — Stabilization: secure env handling and add quality gates
+#20 — Stabilize repository security and CI
 ```
 
-Changes:
+Stabilization changes include:
 
 - repository confirmed private while GitHub integration remains connected,
-- `.env` removed from branch,
-- environment files ignored,
+- `.env` removed from branch and ignored,
 - safe `.env.example` added,
 - `typecheck` script added,
 - GitHub Actions quality workflow added,
-- Supabase compatibility database type added without editing generated types,
-- no guessed/destructive database migration added,
-- historical product/technical/blueprint/scientific-review Markdown files consolidated into this master file,
-- all other repository-level Markdown documentation removed.
+- Supabase compatibility type added without guessed schema migrations,
+- historical Markdown documentation consolidated into this single master file,
+- other repository-level Markdown project documents removed.
+
+Known quality state at this checkpoint:
+
+- dependency installation succeeded in the first quality workflow run,
+- `lint` failed,
+- `typecheck` and `build` were therefore skipped,
+- do not claim CI is green until a successful run is observed.
 
 ---
 
-## 25. Documentation policy
+## 24. Documentation policy
 
 `HUBGENE_PROJECT_MASTER.md` is the only general project Markdown document intended to remain.
 
@@ -942,7 +1177,7 @@ For future milestones, update this file instead of creating dated backup/review 
 
 It should preserve:
 
-- current product decisions,
+- product decisions,
 - scientific learning rules,
 - architecture constraints,
 - deployment/recovery knowledge,
@@ -953,7 +1188,7 @@ Do not copy secrets or obsolete large code snapshots into documentation.
 
 ---
 
-## 26. Recovery checklist
+## 25. Recovery checklist
 
 A full recovery requires more than the Git repository.
 
@@ -984,38 +1219,31 @@ Recovery sequence:
 9. `bun run typecheck`,
 10. `bun run build`,
 11. deploy,
-12. test auth, dashboard, admin, consultation, Learn, RNA-seq persistence, project files/messages, quotes and invoices.
+12. test auth, dashboard, admin, consultation, Learn, Data Resources, RNA-seq persistence, project files/messages, quotes and invoices.
 
 Do not rely on a ChatGPT conversation as the only project backup.
 
 ---
 
-## 27. Next development checkpoint
+## 26. Current development checkpoint
 
-Cleanup is not the product goal. After the stabilization PR is reviewed/merged, return to development.
+The newer explicit product decision supersedes the previous “go directly to TCGA-LIHC analysis” checkpoint.
 
-The foundations and guided RNA-seq learning system are already substantially implemented, so the next high-value milestone should be the detailed **real RNA-seq case-study experience**.
+Current order:
 
-Recommended next implementation target:
+1. validate **Data Resources** as an independent reusable pillar,
+2. use **GDC / TCGA** as the first Resource Learning Engine implementation,
+3. connect the approved/current GDC visual reference and calibrate hotspots,
+4. build one complete task-based GDC mission around finding/understanding RNA-seq data,
+5. validate UX before adding CMS schema,
+6. then connect this upstream data-source learning to the **TCGA-LIHC real RNA-seq analysis with R** experience,
+7. after GDC succeeds, expand the same engine to GEO/SRA and then resources from Genomics/Proteomics and other domains.
 
-> **TCGA-LIHC as the first real-data Golden Template**
-
-Before coding the full experience, define each learner screen:
-
-- what the learner sees,
-- what question/decision is required,
-- what chart/table is shown,
-- what R code is revealed,
-- what must be understood before unlock,
-- which artifacts are fixed snapshots,
-- how provenance is communicated,
-- how the complete reproducible R script is delivered.
-
-Then reuse the architecture for BRCA/LUAD and future Omics projects.
+This order tests whether the reusable learning engine works before multiplying content.
 
 ---
 
-## 28. Immediate development rules
+## 27. Immediate development rules
 
 - preserve working auth/project/admin/payment flows,
 - use focused branches and PRs,
@@ -1025,6 +1253,10 @@ Then reuse the architecture for BRCA/LUAD and future Omics projects.
 - keep scientific terms beginner-readable but technically correct,
 - keep Persian-first RTL UX,
 - concept before tool,
+- prefer task-based resource teaching over static interface labeling,
+- keep one canonical Resource page and cross-link it from relevant domains,
+- distinguish external official resources from HubGene educational overlays,
+- record source/release/version context when external data portals change,
 - never equate paired-end files/technical replicates with biological replicates,
 - never use TPM/FPKM as raw-count substitutes for standard DESeq2 teaching,
 - never auto-delete a sample from one PCA/QC signal,
@@ -1036,6 +1268,8 @@ Then reuse the architecture for BRCA/LUAD and future Omics projects.
 
 # Current status
 
-**Repository documentation cleanup and the first stabilization pass are complete on the stabilization branch.**
+**Repository stabilization exists on PR #20 and still has an unresolved lint quality-gate failure.**
 
-**Next phase: continue HubGene product development, with Transcriptomics as the first Omics pillar and a real RNA-seq case-study/TCGA-LIHC experience as the recommended next major milestone unless a newer explicit decision supersedes it.**
+**Data Resources is now the approved independent product pillar and has an MVP implementation on `feature/data-resources-mvp`, with GDC/TCGA as the first active Resource.**
+
+**Next product-validation step: connect the real GDC visual reference, calibrate the guided hotspots, and complete the first task-based GDC workflow before expanding the same engine to more databases/resources or wiring it into CMS.**
