@@ -11,6 +11,7 @@ const nav = [
   { to: "/", label: "خانه" },
   { to: "/services", label: "خدمات" },
   { to: "/learn", label: "آموزش" },
+  { to: "/resources", label: "منابع داده" },
   { to: "/wizard", label: "طراح پروژه" },
   { to: "/consultation", label: "مشاوره" },
   { to: "/dashboard", label: "داشبورد پژوهشگر" },
