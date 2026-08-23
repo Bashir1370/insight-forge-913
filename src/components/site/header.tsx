@@ -110,6 +110,8 @@ export function Header() {
             size="icon"
             className="lg:hidden"
             aria-label="منو"
+            aria-expanded={open}
+            aria-controls="mobile-site-navigation"
             onClick={() => setOpen((v) => !v)}
           >
             <Menu className="size-5" />
@@ -118,7 +120,10 @@ export function Header() {
       </div>
 
       {open && (
-        <div className="border-t border-border bg-background lg:hidden">
+        <div
+          id="mobile-site-navigation"
+          className="border-t border-border bg-background lg:hidden"
+        >
           <nav className="mx-auto flex max-w-7xl flex-col p-3">
             {nav.map((item) => (
               <Link
