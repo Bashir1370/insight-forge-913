@@ -14,14 +14,19 @@ export function GdcDynamicPage() {
     loadResourceTour("gdc").then(setResource);
 
     async function checkAdmin() {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (!user) return;
+
       const { data: role } = await (supabase as any)
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
         .eq("role", "admin")
         .maybeSingle();
+
       setIsAdmin(Boolean(role));
     }
 
@@ -38,6 +43,7 @@ export function GdcDynamicPage() {
           ویرایش GDC
         </a>
       )}
+
       <ResourceTourRenderer resource={resource} />
     </div>
   );
