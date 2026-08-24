@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { supabase } from "@/integrations/lovable/client";
+import { supabase } from "@/integrations/supabase/client";
 import { loadResourceTour } from "./resource-tour-loader";
 import { ResourceTourRenderer } from "./resource-tour-renderer";
 
