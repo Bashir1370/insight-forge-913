@@ -1,4 +1,5 @@
 import { GdcHomeTour } from "./gdc-home";
+import { DatabaseResourceTour } from "./database-resource-tour";
 
 type ResourceTourRendererProps = {
   resource: {
@@ -11,15 +12,13 @@ type ResourceTourRendererProps = {
 
 /**
  * Generic renderer entry point for database-driven resource tours.
- * GDC keeps the current visual experience while migrating data sources.
- * New resources can plug into this renderer without creating new routes.
  */
 export function ResourceTourRenderer({ resource }: ResourceTourRendererProps) {
   if (!resource) return <GdcHomeTour />;
 
-  switch (resource.slug) {
-    case "gdc":
-    default:
-      return <GdcHomeTour />;
+  if (resource.hotspots || resource.content || resource.image_url) {
+    return <DatabaseResourceTour resource={resource} />;
   }
+
+  return <GdcHomeTour />;
 }
