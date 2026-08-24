@@ -20,8 +20,7 @@ import {
   type PortalHotspot,
 } from "@/features/data-resources/resource-catalog";
 
-const GDC_PORTAL_SNAPSHOT_URL =
-  "https://image.thum.io/get/width/1600/crop/900/noanimate/https://portal.gdc.cancer.gov/";
+const GDC_PORTAL_SNAPSHOT_URL = "/images/gdc/gdc-home-clean.webp";
 
 const hotspotIcons: Record<string, typeof Database> = {
   "analysis-center": BarChart3,
@@ -102,21 +101,20 @@ function GdcPortalCanvas({
   const [snapshotFailed, setSnapshotFailed] = useState(false);
 
   return (
-    <div className="relative aspect-[16/9] min-h-[440px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="relative aspect-[1911/870] w-full overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <PortalFallback />
 
       {!snapshotFailed ? (
         <img
           src={GDC_PORTAL_SNAPSHOT_URL}
-          alt="نمای واقعی صفحه اصلی GDC Data Portal"
-          className="absolute inset-0 z-10 h-full w-full object-cover object-top"
+          alt="نمای تمیز صفحه اصلی GDC Data Portal"
+          className="absolute inset-0 z-10 h-full w-full object-contain"
           loading="eager"
-          referrerPolicy="no-referrer"
           onError={() => setSnapshotFailed(true)}
         />
       ) : null}
 
-      <div className="pointer-events-none absolute inset-0 z-[15] bg-slate-950/[0.02]" />
+      <div className="pointer-events-none absolute inset-0 z-[15] bg-slate-950/[0.01]" />
 
       {hotspots.map((hotspot, index) => {
         const isActive = hotspot.id === activeHotspotId;
@@ -154,7 +152,7 @@ function GdcPortalCanvas({
 
       <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2 rounded-lg bg-slate-950/90 px-3 py-2 text-[10px] font-semibold text-white shadow-lg sm:text-xs">
         <span className={`h-2 w-2 rounded-full ${snapshotFailed ? "bg-amber-400" : "bg-emerald-400"}`} />
-        {snapshotFailed ? "نمای جایگزین آموزشی GDC" : "Snapshot واقعی GDC Data Portal"}
+        {snapshotFailed ? "نمای جایگزین آموزشی GDC" : "اسکرین‌شات ثابت و تمیز GDC"}
       </div>
     </div>
   );
