@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
-import { HotspotEditor } from "@/features/data-resources/HotspotEditor";
+import { HotspotCanvasEditor } from "@/features/data-resources/HotspotCanvasEditor";
 
 const gdcHotspots = [
   { id: "5", title: "Search", x: 82, y: 16, width: 15, height: 6 },
@@ -30,7 +30,10 @@ function ResourceTourAdmin() {
       <h1 className="text-2xl font-black">ویرایشگر تور منابع</h1>
       <p className="mt-2 text-slate-600">تنظیم Hotspotهای GDC بدون تغییر کد</p>
       <div className="mt-6">
-        <HotspotEditor initialHotspots={gdcHotspots} />
+        <HotspotCanvasEditor
+          hotspots={gdcHotspots}
+          onSave={(items) => console.log("Saved hotspots", items)}
+        />
       </div>
     </main>
   );
