@@ -11,8 +11,10 @@ type Hotspot = {
 
 export function HotspotCanvasEditor({
   hotspots,
+  onSave,
 }: {
   hotspots: Hotspot[];
+  onSave?: (items: Hotspot[]) => void;
 }) {
   const [items, setItems] = useState(hotspots);
   const [selected, setSelected] = useState<string | null>(null);
@@ -65,7 +67,15 @@ export function HotspotCanvasEditor({
 
   return (
     <div className="rounded-3xl border bg-white p-5">
-      <h3 className="font-black">ویرایش بصری Hotspot</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-black">ویرایش بصری Hotspot</h3>
+        <button
+          className="rounded-xl bg-teal-600 px-4 py-2 text-white font-bold"
+          onClick={() => onSave?.(items)}
+        >
+          ذخیره تغییرات
+        </button>
+      </div>
       <div className="relative mt-4 aspect-video overflow-hidden rounded-2xl bg-slate-100" onPointerMove={move} onPointerUp={end}>
         {items.map((item) => (
           <button key={item.id} onPointerDown={(e) => startDrag(item.id, e)} className={`absolute border-2 border-dashed border-teal-500 bg-teal-500/10 text-xs font-bold cursor-move ${selected === item.id ? "ring-4 ring-teal-300" : ""}`} style={{left:`${item.x}%`,top:`${item.y}%`,width:`${item.width}%`,height:`${item.height}%`}}>
