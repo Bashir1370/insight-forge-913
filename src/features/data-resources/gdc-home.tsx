@@ -20,6 +20,9 @@ import {
   type PortalHotspot,
 } from "@/features/data-resources/resource-catalog";
 
+const GDC_PORTAL_SNAPSHOT_URL =
+  "https://image.thum.io/get/width/1600/crop/900/noanimate/https://portal.gdc.cancer.gov/";
+
 const hotspotIcons: Record<string, typeof Database> = {
   "analysis-center": BarChart3,
   projects: FolderKanban,
@@ -30,7 +33,64 @@ const hotspotIcons: Record<string, typeof Database> = {
   "primary-site-chart": BarChart3,
 };
 
-function GdcPortalMock({
+function PortalFallback() {
+  return (
+    <div className="absolute inset-0 overflow-hidden bg-white" dir="ltr">
+      <div className="h-[15%] border-b border-slate-200 bg-slate-50 px-5 py-4">
+        <div className="flex items-center justify-between gap-4 text-xs font-semibold text-slate-600 sm:text-sm">
+          <div className="flex items-center gap-3 sm:gap-5">
+            <span className="rounded bg-slate-900 px-2 py-1 text-white">NCI · GDC</span>
+            <span>Analysis Center</span>
+            <span>Projects</span>
+            <span>Cohort Builder</span>
+            <span>Repository</span>
+          </div>
+          <div className="hidden rounded-lg border border-slate-200 bg-white px-4 py-2 text-slate-400 lg:block">
+            Search projects, genes, cases…
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute left-[3%] top-[21%] w-[55%] text-left">
+        <p className="text-sm font-bold uppercase tracking-wide text-slate-400">Harmonized Cancer Datasets</p>
+        <h3 className="mt-2 text-2xl font-black text-slate-900 sm:text-4xl">Genomic Data Commons Data Portal</h3>
+        <p className="mt-3 max-w-2xl text-xs leading-6 text-slate-500 sm:text-sm">
+          A repository and computational platform for cancer researchers who need to understand cancer, its clinical progression, and response to therapy.
+        </p>
+        <button type="button" className="mt-4 rounded-lg bg-sky-700 px-4 py-2 text-xs font-bold text-white sm:text-sm">
+          Explore Our Cancer Datasets
+        </button>
+      </div>
+
+      <div className="absolute bottom-[7%] left-[3%] w-[55%] rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="text-sm font-black text-slate-800">Data Portal Summary</div>
+        <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-6">
+          {["Projects", "Primary Sites", "Cases", "Files", "Genes", "Mutations"].map((label, index) => (
+            <div key={label} className="rounded-lg bg-slate-50 px-2 py-3 text-center">
+              <div className="text-sm font-black text-slate-800">{[91, 69, "50K+", "1.2M+", "22K+", "3.3M+"][index]}</div>
+              <div className="mt-1 text-[9px] font-semibold text-slate-400 sm:text-[10px]">{label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="absolute right-[3%] top-[22%] h-[67%] w-[34%] rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="text-sm font-black text-slate-800">Cases by Major Primary Site</div>
+        <div className="mt-4 flex h-[78%] flex-col justify-between gap-1.5">
+          {[82, 58, 92, 64, 75, 50, 68, 42].map((width, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <div className="h-2.5 flex-1 rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-sky-500/70" style={{ width: `${width}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GdcPortalCanvas({
   hotspots,
   activeHotspotId,
   onHotspotClick,
@@ -39,68 +99,24 @@ function GdcPortalMock({
   activeHotspotId: string;
   onHotspotClick: (hotspotId: string) => void;
 }) {
+  const [snapshotFailed, setSnapshotFailed] = useState(false);
+
   return (
-    <div className="relative aspect-[16/9] min-h-[420px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-slate-50 to-slate-100" />
+    <div className="relative aspect-[16/9] min-h-[440px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <PortalFallback />
 
-      <div className="absolute inset-x-0 top-0 h-[15%] border-b border-slate-200 bg-[#f7f9fc]">
-        <div className="flex h-full items-center justify-between gap-4 px-5 text-[11px] font-semibold text-slate-600 sm:text-sm">
-          <div className="flex items-center gap-2 sm:gap-5" dir="ltr">
-            <span className="rounded-md bg-slate-900 px-2 py-1 text-white">GDC</span>
-            <span>Analysis Center</span>
-            <span>Projects</span>
-            <span>Cohort Builder</span>
-            <span>Repository</span>
-          </div>
-          <div className="hidden w-44 rounded-lg border border-slate-200 bg-white px-3 py-2 text-slate-400 lg:block">
-            Search projects, genes, cases…
-          </div>
-        </div>
-      </div>
+      {!snapshotFailed ? (
+        <img
+          src={GDC_PORTAL_SNAPSHOT_URL}
+          alt="نمای واقعی صفحه اصلی GDC Data Portal"
+          className="absolute inset-0 z-10 h-full w-full object-cover object-top"
+          loading="eager"
+          referrerPolicy="no-referrer"
+          onError={() => setSnapshotFailed(true)}
+        />
+      ) : null}
 
-      <div className="absolute left-[3%] top-[20%] w-[58%]">
-        <div className="mb-3 text-left text-lg font-bold text-slate-900 sm:text-2xl" dir="ltr">
-          GDC Data Portal
-        </div>
-        <p className="max-w-xl text-left text-xs leading-6 text-slate-500 sm:text-sm" dir="ltr">
-          Explore harmonized cancer genomic, clinical and biospecimen data from NCI programs including TCGA.
-        </p>
-      </div>
-
-      <div className="absolute left-[3%] top-[43%] grid w-[58%] grid-cols-3 gap-3" dir="ltr">
-        {[
-          ["Projects", "80+"],
-          ["Cases", "90K+"],
-          ["Files", "3M+"],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 sm:text-xs">{label}</div>
-            <div className="mt-1 text-lg font-bold text-slate-900 sm:text-2xl">{value}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="absolute bottom-[8%] left-[3%] h-[20%] w-[58%] rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm sm:p-4" dir="ltr">
-        <div className="text-xs font-bold text-slate-800 sm:text-sm">Data Portal Summary</div>
-        <div className="mt-3 grid grid-cols-4 gap-2">
-          {[68, 42, 82, 55].map((height, index) => (
-            <div key={index} className="flex h-12 items-end rounded bg-slate-100 px-1 sm:h-16">
-              <div className="w-full rounded-t bg-teal-500/70" style={{ height: `${height}%` }} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="absolute right-[3%] top-[20%] h-[67%] w-[29%] rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm sm:p-4" dir="ltr">
-        <div className="text-xs font-bold text-slate-800 sm:text-sm">Cases by Major Primary Site</div>
-        <div className="mt-4 flex h-[75%] items-end gap-1.5 sm:gap-2">
-          {[72, 94, 58, 80, 49, 68, 38].map((height, index) => (
-            <div key={index} className="flex h-full flex-1 items-end rounded bg-slate-50">
-              <div className="w-full rounded-t bg-sky-500/65" style={{ height: `${height}%` }} />
-            </div>
-          ))}
-        </div>
-      </div>
+      <div className="pointer-events-none absolute inset-0 z-[15] bg-slate-950/[0.02]" />
 
       {hotspots.map((hotspot, index) => {
         const isActive = hotspot.id === activeHotspotId;
@@ -112,10 +128,11 @@ function GdcPortalMock({
             type="button"
             onClick={() => onHotspotClick(hotspot.id)}
             aria-label={hotspot.label}
-            className={`absolute z-20 rounded-lg border-2 transition-all duration-200 ${
+            title={hotspot.label}
+            className={`absolute z-20 rounded-md border-2 transition-all duration-200 ${
               isActive
-                ? "border-teal-500 bg-teal-400/20 shadow-[0_0_0_4px_rgba(20,184,166,0.14)]"
-                : "border-sky-500/70 bg-sky-400/10 hover:border-teal-500 hover:bg-teal-400/15"
+                ? "border-teal-400 bg-teal-300/20 shadow-[0_0_0_5px_rgba(20,184,166,0.18)]"
+                : "border-sky-500/80 bg-sky-300/10 hover:border-teal-400 hover:bg-teal-300/15"
             }`}
             style={{
               left: `${hotspot.x * 100}%`,
@@ -125,8 +142,8 @@ function GdcPortalMock({
             }}
           >
             <span
-              className={`absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black text-white shadow-lg ${
-                isActive ? "bg-teal-600" : "bg-sky-600"
+              className={`absolute -right-2.5 -top-2.5 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black text-white shadow-lg ${
+                isActive ? "bg-teal-600" : "bg-sky-700"
               }`}
             >
               {isActive ? <Icon className="h-3.5 w-3.5" /> : index + 1}
@@ -135,8 +152,9 @@ function GdcPortalMock({
         );
       })}
 
-      <div className="absolute bottom-3 right-3 rounded-lg bg-slate-900/90 px-3 py-2 text-[10px] text-white sm:text-xs" dir="rtl">
-        نمای آموزشی اولیه — اسکرین‌شات واقعی GDC در مرحله بعد جایگزین می‌شود
+      <div className="absolute bottom-3 right-3 z-30 flex items-center gap-2 rounded-lg bg-slate-950/90 px-3 py-2 text-[10px] font-semibold text-white shadow-lg sm:text-xs">
+        <span className={`h-2 w-2 rounded-full ${snapshotFailed ? "bg-amber-400" : "bg-emerald-400"}`} />
+        {snapshotFailed ? "نمای جایگزین آموزشی GDC" : "Snapshot واقعی GDC Data Portal"}
       </div>
     </div>
   );
@@ -278,7 +296,7 @@ export function GdcHomeTour() {
               ) : null}
             </div>
 
-            <GdcPortalMock
+            <GdcPortalCanvas
               hotspots={screen.hotspots}
               activeHotspotId={currentStep.hotspotId}
               onHotspotClick={selectHotspot}
