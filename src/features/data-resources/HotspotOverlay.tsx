@@ -5,6 +5,8 @@ type Hotspot = {
   title: string;
   x: number;
   y: number;
+  width?: number;
+  height?: number;
 };
 
 export function HotspotOverlay({
@@ -22,10 +24,23 @@ export function HotspotOverlay({
           key={hotspot.id}
           type="button"
           title={hotspot.title}
-          className="absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-teal-600 text-xs text-white shadow-lg"
-          style={{ left: `${hotspot.x}%`, top: `${hotspot.y}%` }}
+          className={
+            hotspot.width && hotspot.height
+              ? "absolute rounded-lg border-2 border-white/80 bg-teal-500/20 shadow-lg transition"
+              : "absolute flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-teal-600 text-xs text-white shadow-lg"
+          }
+          style={
+            hotspot.width && hotspot.height
+              ? {
+                  left: `${hotspot.x}%`,
+                  top: `${hotspot.y}%`,
+                  width: `${hotspot.width}%`,
+                  height: `${hotspot.height}%`,
+                }
+              : { left: `${hotspot.x}%`, top: `${hotspot.y}%` }
+          }
         >
-          {hotspot.id}
+          {!hotspot.width && hotspot.id}
         </button>
       ))}
     </div>
