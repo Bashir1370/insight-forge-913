@@ -13,15 +13,23 @@ type DatabaseResourceTourProps = {
     content?: Array<{
       key?: string;
       value?: string;
+      label?: string;
     }>;
   };
 };
 
 export function DatabaseResourceTour({ resource }: DatabaseResourceTourProps) {
   const hotspots = resource.hotspots ?? [];
+  const title = resource.content?.find((item) => item.key === "title")?.value;
+  const description = resource.content?.find((item) => item.key === "description")?.value;
 
   return (
-    <div className="rounded-2xl border bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border bg-white p-4 shadow-sm" dir="rtl">
+      <div className="mb-4">
+        {title ? <h1 className="text-2xl font-black">{title}</h1> : null}
+        {description ? <p className="mt-2 text-slate-600">{description}</p> : null}
+      </div>
+
       <div className="relative aspect-video overflow-hidden rounded-xl border bg-slate-50">
         {resource.image_url ? (
           <img
@@ -34,22 +42,15 @@ export function DatabaseResourceTour({ resource }: DatabaseResourceTourProps) {
         {hotspots.map((hotspot, index) => (
           <div
             key={hotspot.id ?? index}
+            title={hotspot.title ?? hotspot.label}
             className="absolute rounded-md border-2 border-teal-500 bg-teal-400/20"
             style={{
-              left: `${(hotspot.x ?? 0) * 100}%`,
-              top: `${(hotspot.y ?? 0) * 100}%`,
-              width: `${(hotspot.width ?? 0.1) * 100}%`,
-              height: `${(hotspot.height ?? 0.1) * 100}%`,
+              left: `${hotspot.x ?? 0}%`,
+              top: `${hotspot.y ?? 0}%`,
+              width: `${hotspot.width ?? 10}%`,
+              height: `${hotspot.height ?? 10}%`,
             }}
           />
-        ))}
-      </div>
-
-      <div className="mt-4 grid gap-2">
-        {(resource.content ?? []).map((item, index) => (
-          <div key={item.key ?? index} className="rounded-lg bg-slate-50 p-3 text-sm">
-            <strong>{item.key}</strong>: {item.value}
-          </div>
         ))}
       </div>
     </div>
