@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 
 import { loadResourceTour } from "./resource-tour-loader";
-import { GdcHomeTour } from "./gdc-home";
+import { ResourceTourRenderer } from "./resource-tour-renderer";
+
+type ResourceTourData = Awaited<ReturnType<typeof loadResourceTour>>;
 
 export function GdcDynamicPage() {
-  const [loaded, setLoaded] = useState(false);
+  const [resource, setResource] = useState<ResourceTourData>(null);
 
   useEffect(() => {
-    loadResourceTour("gdc").finally(() => setLoaded(true));
+    loadResourceTour("gdc").then(setResource);
   }, []);
 
-  // Until the database-driven renderer is fully migrated,
-  // keep the existing UI as a safe fallback.
-  if (!loaded) return null;
-
-  return <GdcHomeTour />;
+  return <ResourceTourRenderer resource={resource} />;
 }
