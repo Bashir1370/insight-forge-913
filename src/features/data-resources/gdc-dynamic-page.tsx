@@ -14,10 +14,7 @@ export function GdcDynamicPage() {
     loadResourceTour("gdc").then(setResource);
 
     async function checkAdmin() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
       const { data: role } = await (supabase as any)
@@ -37,7 +34,7 @@ export function GdcDynamicPage() {
     <div className="relative">
       {isAdmin && (
         <a
-          href="/admin_/resource-tours"
+          href="/admin/resource-tours"
           className="fixed right-6 top-6 z-50 rounded-xl bg-black px-4 py-3 text-white shadow-lg"
         >
           ویرایش GDC
