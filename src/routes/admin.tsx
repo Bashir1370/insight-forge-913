@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, Outlet } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import {
   useEffect,
   useMemo,
@@ -3982,9 +3982,6 @@ function Admin() {
           </div>
         </section>
       )}
-
-      {/* Child admin routes مثل /admin/resource-tours */}
-      <Outlet />
     </div>
   );
 }
