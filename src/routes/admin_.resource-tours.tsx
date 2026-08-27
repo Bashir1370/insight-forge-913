@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { HotspotContentEditor } from "@/features/data-resources/HotspotContentEditor";
 import { VisualAssetEditor } from "@/features/data-resources/VisualAssetEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
 import { VisualPageEditor } from "@/features/data-resources/VisualPageEditor";
@@ -128,10 +129,11 @@ function ResourceToursAdmin() {
       );
       setHotspots(saved);
       setWarning(null);
-      toast.success("موقعیت و اندازه Hotspotها ذخیره شد.");
+      toast.success("Hotspotهای GDC ذخیره شدند.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره Hotspotها انجام نشد. Migration دیتابیس را بررسی کنید.");
+      throw error;
     }
   }
 
@@ -145,10 +147,11 @@ function ResourceToursAdmin() {
       );
       setContent(saved);
       setWarning(null);
-      toast.success("محتوای GDC ذخیره شد.");
+      toast.success("محتوای عمومی صفحه GDC ذخیره شد.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره محتوای GDC انجام نشد.");
+      throw error;
     }
   }
 
@@ -170,8 +173,8 @@ function ResourceToursAdmin() {
               بازگشت به پنل مدیریت
             </a>
             <h1 className="mt-3 text-3xl font-black text-slate-950">Visual Resource Tour Editor</h1>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-slate-600">
-              تصویر، متن و Hotspotهای GDC را بدون تغییر کد تنظیم کنید. باکس‌ها را با موس جابه‌جا یا Resize کنید و سپس ذخیره بزنید.
+            <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
+              تصویر، جایگاه Hotspotها و محتوای آموزشی GDC را بدون تغییر کد مدیریت کنید. عنوان Hotspotها همان انگلیسی رابط اصلی باقی می‌ماند و متن فارسی هر بخش جداگانه قابل ویرایش است.
             </p>
           </div>
           <a
@@ -202,6 +205,7 @@ function ResourceToursAdmin() {
             hotspots={hotspots}
             onSave={handleHotspotSave}
           />
+          <HotspotContentEditor hotspots={hotspots} onSave={handleHotspotSave} />
           <VisualContentEditor items={content} onSave={handleContentSave} />
         </div>
       </div>

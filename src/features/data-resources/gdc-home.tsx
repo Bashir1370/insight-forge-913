@@ -1,15 +1,18 @@
 import {
   ArrowLeft,
   BarChart3,
+  BookOpenCheck,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
   Database,
   ExternalLink,
   FolderKanban,
+  GraduationCap,
   Info,
   Search,
   Target,
+  TriangleAlert,
   Users,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -19,6 +22,7 @@ import {
   type GuidedPortalStep,
   type PortalHotspot,
 } from "@/features/data-resources/resource-catalog";
+import { DEFAULT_GDC_HOTSPOTS } from "@/features/data-resources/resource-tour-model";
 
 const GDC_PORTAL_SNAPSHOT_URL = "/images/gdc/gdc-home-clean.webp";
 
@@ -27,10 +31,25 @@ type ManagedHotspot = {
   key?: string | null;
   step?: number | string | null;
   title?: string | null;
+  persian_label?: string | null;
+  description?: string | null;
+  why_it_matters?: string | null;
+  research_example?: string | null;
+  common_mistake?: string | null;
+  exercise_question?: string | null;
+  exercise_answer?: string | null;
+  action?: string | null;
   x?: number | string | null;
   y?: number | string | null;
   width?: number | string | null;
   height?: number | string | null;
+};
+
+type LearningStep = GuidedPortalStep & {
+  persianLabel?: string;
+  researchExample?: string;
+  exerciseQuestion?: string;
+  exerciseAnswer?: string;
 };
 
 type GdcHomeTourProps = {
@@ -184,7 +203,9 @@ function GdcPortalCanvas({
   );
 }
 
-function StepCard({ step, stepNumber, total }: { step: GuidedPortalStep; stepNumber: number; total: number }) {
+function StepCard({ step, stepNumber, total }: { step: LearningStep; stepNumber: number; total: number }) {
+  const [showAnswer, setShowAnswer] = useState(false);
+
   return (
     <div className="flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex items-center justify-between gap-3">
@@ -197,9 +218,16 @@ function StepCard({ step, stepNumber, total }: { step: GuidedPortalStep; stepNum
       <h2 className="mt-5 text-2xl font-black text-slate-950" dir="ltr">
         {step.title}
       </h2>
-      <p className="mt-4 text-sm leading-7 text-slate-600">{step.summary}</p>
+      {step.persianLabel ? (
+        <div className="mt-2 text-sm font-bold text-teal-700">{step.persianLabel}</div>
+      ) : null}
 
-      <div className="mt-5 rounded-xl border border-teal-100 bg-teal-50/70 p-4">
+      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="text-xs font-black text-slate-500">در یک جمله</div>
+        <p className="mt-2 text-sm leading-7 text-slate-700">{step.summary}</p>
+      </div>
+
+      <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50/70 p-4">
         <div className="flex items-center gap-2 text-sm font-bold text-teal-800">
           <Target className="h-4 w-4" />
           چرا مهم است؟
@@ -207,17 +235,57 @@ function StepCard({ step, stepNumber, total }: { step: GuidedPortalStep; stepNum
         <p className="mt-2 text-sm leading-7 text-teal-900/80">{step.whyItMatters}</p>
       </div>
 
+      {step.researchExample ? (
+        <details className="mt-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4">
+          <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-sky-800">
+            <BookOpenCheck className="h-4 w-4" />
+            مثال پژوهشی
+          </summary>
+          <p className="mt-3 text-sm leading-7 text-sky-950/80">{step.researchExample}</p>
+        </details>
+      ) : null}
+
       {step.commonMistake ? (
         <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50 p-4">
-          <div className="text-sm font-bold text-amber-800">اشتباه رایج</div>
+          <div className="flex items-center gap-2 text-sm font-bold text-amber-800">
+            <TriangleAlert className="h-4 w-4" />
+            اشتباه رایج
+          </div>
           <p className="mt-2 text-sm leading-7 text-amber-900/80">{step.commonMistake}</p>
+        </div>
+      ) : null}
+
+      {step.exerciseQuestion ? (
+        <div className="mt-3 rounded-xl border border-violet-100 bg-violet-50/70 p-4">
+          <div className="flex items-center gap-2 text-sm font-bold text-violet-800">
+            <GraduationCap className="h-4 w-4" />
+            خودت امتحان کن
+          </div>
+          <p className="mt-2 text-sm leading-7 text-violet-950/80">{step.exerciseQuestion}</p>
+          {showAnswer ? (
+            <div className="mt-3 rounded-lg border border-violet-200 bg-white/80 p-3 text-sm leading-7 text-violet-950">
+              <span className="font-black">پاسخ: </span>
+              {step.exerciseAnswer}
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowAnswer(true)}
+              className="mt-3 rounded-lg border border-violet-200 bg-white px-3 py-2 text-xs font-bold text-violet-800 transition hover:bg-violet-100"
+            >
+              نمایش پاسخ
+            </button>
+          )}
         </div>
       ) : null}
 
       {step.nextAction ? (
         <div className="mt-3 flex items-start gap-2 rounded-xl bg-slate-50 p-4 text-sm leading-7 text-slate-600">
           <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-slate-400" />
-          <span>{step.nextAction}</span>
+          <div>
+            <div className="mb-1 text-xs font-black text-slate-500">ارتباط با مرحله بعد</div>
+            <span>{step.nextAction}</span>
+          </div>
         </div>
       ) : null}
     </div>
@@ -232,9 +300,38 @@ export function GdcHomeTour({
 }: GdcHomeTourProps = {}) {
   const resource = useMemo(() => dataResources.find((item) => item.id === "gdc"), []);
   const baseScreen = resource?.screens?.[0];
-  const steps = resource?.guidedSteps ?? [];
+  const baseSteps = resource?.guidedSteps ?? [];
   const task = resource?.guidedTasks?.[0];
   const [stepIndex, setStepIndex] = useState(0);
+
+  const steps = useMemo<LearningStep[]>(
+    () =>
+      baseSteps.map((step, index) => {
+        const fallback = DEFAULT_GDC_HOTSPOTS.find((item) => item.key === step.hotspotId);
+        const override = managedHotspots.find(
+          (item) =>
+            item.hotspot_key === step.hotspotId ||
+            item.key === step.hotspotId ||
+            Number(item.step) === index + 1,
+        );
+
+        return {
+          ...step,
+          title: override?.title || fallback?.title || step.title,
+          persianLabel: override?.persian_label || fallback?.persianLabel,
+          summary: override?.description || fallback?.description || step.summary,
+          whyItMatters:
+            override?.why_it_matters || fallback?.whyItMatters || step.whyItMatters,
+          researchExample: override?.research_example || fallback?.researchExample,
+          commonMistake:
+            override?.common_mistake || fallback?.commonMistake || step.commonMistake,
+          exerciseQuestion: override?.exercise_question || fallback?.exerciseQuestion,
+          exerciseAnswer: override?.exercise_answer || fallback?.exerciseAnswer,
+          nextAction: override?.action || fallback?.action || step.nextAction,
+        };
+      }),
+    [baseSteps, managedHotspots],
+  );
 
   const screen = useMemo(() => {
     if (!baseScreen) return undefined;
@@ -341,12 +438,12 @@ export function GdcHomeTour({
           ))}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_420px]">
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.8fr)_440px]">
           <div>
             <div className="mb-3 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-lg font-black text-slate-900">{screen.title}</h2>
-                <p className="mt-1 text-sm text-slate-500">روی هر ناحیه کلیک کنید تا توضیح همان بخش باز شود.</p>
+                <p className="mt-1 text-sm text-slate-500">روی هر ناحیه کلیک کنید تا آموزش همان بخش باز شود.</p>
               </div>
               {activeHotspot ? (
                 <span className="hidden rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700 sm:inline-block" dir="ltr">
@@ -364,7 +461,7 @@ export function GdcHomeTour({
           </div>
 
           <div className="flex flex-col gap-4">
-            <StepCard step={currentStep} stepNumber={stepIndex + 1} total={steps.length} />
+            <StepCard key={currentStep.id} step={currentStep} stepNumber={stepIndex + 1} total={steps.length} />
 
             <div className="grid grid-cols-2 gap-3">
               <button

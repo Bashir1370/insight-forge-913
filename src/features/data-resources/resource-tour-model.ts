@@ -3,7 +3,13 @@ export type EditableResourceHotspot = {
   key: string;
   step: number;
   title: string;
+  persianLabel: string;
   description: string;
+  whyItMatters: string;
+  researchExample: string;
+  commonMistake: string;
+  exerciseQuestion: string;
+  exerciseAnswer: string;
   action: string;
   x: number;
   y: number;
@@ -30,15 +36,28 @@ export type ResourceTourAdminData = {
 
 export const DEFAULT_GDC_IMAGE_URL = "/images/gdc/gdc-home-clean.webp";
 
-// Percent-based geometry. These values mirror the currently published GDC tour,
-// so moving to database-backed editing does not shift the existing hotspots.
+// Percent-based geometry mirrors the published GDC tour. Titles intentionally
+// stay in the same English terminology users see in the real GDC interface.
+// Persian teaching text follows HubGene terminology: Cohort = گروه مطالعاتی.
 export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
   {
     key: "analysis-center",
     step: 1,
     title: "Analysis Center",
-    description: "",
-    action: "",
+    persianLabel: "مرکز تحلیل",
+    description:
+      "مرکز تحلیل، محل اجرای ابزارهای تحلیلی GDC روی گروه مطالعاتی فعال است. بعد از تعریف گروه مطالعاتی، از این بخش برای بررسی و تحلیل همان گروه استفاده می‌کنید.",
+    whyItMatters:
+      "این بخش نقطه اتصال بین انتخاب افراد مناسب برای پژوهش و تحلیل داده‌های آن‌هاست. اگر گروه مطالعاتی را درست تعریف کرده باشید، Analysis Center کمک می‌کند سؤال زیستی خود را روی همان مجموعه هدف دنبال کنید.",
+    researchExample:
+      "فرض کنید گروه مطالعاتی بیماران سرطان پستان در پروژه TCGA-BRCA را ساخته‌اید. برای بررسی الگوهای مولکولی یا مقایسه نتایج تحلیلی آن گروه، Analysis Center یکی از مسیرهای اصلی ادامه کار است.",
+    commonMistake:
+      "Analysis Center را با محل اصلی انتخاب فایل برای دانلود اشتباه نگیرید. انتخاب و محدود کردن فایل‌های داده معمولاً در Repository انجام می‌شود.",
+    exerciseQuestion:
+      "گروه مطالعاتی بیماران سرطان پستان را ساخته‌اید و حالا می‌خواهید الگوهای تحلیلی همان گروه را بررسی کنید. قدم منطقی بعدی چیست؟",
+    exerciseAnswer:
+      "وارد Analysis Center شوید و ابزار تحلیلی مناسب را برای گروه مطالعاتی فعال انتخاب کنید.",
+    action: "برای اینکه بدانید داده‌ها در چه مطالعاتی سازمان‌دهی شده‌اند، در مرحله بعد Projects را بررسی کنید.",
     x: 1.2,
     y: 9.6,
     width: 10.5,
@@ -48,8 +67,20 @@ export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
     key: "projects",
     step: 2,
     title: "Projects",
-    description: "",
-    action: "",
+    persianLabel: "پروژه‌ها",
+    description:
+      "Projects نمای پروژه‌محور GDC است. داده‌ها در قالب پروژه‌های پژوهشی سازمان‌دهی می‌شوند و هر پروژه مجموعه‌ای از موارد، نمونه‌ها و انواع داده مرتبط را در بر می‌گیرد.",
+    whyItMatters:
+      "پیش از ساخت گروه مطالعاتی یا انتخاب فایل، باید بدانید پروژه مناسب سؤال پژوهشی شما کدام است و چه نوع بیماری، محل اصلی تومور و داده‌هایی در آن وجود دارد.",
+    researchExample:
+      "اگر موضوع پژوهش شما سرطان پستان باشد، پروژه‌ای مانند TCGA-BRCA می‌تواند نقطه شروع باشد. از صفحه Projects می‌توانید ابتدا پروژه را بشناسید و سپس تصمیم بگیرید چه مواردی از آن برای مطالعه شما مناسب‌اند.",
+    commonMistake:
+      "Project با گروه مطالعاتی یکی نیست. یک پروژه می‌تواند هزاران داده و تعداد زیادی مورد داشته باشد، اما گروه مطالعاتی فقط زیرمجموعه‌ای است که با معیارهای پژوهش شما انتخاب می‌شود.",
+    exerciseQuestion:
+      "اگر یک پروژه TCGA را پیدا کردید، آیا تمام موارد آن پروژه به‌طور خودکار باید وارد مطالعه شما شوند؟",
+    exerciseAnswer:
+      "خیر. ابتدا پروژه را می‌شناسید و سپس با معیارهای پژوهش، گروه مطالعاتی مناسب را از میان موارد آن انتخاب می‌کنید.",
+    action: "حالا که مفهوم پروژه روشن شد، در Cohort Builder یاد می‌گیریم چگونه گروه مطالعاتی دقیق خود را بسازیم.",
     x: 12.7,
     y: 9.6,
     width: 7.2,
@@ -59,8 +90,20 @@ export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
     key: "cohort-builder",
     step: 3,
     title: "Cohort Builder",
-    description: "",
-    action: "",
+    persianLabel: "سازنده گروه مطالعاتی",
+    description:
+      "گروه مطالعاتی (Cohort) مجموعه‌ای از موارد (Case) است که بر اساس معیارهای مشخص برای پاسخ به یک سؤال پژوهشی انتخاب می‌شوند. Cohort Builder ابزار ساخت این گروه در GDC است.",
+    whyItMatters:
+      "بخش بزرگی از کار با GDC گروه‌مطالعاتی‌محور است: ابتدا مشخص می‌کنید دقیقاً چه افرادی یا مواردی برای سؤال شما مناسب‌اند و بعد همان گروه را برای تحلیل یا یافتن فایل‌های مربوط به آن دنبال می‌کنید.",
+    researchExample:
+      "فرض کنید می‌خواهید زنان مبتلا به سرطان پستان را که ویژگی‌های بالینی مشخصی دارند بررسی کنید. با فیلترهای بالینی و پژوهشی در Cohort Builder می‌توانید گروه مطالعاتی را مرحله‌به‌مرحله محدود کنید.",
+    commonMistake:
+      "فیلتر کردن مورد با فیلتر کردن فایل تفاوت دارد. Cohort Builder برای انتخاب موارد مناسب است؛ برای انتخاب نوع فایل، روش آزمایشی یا نوع داده باید به Repository بروید.",
+    exerciseQuestion:
+      "می‌خواهید فقط موارد مربوط به یک بیماری، جنسیت و مرحله بالینی مشخص را بررسی کنید. کدام بخش برای شروع مناسب‌تر است؟",
+    exerciseAnswer:
+      "Cohort Builder؛ چون ابتدا باید موارد واجد معیارهای مطالعه را به‌صورت یک گروه مطالعاتی تعریف کنید.",
+    action: "پس از ساخت گروه مطالعاتی، بسته به هدف می‌توانید برای تحلیل به Analysis Center یا برای انتخاب فایل‌ها به Repository بروید.",
     x: 20.5,
     y: 9.6,
     width: 10.5,
@@ -70,8 +113,20 @@ export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
     key: "repository",
     step: 4,
     title: "Repository",
-    description: "",
-    action: "",
+    persianLabel: "مخزن داده‌ها",
+    description:
+      "Repository محل مرور و انتخاب فایل‌های داده در GDC است. پس از مشخص شدن گروه مطالعاتی، اینجا می‌توانید فایل‌ها را بر اساس ویژگی‌های سطح فایل محدود کنید.",
+    whyItMatters:
+      "در بسیاری از جریان‌های کاری، دانستن اینکه چه افرادی را مطالعه می‌کنید کافی نیست؛ باید فایل درست را هم پیدا کنید. Repository این مرحله را با فیلترهایی مانند راهبرد آزمایشی، دسته داده و نوع داده مدیریت می‌کند.",
+    researchExample:
+      "فرض کنید گروه مطالعاتی TCGA-BRCA آماده است و برای تحلیل بیان ژن به داده RNA-Seq نیاز دارید. در Repository می‌توانید راهبرد آزمایشی و نوع داده را محدود کنید تا به فایل‌های مناسب برسید.",
+    commonMistake:
+      "فیلترهای مربوط به افراد و فایل‌ها را با هم یکی ندانید. گروه مطالعاتی مشخص می‌کند «چه کسانی؟» و Repository مشخص می‌کند «کدام فایل‌های مربوط به آن‌ها؟».",
+    exerciseQuestion:
+      "گروه مطالعاتی شما آماده است و حالا فقط فایل‌های RNA-Seq مربوط به بیان ژن را می‌خواهید. کجا باید فیلتر را ادامه دهید؟",
+    exerciseAnswer:
+      "در Repository؛ ابتدا راهبرد آزمایشی RNA-Seq و سپس دسته یا نوع داده مناسب را محدود کنید.",
+    action: "پس از رسیدن به فایل‌های مناسب، metadata و شرایط دسترسی را بررسی کنید و سپس روش دریافت فایل‌ها را انتخاب کنید.",
     x: 31.4,
     y: 9.6,
     width: 8.7,
@@ -80,9 +135,20 @@ export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
   {
     key: "search",
     step: 5,
-    title: "Search",
-    description: "",
-    action: "",
+    title: "Global Search",
+    persianLabel: "جست‌وجوی سراسری",
+    description:
+      "Global Search برای زمانی مناسب است که نام یا شناسه مشخصی دارید و می‌خواهید سریع به موجودیت مرتبط در GDC برسید؛ مانند نام پروژه، ژن، مورد یا شناسه داده.",
+    whyItMatters:
+      "وقتی دقیقاً می‌دانید دنبال چه چیزی هستید، جست‌وجوی سراسری مسیر رسیدن به اطلاعات را کوتاه می‌کند و لازم نیست همه بخش‌های پورتال را مرحله‌به‌مرحله مرور کنید.",
+    researchExample:
+      "اگر استاد یا مقاله‌ای به پروژه TCGA-BRCA، ژن TP53 یا یک شناسه مشخص اشاره کرده باشد، Global Search نقطه شروع سریع برای پیدا کردن آن موجودیت است.",
+    commonMistake:
+      "Global Search جای Cohort Builder را نمی‌گیرد. برای تعریف یک گروه پیچیده با چند معیار بالینی یا پژوهشی، باید از سازنده گروه مطالعاتی استفاده کنید.",
+    exerciseQuestion:
+      "نام دقیق یک پروژه یا ژن را دارید و فقط می‌خواهید سریع آن را در GDC پیدا کنید. بهترین نقطه شروع چیست؟",
+    exerciseAnswer: "Global Search؛ چون برای جست‌وجوی مستقیم نام‌ها و شناسه‌های مشخص طراحی شده است.",
+    action: "اگر نتیجه جست‌وجو نشان داد باید مجموعه‌ای از موارد را با چند معیار انتخاب کنید، ادامه کار را در Cohort Builder انجام دهید.",
     x: 71.6,
     y: 9.6,
     width: 26.7,
@@ -92,8 +158,20 @@ export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
     key: "portal-summary",
     step: 6,
     title: "Data Portal Summary",
-    description: "",
-    action: "",
+    persianLabel: "خلاصه وضعیت پورتال داده",
+    description:
+      "Data Portal Summary یک نمای سریع از مقیاس داده‌های موجود در نسخه فعلی پورتال ارائه می‌کند؛ مانند تعداد پروژه‌ها، محل‌های اصلی تومور، موارد، فایل‌ها، ژن‌ها و جهش‌ها.",
+    whyItMatters:
+      "این بخش به شما کمک می‌کند قبل از ورود به جزئیات، بزرگی و گستره پایگاه داده را درک کنید و به یاد داشته باشید که این اعداد با انتشار نسخه‌های جدید داده تغییر می‌کنند.",
+    researchExample:
+      "ممکن است تعداد فایل‌ها بسیار بیشتر از تعداد موارد باشد. این طبیعی است، چون برای یک مورد می‌تواند چند نمونه، چند روش آزمایشی و چند فایل پردازش‌شده یا خام وجود داشته باشد.",
+    commonMistake:
+      "اعدادی که در یک اسکرین‌شات می‌بینید ثابت نیستند و نباید به‌عنوان یک مقدار همیشگی گزارش شوند. هنگام مستندسازی پژوهش، نسخه یا انتشار داده GDC اهمیت دارد.",
+    exerciseQuestion:
+      "چرا ممکن است تعداد Files در خلاصه پورتال بسیار بیشتر از تعداد Cases باشد؟",
+    exerciseAnswer:
+      "چون هر مورد می‌تواند چند نمونه و چندین فایل با انواع داده و مراحل پردازش متفاوت داشته باشد.",
+    action: "بعد از شناخت مقیاس کلی پورتال، نمودار Cases by Major Primary Site به شما دیدی از توزیع داده‌ها بین محل‌های اصلی تومور می‌دهد.",
     x: 1.4,
     y: 74.2,
     width: 48.6,
@@ -103,8 +181,20 @@ export const DEFAULT_GDC_HOTSPOTS: EditableResourceHotspot[] = [
     key: "primary-site-chart",
     step: 7,
     title: "Cases by Major Primary Site",
-    description: "",
-    action: "",
+    persianLabel: "توزیع موارد بر اساس محل اصلی تومور",
+    description:
+      "این نمودار توزیع موارد GDC را بر اساس محل اصلی تومور (Primary Site) نشان می‌دهد و برای شناخت سریع حوزه‌های سرطانی موجود در پورتال مفید است.",
+    whyItMatters:
+      "قبل از ساخت یک گروه مطالعاتی دقیق، این نما کمک می‌کند بفهمید داده‌ها در چه محل‌های آناتومیکی بیشتر یا کمتر حضور دارند و آیا حوزه موردنظر شما در پورتال پوشش مناسبی دارد یا نه.",
+    researchExample:
+      "اگر پژوهش شما درباره سرطان ریه یا پستان است، این نمودار ابتدا تصویری کلی از سهم آن محل اصلی تومور در GDC می‌دهد؛ سپس می‌توانید برای انتخاب دقیق‌تر موارد وارد Cohort Builder شوید.",
+    commonMistake:
+      "Primary Site را با Disease Type یکی ندانید. محل اصلی تومور به ناحیه آناتومیکی اشاره دارد، در حالی که نوع بیماری طبقه‌بندی دیگری از بیماری است.",
+    exerciseQuestion:
+      "در نمودار می‌بینید موارد مربوط به Lung وجود دارند. برای ساخت یک گروه مطالعاتی دقیق از بیماران موردنظر، قدم بعدی چیست؟",
+    exerciseAnswer:
+      "از نمودار برای جهت‌گیری استفاده کنید و سپس در Cohort Builder معیارهای دقیق مطالعه را روی موارد اعمال کنید.",
+    action: "اکنون مسیر اصلی را می‌شناسید: Project → گروه مطالعاتی → Analysis Center یا Repository. در مأموریت پایین صفحه این مسیر را یک‌بار عملی مرور کنید.",
     x: 69,
     y: 21.8,
     width: 28.7,
@@ -122,6 +212,6 @@ export const DEFAULT_GDC_CONTENT: EditableResourceContent[] = [
     key: "description",
     label: "توضیح صفحه",
     value:
-      "پورتال اصلی NCI برای جست‌وجو، ساخت cohort، مرور پروژه‌ها، تحلیل و دریافت داده‌های هماهنگ‌شده سرطان؛ از جمله پروژه‌های TCGA.",
+      "آموزش تعاملی GDC برای شناخت پروژه‌ها، ساخت گروه مطالعاتی، انتخاب فایل و تحلیل داده‌های سرطان. عنوان ابزارها همان اصطلاحات انگلیسی رابط اصلی GDC باقی می‌مانند و توضیحات آموزشی به فارسی استاندارد ارائه می‌شوند.",
   },
 ];
