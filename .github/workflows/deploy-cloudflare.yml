@@ -28,6 +28,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: deploy
-
-# deployment trigger check
+          command: deploy --config .output/server/wrangler.json
