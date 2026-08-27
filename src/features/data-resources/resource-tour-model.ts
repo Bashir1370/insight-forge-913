@@ -25,6 +25,7 @@ export type ResourceTourAdminData = {
   hotspots: EditableResourceHotspot[];
   content: EditableResourceContent[];
   persisted: boolean;
+  warning?: string;
 };
 
 export const DEFAULT_GDC_IMAGE_URL = "/images/gdc/gdc-home-clean.webp";
