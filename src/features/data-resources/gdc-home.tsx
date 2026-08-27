@@ -22,6 +22,24 @@ import {
 
 const GDC_PORTAL_SNAPSHOT_URL = "/images/gdc/gdc-home-clean.webp";
 
+type ManagedHotspot = {
+  hotspot_key?: string | null;
+  key?: string | null;
+  step?: number | string | null;
+  title?: string | null;
+  x?: number | string | null;
+  y?: number | string | null;
+  width?: number | string | null;
+  height?: number | string | null;
+};
+
+type GdcHomeTourProps = {
+  imageUrl?: string | null;
+  managedHotspots?: ManagedHotspot[];
+  pageTitle?: string | null;
+  pageDescription?: string | null;
+};
+
 const hotspotIcons: Record<string, typeof Database> = {
   "analysis-center": BarChart3,
   projects: FolderKanban,
@@ -31,6 +49,12 @@ const hotspotIcons: Record<string, typeof Database> = {
   "portal-summary": Info,
   "primary-site-chart": BarChart3,
 };
+
+function percentToFraction(value: unknown, fallback: number) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(1, Math.max(0, parsed / 100));
+}
 
 function PortalFallback() {
   return (
@@ -93,10 +117,12 @@ function GdcPortalCanvas({
   hotspots,
   activeHotspotId,
   onHotspotClick,
+  imageUrl,
 }: {
   hotspots: PortalHotspot[];
   activeHotspotId: string;
   onHotspotClick: (hotspotId: string) => void;
+  imageUrl?: string | null;
 }) {
   const [snapshotFailed, setSnapshotFailed] = useState(false);
 
@@ -106,7 +132,7 @@ function GdcPortalCanvas({
 
       {!snapshotFailed ? (
         <img
-          src={GDC_PORTAL_SNAPSHOT_URL}
+          src={imageUrl || GDC_PORTAL_SNAPSHOT_URL}
           alt="نمای تمیز صفحه اصلی GDC Data Portal"
           className="absolute inset-0 z-10 h-full w-full object-contain"
           loading="eager"
@@ -198,12 +224,43 @@ function StepCard({ step, stepNumber, total }: { step: GuidedPortalStep; stepNum
   );
 }
 
-export function GdcHomeTour() {
+export function GdcHomeTour({
+  imageUrl,
+  managedHotspots = [],
+  pageTitle,
+  pageDescription,
+}: GdcHomeTourProps = {}) {
   const resource = useMemo(() => dataResources.find((item) => item.id === "gdc"), []);
-  const screen = resource?.screens?.[0];
+  const baseScreen = resource?.screens?.[0];
   const steps = resource?.guidedSteps ?? [];
   const task = resource?.guidedTasks?.[0];
   const [stepIndex, setStepIndex] = useState(0);
+
+  const screen = useMemo(() => {
+    if (!baseScreen) return undefined;
+
+    const hotspots = baseScreen.hotspots.map((hotspot, index) => {
+      const override = managedHotspots.find(
+        (item) =>
+          item.hotspot_key === hotspot.id ||
+          item.key === hotspot.id ||
+          Number(item.step) === index + 1,
+      );
+
+      if (!override) return hotspot;
+
+      return {
+        ...hotspot,
+        label: override.title || hotspot.label,
+        x: percentToFraction(override.x, hotspot.x),
+        y: percentToFraction(override.y, hotspot.y),
+        width: percentToFraction(override.width, hotspot.width),
+        height: percentToFraction(override.height, hotspot.height),
+      };
+    });
+
+    return { ...baseScreen, hotspots };
+  }, [baseScreen, managedHotspots]);
 
   if (!resource || !screen || steps.length === 0) {
     return (
@@ -243,8 +300,12 @@ export function GdcHomeTour() {
                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">NCI</span>
                 <span className="rounded-full bg-sky-50 px-3 py-1 text-xs font-bold text-sky-700">TCGA</span>
               </div>
-              <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">GDC / TCGA Guided Portal Tour</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">{resource.description}</p>
+              <h1 className="text-3xl font-black tracking-tight text-slate-950 sm:text-4xl">
+                {pageTitle || "GDC / TCGA Guided Portal Tour"}
+              </h1>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600 sm:text-base">
+                {pageDescription || resource.description}
+              </p>
             </div>
 
             <a
@@ -298,6 +359,7 @@ export function GdcHomeTour() {
               hotspots={screen.hotspots}
               activeHotspotId={currentStep.hotspotId}
               onHotspotClick={selectHotspot}
+              imageUrl={imageUrl}
             />
           </div>
 
