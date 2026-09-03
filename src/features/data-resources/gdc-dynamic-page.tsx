@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { GdcQuestionDrivenGuideV4 } from "./GdcQuestionDrivenGuideV4";
+import { GdcQuestionDrivenGuideV5 } from "./GdcQuestionDrivenGuideV5";
+import { getGdcQuestionGuideConfig } from "./gdc-question-guide-config";
 import { loadResourceTour } from "./resource-tour-loader";
 
 type ResourceTourData = Awaited<ReturnType<typeof loadResourceTour>>;
@@ -49,6 +50,7 @@ export function GdcDynamicPage() {
     return {
       title: blocks.find((item) => item.key === "title")?.value,
       description: blocks.find((item) => item.key === "description")?.value,
+      guideConfig: getGdcQuestionGuideConfig(blocks),
     };
   }, [resource]);
 
@@ -63,11 +65,12 @@ export function GdcDynamicPage() {
         </a>
       ) : null}
 
-      <GdcQuestionDrivenGuideV4
+      <GdcQuestionDrivenGuideV5
         imageUrl={resource?.image_url}
         managedHotspots={(resource?.hotspots ?? []) as any[]}
         pageTitle={content.title}
         pageDescription={content.description}
+        guideConfig={content.guideConfig}
       />
     </div>
   );
