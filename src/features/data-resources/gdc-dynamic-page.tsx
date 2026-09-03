@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GdcQuestionDrivenGuideV5 } from "./GdcQuestionDrivenGuideV5";
 import { getGdcQuestionGuideConfig } from "./gdc-question-guide-config";
+import {
+  prepareGdcQuestionGuideForDisplay,
+  upgradeGdcQuestionGuideConfig,
+} from "./gdc-question-guide-upgrade";
 import { loadResourceTour } from "./resource-tour-loader";
 
 type ResourceTourData = Awaited<ReturnType<typeof loadResourceTour>>;
@@ -47,10 +51,14 @@ export function GdcDynamicPage() {
       value?: string;
     }>;
 
+    const upgradedGuide = upgradeGdcQuestionGuideConfig(
+      getGdcQuestionGuideConfig(blocks),
+    );
+
     return {
       title: blocks.find((item) => item.key === "title")?.value,
       description: blocks.find((item) => item.key === "description")?.value,
-      guideConfig: getGdcQuestionGuideConfig(blocks),
+      guideConfig: prepareGdcQuestionGuideForDisplay(upgradedGuide),
     };
   }, [resource]);
 
