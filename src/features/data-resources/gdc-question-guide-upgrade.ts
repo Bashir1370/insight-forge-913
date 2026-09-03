@@ -1,6 +1,49 @@
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
 
-const PRIMARY_SITE_IMAGE = "/images/gdc/gdc-primary-site.webp";
+const PRIMARY_SITE_IMAGE_PATH = "/images/gdc/gdc-primary-site.webp";
+
+const PRIMARY_SITE_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="405" height="352" viewBox="0 0 405 352">
+  <rect width="405" height="352" rx="8" fill="#ffffff"/>
+  <rect x="1" y="1" width="403" height="350" rx="8" fill="none" stroke="#cfd8e3"/>
+  <rect x="1" y="1" width="403" height="57" rx="7" fill="#215d82"/>
+  <path d="M18 36 l7 -7 l7 7" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="43" y="37" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#ffffff">Primary Site</text>
+  <circle cx="318" cy="27" r="6" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <line x1="323" y1="32" x2="329" y2="38" stroke="#ffffff" stroke-width="2"/>
+  <path d="M344 20 v19 M351 20 v19" stroke="#ffffff" stroke-width="2"/>
+  <path d="M373 20 a10 10 0 1 1 -7 17" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+  <path d="M366 18 l8 2 l-3 7" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+
+  <line x1="1" y1="93" x2="404" y2="93" stroke="#d9e1e8"/>
+  <text x="14" y="84" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#215d82">Name</text>
+  <path d="M84 76 l6 6 l6 -6" fill="#215d82"/>
+  <text x="296" y="84" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#215d82">Projects</text>
+  <path d="M381 78 l6 6 l6 -6" fill="#215d82"/>
+
+  <g font-family="Arial, sans-serif" font-size="16" fill="#111827">
+    <rect x="17" y="108" width="18" height="18" rx="4" fill="#fff" stroke="#8997a5"/>
+    <text x="42" y="123">bronchus and lung</text><text x="294" y="123">27 (29.03%)</text>
+    <rect x="17" y="135" width="18" height="18" rx="4" fill="#fff" stroke="#8997a5"/>
+    <text x="42" y="150">unknown</text><text x="294" y="150">22 (23.66%)</text>
+    <rect x="17" y="162" width="18" height="18" rx="4" fill="#fff" stroke="#8997a5"/>
+    <text x="42" y="177">breast</text><text x="294" y="177">21 (22.58%)</text>
+    <rect x="17" y="189" width="18" height="18" rx="4" fill="#fff" stroke="#8997a5"/>
+    <text x="42" y="204">colon</text><text x="294" y="204">21 (22.58%)</text>
+    <rect x="17" y="216" width="18" height="18" rx="4" fill="#fff" stroke="#8997a5"/>
+    <text x="42" y="231">liver and intrahepatic bile du...</text><text x="294" y="231">18 (19.35%)</text>
+    <rect x="17" y="243" width="18" height="18" rx="4" fill="#fff" stroke="#8997a5"/>
+    <text x="42" y="258">hematopoietic and reticulo...</text><text x="294" y="258">17 (18.28%)</text>
+  </g>
+
+  <line x1="1" y1="282" x2="404" y2="282" stroke="#d9e1e8"/>
+  <circle cx="307" cy="317" r="9" fill="#de7046"/>
+  <line x1="302" y1="317" x2="312" y2="317" stroke="#fff" stroke-width="2"/>
+  <line x1="307" y1="312" x2="307" y2="322" stroke="#fff" stroke-width="2"/>
+  <text x="321" y="323" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#334155">63 more</text>
+</svg>`;
+
+const PRIMARY_SITE_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(PRIMARY_SITE_SVG)}`;
 
 const NEW_PRIMARY_SECTIONS = [
   {
@@ -37,7 +80,6 @@ function looksLikeLegacyPrimarySite(config: GdcQuestionGuideConfig) {
 function shouldUseBundledPrimaryImage(value?: string) {
   if (!value) return true;
   if (value.startsWith("hubgene://gdc-primary-site")) return true;
-  if (value.startsWith("data:image/")) return true;
   if (value.includes("/images/gdc/gdc-primary-site")) return true;
   return false;
 }
@@ -61,5 +103,10 @@ export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): G
 }
 
 export function prepareGdcQuestionGuideForDisplay(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
-  return structuredClone(config);
+  const next = structuredClone(config);
+  const primary = next.projects.facets.find((item) => item.id === "primarySite");
+  if (primary && shouldUseBundledPrimaryImage(primary.imageUrl)) {
+    primary.imageUrl = PRIMARY_SITE_IMAGE;
+  }
+  return next;
 }
