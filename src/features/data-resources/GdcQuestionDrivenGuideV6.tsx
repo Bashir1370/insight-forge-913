@@ -1,22 +1,33 @@
 import type { ComponentProps } from "react";
 
 import { GdcQuestionDrivenGuideV5 } from "./GdcQuestionDrivenGuideV5";
+import {
+  HIDDEN_GDC_LENS_IMAGE,
+  getGdcLensLayout,
+} from "./gdc-lens-layout";
 
 type Props = ComponentProps<typeof GdcQuestionDrivenGuideV5>;
 
 export function GdcQuestionDrivenGuideV6(props: Props) {
+  const layout = getGdcLensLayout(props.guideConfig.projects);
+  const imageHeight = layout.imageHeight > 0 ? `${layout.imageHeight}px` : "auto";
+
   return (
     <div className="gdc-guide-v6">
       <style>{`
         .gdc-guide-v6 .fixed.inset-0 > section {
-          width: min(96vw, 1500px) !important;
-          max-width: 1500px !important;
+          width: min(96vw, ${layout.modalMaxWidth}px) !important;
+          max-width: ${layout.modalMaxWidth}px !important;
           max-height: 96vh !important;
         }
 
         @media (min-width: 1024px) {
           .gdc-guide-v6 .fixed.inset-0 > section {
-            grid-template-columns: 500px minmax(0, 1fr) !important;
+            grid-template-columns: ${layout.imageColumnWidth}px minmax(0, 1fr) !important;
+          }
+
+          .gdc-guide-v6 .fixed.inset-0 > section:has(img[src="${HIDDEN_GDC_LENS_IMAGE}"]) {
+            grid-template-columns: minmax(0, 1fr) !important;
           }
         }
 
@@ -24,9 +35,15 @@ export function GdcQuestionDrivenGuideV6(props: Props) {
           padding: 16px !important;
         }
 
+        .gdc-guide-v6 .fixed.inset-0 > section > div:first-of-type:has(img[src="${HIDDEN_GDC_LENS_IMAGE}"]) {
+          display: none !important;
+        }
+
         .gdc-guide-v6 .fixed.inset-0 > section > div:first-of-type img {
           width: 100% !important;
-          height: auto !important;
+          height: ${imageHeight} !important;
+          max-height: min(78vh, 1000px) !important;
+          object-fit: ${layout.imageFit} !important;
           display: block !important;
         }
 
