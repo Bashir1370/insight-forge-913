@@ -1,5 +1,8 @@
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
-import { GDC_PRIMARY_SITE_BUNDLED_REF } from "./gdc-question-guide-assets";
+import {
+  GDC_PRIMARY_SITE_BUNDLED_REF,
+  resolveGdcGuideImageUrl,
+} from "./gdc-question-guide-assets";
 
 const LEGACY_PRIMARY_IMAGE = "/images/gdc/gdc-primary-site.webp";
 
@@ -50,5 +53,14 @@ export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): G
     primary.sections = NEW_PRIMARY_SECTIONS.map((item) => ({ ...item }));
   }
 
+  return next;
+}
+
+export function prepareGdcQuestionGuideForDisplay(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
+  const next = structuredClone(config);
+  next.projects.facets = next.projects.facets.map((facet) => ({
+    ...facet,
+    imageUrl: resolveGdcGuideImageUrl(facet.imageUrl),
+  }));
   return next;
 }
