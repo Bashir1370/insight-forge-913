@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { GdcQuestionDrivenGuideV3 } from "./GdcQuestionDrivenGuideV3";
+import { GdcQuestionDrivenGuideV4 } from "./GdcQuestionDrivenGuideV4";
 import { loadResourceTour } from "./resource-tour-loader";
 
 type ResourceTourData = Awaited<ReturnType<typeof loadResourceTour>>;
@@ -63,7 +63,7 @@ export function GdcDynamicPage() {
         </a>
       ) : null}
 
-      <GdcQuestionDrivenGuideV3
+      <GdcQuestionDrivenGuideV4
         imageUrl={resource?.image_url}
         managedHotspots={(resource?.hotspots ?? []) as any[]}
         pageTitle={content.title}
