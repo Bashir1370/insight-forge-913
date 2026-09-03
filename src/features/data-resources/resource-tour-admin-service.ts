@@ -51,8 +51,9 @@ function normalizeHotspots(rows: any[] | null | undefined): EditableResourceHots
 
 function normalizeContent(rows: any[] | null | undefined): EditableResourceContent[] {
   const saved = rows ?? [];
+  const defaultKeys = new Set(DEFAULT_GDC_CONTENT.map((item) => item.key));
 
-  return DEFAULT_GDC_CONTENT.map((fallback) => {
+  const normalizedDefaults = DEFAULT_GDC_CONTENT.map((fallback) => {
     const row = saved.find((item) => item.key === fallback.key);
     return row
       ? {
@@ -62,6 +63,16 @@ function normalizeContent(rows: any[] | null | undefined): EditableResourceConte
         }
       : { ...fallback };
   });
+
+  const customBlocks = saved
+    .filter((item) => item?.key && !defaultKeys.has(item.key))
+    .map((item) => ({
+      key: String(item.key),
+      label: String(item.label ?? item.key),
+      value: String(item.value ?? ""),
+    }));
+
+  return [...normalizedDefaults, ...customBlocks];
 }
 
 export async function loadResourceTourAdmin(slug: string): Promise<ResourceTourAdminData> {
