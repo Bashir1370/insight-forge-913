@@ -3,22 +3,23 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { HotspotContentEditor } from "@/features/data-resources/HotspotContentEditor";
+import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
 import { VisualAssetEditor } from "@/features/data-resources/VisualAssetEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
-import { VisualPageEditor } from "@/features/data-resources/VisualPageEditor";
+import {
+  getGdcQuestionGuideConfig,
+  toGdcQuestionGuideContent,
+  type GdcQuestionGuideConfig,
+} from "@/features/data-resources/gdc-question-guide-config";
 import {
   loadResourceTourAdmin,
   saveResourceContent,
-  saveResourceHotspots,
   saveResourceImage,
 } from "@/features/data-resources/resource-tour-admin-service";
 import {
   DEFAULT_GDC_CONTENT,
-  DEFAULT_GDC_HOTSPOTS,
   DEFAULT_GDC_IMAGE_URL,
   type EditableResourceContent,
-  type EditableResourceHotspot,
 } from "@/features/data-resources/resource-tour-model";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -61,11 +62,11 @@ export const Route = createFileRoute("/admin_/resource-tours")({
 
 function ResourceToursAdmin() {
   const [imageUrl, setImageUrl] = useState(DEFAULT_GDC_IMAGE_URL);
-  const [hotspots, setHotspots] = useState<EditableResourceHotspot[]>(
-    DEFAULT_GDC_HOTSPOTS.map((item) => ({ ...item })),
-  );
   const [content, setContent] = useState<EditableResourceContent[]>(
     DEFAULT_GDC_CONTENT.map((item) => ({ ...item })),
+  );
+  const [guideConfig, setGuideConfig] = useState<GdcQuestionGuideConfig>(() =>
+    getGdcQuestionGuideConfig([]),
   );
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
@@ -79,8 +80,8 @@ function ResourceToursAdmin() {
         if (!active) return;
 
         setImageUrl(data.imageUrl);
-        setHotspots(data.hotspots);
         setContent(data.content);
+        setGuideConfig(getGdcQuestionGuideConfig(data.content));
         setWarning(
           data.persisted
             ? null
@@ -111,7 +112,7 @@ function ResourceToursAdmin() {
       );
       setImageUrl(saved);
       setWarning(null);
-      toast.success("تصویر GDC ذخیره شد.");
+      toast.success("تصویر مرحله اول GDC ذخیره شد.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره تصویر GDC انجام نشد.");
@@ -119,38 +120,50 @@ function ResourceToursAdmin() {
     }
   }
 
-  async function handleHotspotSave(nextHotspots: EditableResourceHotspot[]) {
-    try {
-      const saved = await saveResourceHotspots(
-        RESOURCE_SLUG,
-        RESOURCE_TITLE,
-        imageUrl,
-        nextHotspots,
-      );
-      setHotspots(saved);
-      setWarning(null);
-      toast.success("Hotspotهای GDC ذخیره شدند.");
-    } catch (error) {
-      console.error(error);
-      toast.error("ذخیره Hotspotها انجام نشد. Migration دیتابیس را بررسی کنید.");
-      throw error;
-    }
-  }
-
   async function handleContentSave(nextContent: EditableResourceContent[]) {
     try {
+      const guideBlock = toGdcQuestionGuideContent(guideConfig);
+      const merged = [
+        ...nextContent.filter((item) => item.key !== guideBlock.key),
+        guideBlock,
+      ];
       const saved = await saveResourceContent(
         RESOURCE_SLUG,
         RESOURCE_TITLE,
         imageUrl,
-        nextContent,
+        merged,
       );
       setContent(saved);
+      setGuideConfig(getGdcQuestionGuideConfig(saved));
       setWarning(null);
       toast.success("محتوای عمومی صفحه GDC ذخیره شد.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره محتوای GDC انجام نشد.");
+      throw error;
+    }
+  }
+
+  async function handleGuideSave(nextConfig: GdcQuestionGuideConfig) {
+    try {
+      const guideBlock = toGdcQuestionGuideContent(nextConfig);
+      const merged = [
+        ...content.filter((item) => item.key !== guideBlock.key),
+        guideBlock,
+      ];
+      const saved = await saveResourceContent(
+        RESOURCE_SLUG,
+        RESOURCE_TITLE,
+        imageUrl,
+        merged,
+      );
+      setContent(saved);
+      setGuideConfig(getGdcQuestionGuideConfig(saved));
+      setWarning(null);
+      toast.success("آموزش سؤال‌محور GDC ذخیره شد.");
+    } catch (error) {
+      console.error(error);
+      toast.error("ذخیره آموزش سؤال‌محور انجام نشد.");
       throw error;
     }
   }
@@ -172,9 +185,9 @@ function ResourceToursAdmin() {
             <a href="/admin" className="text-sm font-bold text-slate-500 hover:text-teal-700">
               بازگشت به پنل مدیریت
             </a>
-            <h1 className="mt-3 text-3xl font-black text-slate-950">Visual Resource Tour Editor</h1>
+            <h1 className="mt-3 text-3xl font-black text-slate-950">GDC Learning Editor</h1>
             <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
-              تصویر، جایگاه Hotspotها و محتوای آموزشی GDC را بدون تغییر کد مدیریت کنید. عنوان Hotspotها همان انگلیسی رابط اصلی باقی می‌ماند و متن فارسی هر بخش جداگانه قابل ویرایش است.
+              آموزش فعلی GDC را بدون تغییر کد مدیریت کنید: سؤال‌ها، روایت مراحل، فیلترها، پنل‌های توضیحی، تصاویر و جایگاه/ابعاد Hotspotها.
             </p>
           </div>
           <a
@@ -194,19 +207,23 @@ function ResourceToursAdmin() {
         ) : null}
 
         <div className="mt-6 space-y-6">
-          <VisualAssetEditor
-            resourceSlug={RESOURCE_SLUG}
-            imageUrl={imageUrl}
-            onSave={handleImageSave}
-          />
-          <VisualPageEditor
-            title={RESOURCE_TITLE}
-            imageUrl={imageUrl}
-            hotspots={hotspots}
-            onSave={handleHotspotSave}
-          />
-          <HotspotContentEditor hotspots={hotspots} onSave={handleHotspotSave} />
-          <VisualContentEditor items={content} onSave={handleContentSave} />
+          <GdcQuestionGuideAdminEditor config={guideConfig} onSave={handleGuideSave} />
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-6">
+            <h2 className="text-xl font-black text-slate-950">تصویر اصلی مرحله ۱</h2>
+            <p className="mt-2 text-sm text-slate-500">
+              اسکرین‌شات صفحه اصلی GDC که در مرحله اول نمایش داده می‌شود.
+            </p>
+            <div className="mt-4">
+              <VisualAssetEditor
+                resourceSlug={RESOURCE_SLUG}
+                imageUrl={imageUrl}
+                onSave={handleImageSave}
+              />
+            </div>
+          </section>
+
+          <VisualContentEditor items={content.filter((item) => item.key !== "gdc_question_guide_v1")} onSave={handleContentSave} />
         </div>
       </div>
     </main>
