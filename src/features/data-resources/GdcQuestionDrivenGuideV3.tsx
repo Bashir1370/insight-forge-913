@@ -42,7 +42,7 @@ const questions = [
 
 const stages = [
   ["از کجا شروع کنم؟", "اگر می‌خواهم بفهمم برای سرطان یا موضوع پژوهشی من چه داده‌ای وجود دارد، از کدام بخش GDC شروع کنم؟", "برای دیدن داده‌ها در سطح پروژه از Projects شروع می‌کنیم.", "قبل از ساخت Cohort یا انتخاب فایل باید بدانیم پروژه مرتبط و نوع داده موردنیاز اصلاً وجود دارد یا نه."],
-  ["Projects را بخوان", "در صفحه Projects چه اطلاعاتی برای پیدا کردن داده مناسب مهم هستند؟", "در این مرحله معماری صفحه Projects را می‌خوانیم: فیلترهای سمت چپ و جدول پروژه‌ها هر کدام بخشی از پاسخ پژوهشی شما را می‌سازند.", "به‌جای حفظ کردن همه گزینه‌ها، اول می‌فهمیم هر فیلتر چه مفهومی دارد و بعد هر جا لازم شد وارد جزئیات همان فیلتر می‌شویم."],
+  ["Projects را بخوان", "صفحه Projects چگونه اطلاعات را به ما نشان می‌دهد؟", "فیلترهای سمت چپ سؤال پژوهشی را محدود می‌کنند و جدول سمت راست Projectهای سازگار با معیارهای فعلی را نشان می‌دهد.", "اول نقشه صفحه را می‌خوانیم؛ بعد هر مفهوم را فقط زمانی که به آن نیاز داریم باز می‌کنیم."],
   ["Program و Project", "Program و Project چه فرقی دارند؟", "Program چارچوب پژوهشی بزرگ‌تر است و Project واحد مشخص‌تری برای سازمان‌دهی داده‌هاست.", "انتخاب عملی داده در ادامه در سطح Project و سپس Case و File دقیق‌تر می‌شود."],
   ["پروژه مرتبط را محدود کن", "چطور ده‌ها پروژه را به پروژه‌های مرتبط با سرطان و نوع داده خودم محدود کنم؟", "Facetها را بر اساس سؤال پژوهشی یکی‌یکی اعمال می‌کنیم.", "به‌جای مرور دستی همه پروژه‌ها، ویژگی‌های سؤال پژوهشی را به فیلترهای GDC تبدیل می‌کنیم."],
   ["نوع داده را بررسی کن", "از کجا بفهمم Project انتخاب‌شده واقعاً داده مناسب تحلیل من را دارد؟", "Experimental Strategy، Data Category و سپس Project Summary را بررسی می‌کنیم.", "نام پروژه کافی نیست؛ داده موجود باید با طراحی تحلیل شما سازگار باشد."],
@@ -50,11 +50,11 @@ const stages = [
 ] as const;
 
 const facets: Array<{ id: FacetId; title: string; short: string }> = [
-  { id: "primarySite", title: "Primary Site", short: "محل آناتومیکی اولیه تومور یا بیماری" },
-  { id: "program", title: "Program", short: "برنامه پژوهشی بزرگ‌تری که Projectها زیر آن سازمان‌دهی می‌شوند" },
-  { id: "diseaseType", title: "Disease Type", short: "نوع یا طبقه‌بندی بیماری در پروژه‌ها" },
-  { id: "dataCategory", title: "Data Category", short: "دسته کلی داده؛ مثل داده بالینی، بیان ژن یا واریانت‌ها" },
-  { id: "experimentalStrategy", title: "Experimental Strategy", short: "روش تولید داده؛ مثل RNA-Seq، WXS یا WGS" },
+  { id: "primarySite", title: "Primary Site", short: "تومور از کدام ناحیه بدن منشأ گرفته؟" },
+  { id: "program", title: "Program", short: "داده‌ها متعلق به کدام برنامه پژوهشی بزرگ هستند؟" },
+  { id: "diseaseType", title: "Disease Type", short: "بیماری از نظر نوع یا طبقه‌بندی چگونه تعریف شده؟" },
+  { id: "dataCategory", title: "Data Category", short: "چه دسته‌ای از داده در Project وجود دارد؟" },
+  { id: "experimentalStrategy", title: "Experimental Strategy", short: "داده با چه روش آزمایشی یا توالی‌یابی تولید شده؟" },
 ];
 
 const facetBoxes: Record<FacetId, string> = {
@@ -90,6 +90,8 @@ function ProjectsView({ stage, selectedFacet, selectFacet }: { stage: number; se
       {stage === 1 && src ? <>
         {facets.map((facet) => <button key={facet.id} type="button" aria-label={`نمایش ${facet.title}`} onClick={() => selectFacet(facet.id)} className={`absolute left-[1%] w-[20%] rounded-md border-[3px] transition ${facetBoxes[facet.id]} ${selectedFacet === facet.id ? "border-teal-400 bg-teal-300/15 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" : "border-transparent bg-transparent hover:border-sky-300 hover:bg-sky-200/10"}`} />)}
         <div className="pointer-events-none absolute left-[22%] top-[39%] h-[56%] w-[77%] rounded-lg border-2 border-dashed border-slate-300/80" />
+        <div className="pointer-events-none absolute left-[1.2%] top-[39%] rounded-full bg-teal-700 px-3 py-1.5 text-[10px] font-black text-white shadow">Filters · سؤال را محدود می‌کنیم</div>
+        <div className="pointer-events-none absolute left-[23%] top-[39%] rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black text-white shadow">Projects Table · نتیجه را می‌خوانیم</div>
       </> : null}
       {stage === 2 && src ? <><div className="pointer-events-none absolute left-[22%] top-[40%] h-[55%] w-[10%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /><div className="pointer-events-none absolute left-[62%] top-[40%] h-[55%] w-[9%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10" /></> : null}
       {stage === 3 && src ? <div className="pointer-events-none absolute left-[.7%] top-[36%] h-[59%] w-[20%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /> : null}
@@ -184,6 +186,42 @@ function ExperimentalStrategyLens({ close }: { close: () => void }) {
   </LensShell>;
 }
 
+function ProjectsStagePanel({ activeFacet, onSelectFacet, onOpenLens }: { activeFacet: (typeof facets)[number]; onSelectFacet: (id: FacetId) => void; onOpenLens: () => void }) {
+  return <>
+    <div className="mt-5 rounded-2xl bg-slate-50 p-4">
+      <div className="text-xs font-black text-slate-500">اول نقشه صفحه را بخوانیم</div>
+      <p className="mt-2 text-sm leading-7 text-slate-700">صفحه <b dir="ltr">Projects</b> دو بخش اصلی دارد: <b>فیلترها در سمت چپ</b> و <b>فهرست Projectها در سمت راست</b>.</p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-xl border border-teal-100 bg-teal-50/70 p-3"><div className="text-xs font-black text-teal-800">سمت چپ</div><p className="mt-1 text-xs leading-6 text-teal-950/80">سؤال پژوهشی را به معیارهای قابل فیلتر تبدیل می‌کنیم.</p></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3"><div className="text-xs font-black text-slate-700">سمت راست</div><p className="mt-1 text-xs leading-6 text-slate-600">بعد از هر انتخاب می‌بینیم چه Projectهایی هنوز با معیارهای ما سازگارند.</p></div>
+      </div>
+    </div>
+
+    <div className="mt-4 rounded-2xl border border-slate-200 p-3">
+      <div className="px-1 text-xs font-black text-slate-600">هر فیلتر جواب چه سؤالی را می‌دهد؟</div>
+      <p className="mt-2 px-1 text-xs leading-6 text-slate-500">قرار نیست اسم همه گزینه‌ها را حفظ کنیم. روی هر مورد کلیک کنید؛ همان ناحیه روی تصویر مشخص می‌شود و می‌توانید جزئیاتش را باز کنید.</p>
+      <div className="mt-3 space-y-2">{facets.map((facet) => <button key={facet.id} type="button" onClick={() => onSelectFacet(facet.id)} className={`w-full rounded-xl border px-3 py-3 text-right transition ${activeFacet.id === facet.id ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><div className="flex items-center justify-between gap-3"><b dir="ltr" className="text-sm">{facet.title}</b><span className="text-xs leading-5 text-slate-500">{facet.short}</span></div></button>)}</div>
+    </div>
+
+    <button onClick={onOpenLens} className="mt-4 w-full rounded-xl border border-teal-200 bg-white px-4 py-3 text-sm font-black text-teal-800">{activeFacet.title} را باز کن</button>
+
+    <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
+      <div className="text-xs font-black text-sky-800">حالا جدول سمت راست را بخوانیم</div>
+      <p className="mt-2 text-sm leading-7 text-sky-950/80">هر ردیف جدول یک <b dir="ltr">Project</b> است و ستون‌ها خلاصه‌ای از دامنه مطالعه و داده‌های آن را نشان می‌دهند.</p>
+      <div className="mt-3 space-y-2 text-xs leading-6 text-sky-950/80">
+        <div><b>این مطالعه چیست؟</b> <span dir="ltr">→ Project</span></div>
+        <div><b>چه مواردی را پوشش می‌دهد؟</b> <span dir="ltr">→ Disease Type / Primary Site / Cases</span></div>
+        <div><b>داده چگونه تولید شده؟</b> <span dir="ltr">→ Experimental Strategy</span></div>
+      </div>
+    </div>
+
+    <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-4">
+      <div className="text-xs font-black text-amber-900">ادامه داستان ما</div>
+      <p className="mt-2 text-sm leading-7 text-amber-950/80">سؤال ما درباره سرطان پستان بود. حالا به‌جای خواندن یکی‌یکی همه Projectها، در مرحله بعد یاد می‌گیریم ویژگی سؤال پژوهشی‌مان را به همین فیلترها تبدیل کنیم.</p>
+    </div>
+  </>;
+}
+
 export function GdcQuestionDrivenGuideV3({ imageUrl, pageTitle, pageDescription, onOpenLegacyTour }: Props) {
   const [questionId, setQuestionId] = useState("discover");
   const [stage, setStage] = useState(0);
@@ -205,11 +243,12 @@ export function GdcQuestionDrivenGuideV3({ imageUrl, pageTitle, pageDescription,
         <div className="mt-6 flex gap-2 overflow-x-auto pb-2">{stages.map((s,i) => <button key={s[0]} onClick={() => setStage(i)} className={`shrink-0 rounded-full px-4 py-2 text-xs font-black ${stage === i ? "bg-teal-700 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}>{i+1}. {s[0]}</button>)}</div>
         <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_420px]">
           <div className="xl:sticky xl:top-5 xl:self-start">{stage === 0 ? <div className="relative overflow-hidden rounded-2xl border bg-white shadow-sm"><img src={imageUrl || DEFAULT_IMAGE} alt="صفحه اصلی GDC" className="w-full" /><div className="pointer-events-none absolute left-[12.6%] top-[8.8%] h-[7%] w-[9%] rounded-lg border-[3px] border-teal-400 bg-teal-300/20 shadow-[0_0_0_999px_rgba(15,23,42,.18)]" /></div> : <ProjectsView stage={stage} selectedFacet={selectedFacet} selectFacet={setSelectedFacet} />}</div>
-          <aside className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6"><div className="text-xs font-black text-teal-700">مرحله {stage+1} از {stages.length}</div><h2 className="mt-2 text-2xl font-black">{current[0]}</h2>
-            <div className="mt-5 rounded-xl bg-slate-50 p-4"><div className="text-xs font-black text-slate-500">سؤال این مرحله</div><p className="mt-2 text-sm font-bold leading-7">{current[1]}</p></div>
-            <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50/70 p-4"><div className="text-xs font-black text-teal-800">پاسخ کوتاه</div><p className="mt-2 text-sm leading-7 text-teal-950/80">{current[2]}</p></div>
-            {stage === 1 ? <div className="mt-4 rounded-2xl border border-slate-200 p-3"><div className="px-1 text-xs font-black text-slate-500">معماری فیلترهای Projects</div><div className="mt-2 space-y-2">{facets.map((facet) => <button key={facet.id} type="button" onClick={() => setSelectedFacet(facet.id)} className={`w-full rounded-xl border px-3 py-3 text-right transition ${selectedFacet === facet.id ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><div className="flex items-center justify-between gap-3"><b dir="ltr" className="text-sm">{facet.title}</b><span className="text-xs leading-5 text-slate-500">{facet.short}</span></div></button>)}</div></div> : <div className="mt-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4"><div className="text-xs font-black text-sky-800">چرا مهم است؟</div><p className="mt-2 text-sm leading-7 text-sky-950/80">{current[3]}</p></div>}
-            {stage === 1 ? <button onClick={() => setLens(activeFacet.id)} className="mt-4 w-full rounded-xl border border-teal-200 bg-white px-4 py-3 text-sm font-black text-teal-800">{activeFacet.title} را در همین صفحه باز کن</button> : null}
+          <aside className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6"><div className="text-xs font-black text-teal-700">مرحله {stage+1} از {stages.length}</div><h2 className="mt-2 text-2xl font-black">{stage === 1 ? "صفحه Projects را مثل یک نقشه بخوانیم" : current[0]}</h2>
+            {stage === 1 ? <ProjectsStagePanel activeFacet={activeFacet} onSelectFacet={setSelectedFacet} onOpenLens={() => setLens(activeFacet.id)} /> : <>
+              <div className="mt-5 rounded-xl bg-slate-50 p-4"><div className="text-xs font-black text-slate-500">سؤال این مرحله</div><p className="mt-2 text-sm font-bold leading-7">{current[1]}</p></div>
+              <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50/70 p-4"><div className="text-xs font-black text-teal-800">پاسخ کوتاه</div><p className="mt-2 text-sm leading-7 text-teal-950/80">{current[2]}</p></div>
+              <div className="mt-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4"><div className="text-xs font-black text-sky-800">چرا مهم است؟</div><p className="mt-2 text-sm leading-7 text-sky-950/80">{current[3]}</p></div>
+            </>}
             <div className="mt-5 grid grid-cols-2 gap-3"><button onClick={() => setStage(Math.max(0,stage-1))} disabled={stage===0} className="rounded-xl border px-4 py-3 text-sm font-bold disabled:opacity-40"><ChevronRight className="inline h-4 w-4" /> قبلی</button><button onClick={() => setStage(Math.min(stages.length-1,stage+1))} disabled={stage===stages.length-1} className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white disabled:opacity-40">بعدی <ChevronLeft className="inline h-4 w-4" /></button></div>
           </aside>
         </div>
