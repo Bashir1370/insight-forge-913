@@ -25,23 +25,23 @@ function numberOrFallback(value: unknown, fallback: number, min: number, max: nu
 
 export function getGdcLensLayout(projects: unknown): GdcLensLayout {
   const source = (projects ?? {}) as Record<string, unknown>;
-  const fit = source.lensImageFit;
+  const fit = source["lensImageFit"];
 
   return {
     modalMaxWidth: numberOrFallback(
-      source.lensModalMaxWidth,
+      source["lensModalMaxWidth"],
       DEFAULT_GDC_LENS_LAYOUT.modalMaxWidth,
       900,
       1900,
     ),
     imageColumnWidth: numberOrFallback(
-      source.lensImageColumnWidth,
+      source["lensImageColumnWidth"],
       DEFAULT_GDC_LENS_LAYOUT.imageColumnWidth,
       280,
       850,
     ),
     imageHeight: numberOrFallback(
-      source.lensImageHeight,
+      source["lensImageHeight"],
       DEFAULT_GDC_LENS_LAYOUT.imageHeight,
       0,
       1000,
