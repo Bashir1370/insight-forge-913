@@ -22,10 +22,11 @@ type Props = {
 };
 
 type FacetId = "primarySite" | "program" | "diseaseType" | "dataCategory" | "experimentalStrategy";
-type LensId = "primarySite" | "program" | null;
+type LensId = FacetId | null;
 
 const DEFAULT_IMAGE = "/images/gdc/gdc-home-clean.webp";
 const PROGRAM_IMAGE = "/images/gdc/gdc-program.webp";
+const PRIMARY_SITE_IMAGE = "/images/gdc/gdc-primary-site.webp";
 const PROJECT_PARTS = Array.from(
   { length: 7 },
   (_, i) => `/images/gdc/gdc-projects-b64/${String(i + 1).padStart(2, "0")}.txt`,
@@ -48,9 +49,9 @@ const stages = [
   ["تصمیم بعدی", "وقتی Project و نوع داده مناسب را پیدا کردم، قدم بعدی چیست؟", "برای انتخاب دقیق Caseها به Cohort Builder و برای رسیدن به فایل‌ها به Repository می‌رویم.", "اینجا جست‌وجوی پروژه به مسیر عملی پژوهش متصل می‌شود."],
 ] as const;
 
-const facets: Array<{ id: FacetId; title: string; short: string; lens?: LensId }> = [
-  { id: "primarySite", title: "Primary Site", short: "محل آناتومیکی اولیه تومور یا بیماری", lens: "primarySite" },
-  { id: "program", title: "Program", short: "برنامه پژوهشی بزرگ‌تری که Projectها زیر آن سازمان‌دهی می‌شوند", lens: "program" },
+const facets: Array<{ id: FacetId; title: string; short: string }> = [
+  { id: "primarySite", title: "Primary Site", short: "محل آناتومیکی اولیه تومور یا بیماری" },
+  { id: "program", title: "Program", short: "برنامه پژوهشی بزرگ‌تری که Projectها زیر آن سازمان‌دهی می‌شوند" },
   { id: "diseaseType", title: "Disease Type", short: "نوع یا طبقه‌بندی بیماری در پروژه‌ها" },
   { id: "dataCategory", title: "Data Category", short: "دسته کلی داده؛ مثل داده بالینی، بیان ژن یا واریانت‌ها" },
   { id: "experimentalStrategy", title: "Experimental Strategy", short: "روش تولید داده؛ مثل RNA-Seq، WXS یا WGS" },
@@ -86,67 +87,99 @@ function ProjectsView({ stage, selectedFacet, selectFacet }: { stage: number; se
     <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" dir="ltr">
       {src ? <img src={src} alt="اسکرین‌شات واقعی صفحه Projects در GDC" className="block w-full" /> :
         <div className="flex aspect-[1905/847] items-center justify-center bg-slate-100 text-sm font-bold text-slate-400">در حال بارگذاری اسکرین‌شات Projects…</div>}
-
       {stage === 1 && src ? <>
-        {facets.map((facet) => (
-          <button
-            key={facet.id}
-            type="button"
-            aria-label={`نمایش ${facet.title}`}
-            onClick={() => selectFacet(facet.id)}
-            className={`absolute left-[1%] w-[20%] rounded-md border-[3px] transition ${facetBoxes[facet.id]} ${selectedFacet === facet.id ? "border-teal-400 bg-teal-300/15 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" : "border-transparent bg-transparent hover:border-sky-300 hover:bg-sky-200/10"}`}
-          />
-        ))}
+        {facets.map((facet) => <button key={facet.id} type="button" aria-label={`نمایش ${facet.title}`} onClick={() => selectFacet(facet.id)} className={`absolute left-[1%] w-[20%] rounded-md border-[3px] transition ${facetBoxes[facet.id]} ${selectedFacet === facet.id ? "border-teal-400 bg-teal-300/15 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" : "border-transparent bg-transparent hover:border-sky-300 hover:bg-sky-200/10"}`} />)}
         <div className="pointer-events-none absolute left-[22%] top-[39%] h-[56%] w-[77%] rounded-lg border-2 border-dashed border-slate-300/80" />
       </> : null}
-
-      {stage === 2 && src ? <>
-        <div className="pointer-events-none absolute left-[22%] top-[40%] h-[55%] w-[10%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" />
-        <div className="pointer-events-none absolute left-[62%] top-[40%] h-[55%] w-[9%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10" />
-      </> : null}
+      {stage === 2 && src ? <><div className="pointer-events-none absolute left-[22%] top-[40%] h-[55%] w-[10%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /><div className="pointer-events-none absolute left-[62%] top-[40%] h-[55%] w-[9%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10" /></> : null}
       {stage === 3 && src ? <div className="pointer-events-none absolute left-[.7%] top-[36%] h-[59%] w-[20%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /> : null}
       {stage === 4 && src ? <div className="pointer-events-none absolute left-[75%] top-[40%] h-[55%] w-[24%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.08)]" /> : null}
     </div>
   );
 }
 
-function LensShell({ close, image, imageAlt, children }: { close: () => void; image: string; imageAlt: string; children: React.ReactNode }) {
+function LensShell({ close, visual, children }: { close: () => void; visual: React.ReactNode; children: React.ReactNode }) {
   return <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/55 p-4 backdrop-blur-sm" dir="rtl">
     <button aria-label="بستن" onClick={close} className="absolute inset-0" />
     <section className="relative z-10 grid max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[420px_minmax(0,1fr)]">
-      <div className="overflow-y-auto border-b border-slate-200 bg-slate-50 p-5 lg:border-b-0 lg:border-l">
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <img src={image} alt={imageAlt} className="block h-auto w-full" />
-        </div>
-      </div>
+      <div className="overflow-y-auto border-b border-slate-200 bg-slate-50 p-5 lg:border-b-0 lg:border-l">{visual}</div>
       <div className="overflow-y-auto p-6 sm:p-8">{children}</div>
     </section>
   </div>;
 }
 
+function ImageVisual({ src, alt }: { src: string; alt: string }) {
+  return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><img src={src} alt={alt} className="block h-auto w-full" /></div>;
+}
+
+function FacetMock({ title, rows, more }: { title: string; rows: Array<[string,string]>; more?: string }) {
+  return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" dir="ltr">
+    <div className="flex items-center justify-between bg-[#215d82] px-4 py-3 text-white"><b>{title}</b><Search className="h-4 w-4" /></div>
+    <div className="grid grid-cols-[1fr_auto] border-b px-3 py-2 text-xs font-black text-[#215d82]"><span>Name</span><span>Projects</span></div>
+    <div className="p-2">{rows.map(([name,count]) => <div key={name} className="grid grid-cols-[1fr_auto] items-center gap-3 px-2 py-1.5 text-xs"><span className="flex min-w-0 items-center gap-2"><span className="h-4 w-4 shrink-0 rounded border border-slate-400" /><span className="truncate">{name}</span></span><b>{count}</b></div>)}</div>
+    {more ? <div className="border-t px-4 py-3 text-right text-sm font-black text-slate-700">{more}</div> : null}
+  </div>;
+}
+
+const diseaseRows: Array<[string,string]> = [
+  ["adenomas and adenocarcinomas", "51 (54.84%)"], ["epithelial neoplasms, nos", "30 (32.26%)"], ["squamous cell neoplasms", "29 (31.18%)"], ["cystic, mucinous and serous neoplasms", "22 (23.66%)"], ["ductal and lobular neoplasms", "21 (22.58%)"], ["neoplasms, nos", "21 (22.58%)"],
+];
+const categoryRows: Array<[string,string]> = [
+  ["sequencing reads", "92 (98.92%)"], ["structural variation", "88 (94.62%)"], ["transcriptome profiling", "88 (94.62%)"], ["simple nucleotide variation", "86 (92.47%)"], ["clinical", "75 (80.65%)"], ["biospecimen", "71 (76.34%)"],
+];
+const strategyRows: Array<[string,string]> = [
+  ["RNA-Seq", "88 (94.62%)"], ["WXS", "76 (81.72%)"], ["WGS", "61 (65.59%)"], ["miRNA-Seq", "50 (53.76%)"], ["Methylation Array", "46 (49.46%)"], ["Tissue Slide", "40 (43.01%)"], ["Genotyping Array", "37 (39.78%)"], ["Diagnostic Slide", "32 (34.41%)"], ["Reverse Phase Protein Array", "32 (34.41%)"], ["ATAC-Seq", "23 (24.73%)"], ["Targeted Sequencing", "13 (13.98%)"], ["Expression Array", "4 (4.30%)"], ["scRNA-Seq", "2 (2.15%)"],
+];
+
+function LensHeader({ close, eyebrow, title, subtitle }: { close: () => void; eyebrow: string; title: string; subtitle: string }) {
+  return <div className="flex items-start justify-between gap-4"><div><div className="text-xs font-black text-teal-700">{eyebrow}</div><h2 className="mt-2 text-2xl font-black">{title}</h2><p className="mt-2 text-sm font-bold text-slate-500">{subtitle}</p></div><button onClick={close} className="rounded-xl border p-2 text-slate-500"><X className="h-5 w-5" /></button></div>;
+}
+
 function PrimarySiteLens({ close }: { close: () => void }) {
-  return <LensShell close={close} image="/images/gdc/gdc-primary-site.webp" imageAlt="Primary Site در صفحه Projects GDC">
-    <div className="flex items-start justify-between gap-4">
-      <div><div className="text-xs font-black text-teal-700">راهنمای Primary Site</div><h2 className="mt-2 text-2xl font-black">Primary Site یعنی چه؟</h2><p className="mt-2 text-sm font-bold text-slate-500">محل آناتومیکی اولیه‌ای که تومور یا بیماری از آن منشأ گرفته است</p></div>
-      <button onClick={close} className="rounded-xl border p-2 text-slate-500"><X className="h-5 w-5" /></button>
-    </div>
+  return <LensShell close={close} visual={<ImageVisual src={PRIMARY_SITE_IMAGE} alt="Primary Site در صفحه Projects GDC" />}>
+    <LensHeader close={close} eyebrow="راهنمای Primary Site" title="Primary Site یعنی چه؟" subtitle="محل آناتومیکی اولیه‌ای که تومور یا بیماری از آن منشأ گرفته است" />
     <div className="mt-6 rounded-2xl border bg-slate-50 p-5"><h3 className="text-sm font-black">این لیست همه سرطان‌ها نیست</h3><p className="mt-2 text-sm leading-7 text-slate-700">Primary Site «نوع سرطان» نیست؛ محل اولیه تومور را دسته‌بندی می‌کند. فهرست GDC قابل اسکرول است و گزینه‌های بیشتری پایین‌تر وجود دارند.</p></div>
-    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد روبه‌روی هر مورد چیست؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">ستون Projects می‌گوید چند Project از مجموعه فعلی با آن Primary Site مرتبط‌اند و درصد داخل پرانتز سهم آن‌ها از کل Projectهای فعلی است.</p><div className="mt-3 rounded-xl border border-teal-200 bg-white p-4 text-sm leading-7"><span dir="ltr" className="font-black">breast — 21 (22.58%)</span> یعنی در نمای فعلی 93 پروژه، 21 Project با breast مرتبط‌اند.</div></div>
+    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد روبه‌روی هر مورد چیست؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">ستون Projects می‌گوید چند Project از مجموعه فعلی با آن Primary Site مرتبط‌اند و درصد داخل پرانتز سهم آن‌ها از کل Projectهای فعلی است.</p></div>
     <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-5"><h3 className="text-sm font-black text-amber-900">Primary Site با Disease Type یکی نیست</h3><p className="mt-2 text-sm leading-7 text-amber-950/80">Primary Site محل آناتومیکی اولیه را می‌گوید؛ Disease Type نوع یا طبقه‌بندی بیماری را توصیف می‌کند.</p></div>
     <button onClick={close} className="mt-6 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white">بستن و ادامه مسیر Projects</button>
   </LensShell>;
 }
 
 function ProgramLens({ close }: { close: () => void }) {
-  return <LensShell close={close} image={PROGRAM_IMAGE} imageAlt="Program بازشده در صفحه Projects GDC">
-    <div className="flex items-start justify-between gap-4">
-      <div><div className="text-xs font-black text-teal-700">راهنمای Program</div><h2 className="mt-2 text-2xl font-black">Program یعنی چه؟</h2><p className="mt-2 text-sm font-bold text-slate-500">یک برنامه پژوهشی بزرگ که چند Project می‌تواند زیر آن قرار بگیرد</p></div>
-      <button onClick={close} className="rounded-xl border p-2 text-slate-500"><X className="h-5 w-5" /></button>
-    </div>
+  return <LensShell close={close} visual={<ImageVisual src={PROGRAM_IMAGE} alt="Program بازشده در صفحه Projects GDC" />}>
+    <LensHeader close={close} eyebrow="راهنمای Program" title="Program یعنی چه؟" subtitle="یک برنامه پژوهشی بزرگ که چند Project می‌تواند زیر آن قرار بگیرد" />
     <div className="mt-6 rounded-2xl border bg-slate-50 p-5"><h3 className="text-sm font-black">این فهرست نام سرطان‌ها نیست</h3><p className="mt-2 text-sm leading-7 text-slate-700">Programها مجموعه‌های پژوهشی بزرگ در GDC هستند. برای نمونه TCGA، TARGET و CPTAC هر کدام یک Program هستند و می‌توانند چندین Project و چند نوع بیماری را پوشش دهند.</p></div>
-    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد کنار Program چیست؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">عدد، تعداد Projectهای مرتبط با آن Program در نتایج فعلی را نشان می‌دهد و درصد، سهم آن Projectها از کل Projectهای فعلی است.</p><div className="mt-3 rounded-xl border border-teal-200 bg-white p-4 text-sm leading-7"><span dir="ltr" className="font-black">TCGA — 33 (35.48%)</span> یعنی از 93 Project فعلی، 33 Project به Program TCGA مربوط‌اند.</div></div>
-    <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-5"><h3 className="text-sm font-black text-sky-900">+21 more یعنی چه؟</h3><p className="mt-2 text-sm leading-7 text-sky-950/80">یعنی Programهای بیشتری در فهرست وجود دارند. با باز کردن ادامه فهرست می‌توانید بقیه Programها را هم ببینید.</p></div>
-    <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-5"><h3 className="text-sm font-black text-amber-900">Program با Project یکی نیست</h3><p className="mt-2 text-sm leading-7 text-amber-950/80">Program سطح بالاتر سازمان‌دهی است؛ Project واحد مشخص‌تری است که داده‌ها، Caseها و فایل‌ها در آن دنبال می‌شوند.</p></div>
+    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد کنار Program چیست؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">عدد، تعداد Projectهای مرتبط با آن Program در نتایج فعلی را نشان می‌دهد و درصد، سهم آن Projectها از کل Projectهای فعلی است.</p></div>
+    <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-5"><h3 className="text-sm font-black text-sky-900">+21 more یعنی چه؟</h3><p className="mt-2 text-sm leading-7 text-sky-950/80">یعنی Programهای بیشتری در فهرست وجود دارند و با باز کردن ادامه فهرست می‌توانید آن‌ها را ببینید.</p></div>
+    <button onClick={close} className="mt-6 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white">بستن و ادامه مسیر Projects</button>
+  </LensShell>;
+}
+
+function DiseaseTypeLens({ close }: { close: () => void }) {
+  return <LensShell close={close} visual={<FacetMock title="Disease Type" rows={diseaseRows} more="+ 42 more" />}>
+    <LensHeader close={close} eyebrow="راهنمای Disease Type" title="Disease Type یعنی چه؟" subtitle="نوع یا طبقه‌بندی پاتولوژیک بیماری در Projectها" />
+    <div className="mt-6 rounded-2xl border bg-slate-50 p-5"><h3 className="text-sm font-black">با Primary Site فرق دارد</h3><p className="mt-2 text-sm leading-7 text-slate-700">Primary Site محل آناتومیکی اولیه را مشخص می‌کند؛ Disease Type ماهیت یا طبقه‌بندی بیماری را نشان می‌دهد. بنابراین ممکن است یک Primary Site شامل چند Disease Type باشد.</p></div>
+    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد چه می‌گویند؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">عدد، تعداد Projectهای مرتبط با آن Disease Type در مجموعه فعلی است و درصد سهم آن Projectها از کل نتایج فعلی را نشان می‌دهد.</p><div className="mt-3 rounded-xl border border-teal-200 bg-white p-4 text-sm leading-7"><span dir="ltr" className="font-black">adenomas and adenocarcinomas — 51 (54.84%)</span> یعنی 51 Project از 93 Project فعلی با این دسته بیماری مرتبط‌اند.</div></div>
+    <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-5"><h3 className="text-sm font-black text-sky-900">+42 more</h3><p className="mt-2 text-sm leading-7 text-sky-950/80">یعنی Disease Typeهای بیشتری در فهرست وجود دارند و موارد نمایش‌داده‌شده فقط ابتدای لیست هستند.</p></div>
+    <button onClick={close} className="mt-6 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white">بستن و ادامه مسیر Projects</button>
+  </LensShell>;
+}
+
+function DataCategoryLens({ close }: { close: () => void }) {
+  return <LensShell close={close} visual={<FacetMock title="Data Category" rows={categoryRows} more="+ 5 more" />}>
+    <LensHeader close={close} eyebrow="راهنمای Data Category" title="Data Category یعنی چه؟" subtitle="دسته کلی داده‌ای که در Projectها وجود دارد" />
+    <div className="mt-6 rounded-2xl border bg-slate-50 p-5"><h3 className="text-sm font-black">این فیلتر می‌گوید چه جنس داده‌ای دارید</h3><p className="mt-2 text-sm leading-7 text-slate-700">برای مثال Clinical داده‌های بالینی، Biospecimen اطلاعات نمونه، Transcriptome Profiling داده‌های مرتبط با RNA و بیان ژن و Simple Nucleotide Variation داده‌های واریانت‌های کوچک را پوشش می‌دهد.</p></div>
+    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد چه معنی دارد؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">عدد، تعداد Projectهایی است که آن Data Category را دارند و درصد، سهم آن‌ها از کل Projectهای فعلی را نشان می‌دهد.</p><div className="mt-3 rounded-xl border border-teal-200 bg-white p-4 text-sm leading-7"><span dir="ltr" className="font-black">transcriptome profiling — 88 (94.62%)</span> یعنی 88 Project از 93 Project فعلی این دسته داده را دارند.</div></div>
+    <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-5"><h3 className="text-sm font-black text-sky-900">+5 more</h3><p className="mt-2 text-sm leading-7 text-sky-950/80">یعنی دسته‌های داده دیگری هم در ادامه فهرست وجود دارند.</p></div>
+    <button onClick={close} className="mt-6 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white">بستن و ادامه مسیر Projects</button>
+  </LensShell>;
+}
+
+function ExperimentalStrategyLens({ close }: { close: () => void }) {
+  return <LensShell close={close} visual={<FacetMock title="Experimental Strategy" rows={strategyRows} more="− show less" />}>
+    <LensHeader close={close} eyebrow="راهنمای Experimental Strategy" title="Experimental Strategy یعنی چه؟" subtitle="روش آزمایشی یا فناوری‌ای که برای تولید داده استفاده شده است" />
+    <div className="mt-6 rounded-2xl border bg-slate-50 p-5"><h3 className="text-sm font-black">این فیلتر را با Data Category اشتباه نگیرید</h3><p className="mt-2 text-sm leading-7 text-slate-700">Data Category می‌گوید «چه نوع داده‌ای» دارید؛ Experimental Strategy می‌گوید آن داده «با چه روش یا فناوری» تولید شده است، مثل RNA-Seq، WXS، WGS یا scRNA-Seq.</p></div>
+    <div className="mt-4 rounded-2xl border border-teal-100 bg-teal-50/70 p-5"><h3 className="text-sm font-black text-teal-900">عدد و درصد کنار روش‌ها چیست؟</h3><p className="mt-2 text-sm leading-7 text-teal-950/80">عدد، تعداد Projectهایی است که آن Experimental Strategy را دارند و درصد، سهم آن‌ها از کل Projectهای فعلی است.</p><div className="mt-3 rounded-xl border border-teal-200 bg-white p-4 text-sm leading-7"><span dir="ltr" className="font-black">RNA-Seq — 88 (94.62%)</span> یعنی 88 Project از 93 Project فعلی داده‌ای با این روش دارند.</div><p className="mt-3 text-xs leading-6 text-teal-950/70">یک Project می‌تواند چند Experimental Strategy داشته باشد؛ بنابراین مجموع درصدهای ردیف‌ها الزاماً 100٪ نیست.</p></div>
     <button onClick={close} className="mt-6 w-full rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white">بستن و ادامه مسیر Projects</button>
   </LensShell>;
 }
@@ -176,7 +209,7 @@ export function GdcQuestionDrivenGuideV3({ imageUrl, pageTitle, pageDescription,
             <div className="mt-5 rounded-xl bg-slate-50 p-4"><div className="text-xs font-black text-slate-500">سؤال این مرحله</div><p className="mt-2 text-sm font-bold leading-7">{current[1]}</p></div>
             <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50/70 p-4"><div className="text-xs font-black text-teal-800">پاسخ کوتاه</div><p className="mt-2 text-sm leading-7 text-teal-950/80">{current[2]}</p></div>
             {stage === 1 ? <div className="mt-4 rounded-2xl border border-slate-200 p-3"><div className="px-1 text-xs font-black text-slate-500">معماری فیلترهای Projects</div><div className="mt-2 space-y-2">{facets.map((facet) => <button key={facet.id} type="button" onClick={() => setSelectedFacet(facet.id)} className={`w-full rounded-xl border px-3 py-3 text-right transition ${selectedFacet === facet.id ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-white hover:border-slate-300"}`}><div className="flex items-center justify-between gap-3"><b dir="ltr" className="text-sm">{facet.title}</b><span className="text-xs leading-5 text-slate-500">{facet.short}</span></div></button>)}</div></div> : <div className="mt-3 rounded-xl border border-sky-100 bg-sky-50/70 p-4"><div className="text-xs font-black text-sky-800">چرا مهم است؟</div><p className="mt-2 text-sm leading-7 text-sky-950/80">{current[3]}</p></div>}
-            {stage === 1 && activeFacet.lens ? <button onClick={() => setLens(activeFacet.lens || null)} className="mt-4 w-full rounded-xl border border-teal-200 bg-white px-4 py-3 text-sm font-black text-teal-800">{activeFacet.title} را در همین صفحه باز کن</button> : null}
+            {stage === 1 ? <button onClick={() => setLens(activeFacet.id)} className="mt-4 w-full rounded-xl border border-teal-200 bg-white px-4 py-3 text-sm font-black text-teal-800">{activeFacet.title} را در همین صفحه باز کن</button> : null}
             <div className="mt-5 grid grid-cols-2 gap-3"><button onClick={() => setStage(Math.max(0,stage-1))} disabled={stage===0} className="rounded-xl border px-4 py-3 text-sm font-bold disabled:opacity-40"><ChevronRight className="inline h-4 w-4" /> قبلی</button><button onClick={() => setStage(Math.min(stages.length-1,stage+1))} disabled={stage===stages.length-1} className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white disabled:opacity-40">بعدی <ChevronLeft className="inline h-4 w-4" /></button></div>
           </aside>
         </div>
@@ -184,5 +217,8 @@ export function GdcQuestionDrivenGuideV3({ imageUrl, pageTitle, pageDescription,
     </section>
     {lens === "primarySite" ? <PrimarySiteLens close={() => setLens(null)} /> : null}
     {lens === "program" ? <ProgramLens close={() => setLens(null)} /> : null}
+    {lens === "diseaseType" ? <DiseaseTypeLens close={() => setLens(null)} /> : null}
+    {lens === "dataCategory" ? <DataCategoryLens close={() => setLens(null)} /> : null}
+    {lens === "experimentalStrategy" ? <ExperimentalStrategyLens close={() => setLens(null)} /> : null}
   </main>;
 }
