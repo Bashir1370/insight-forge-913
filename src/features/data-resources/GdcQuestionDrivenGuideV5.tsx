@@ -294,9 +294,12 @@ function ProjectsStage({
                 key={item.id}
                 type="button"
                 onClick={() => onSelectFacet(item.id)}
-                className={`w-full rounded-xl border px-3 py-3 text-right transition ${selectedFacet === item.id ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                className={`w-full rounded-xl border px-4 py-3 text-right transition ${selectedFacet === item.id ? "border-teal-300 bg-teal-50" : "border-slate-200 bg-white hover:border-slate-300"}`}
               >
-                <div className="flex items-center justify-between gap-3"><b dir="ltr" className="text-sm">{item.title}</b><span className="text-xs leading-5 text-slate-500">{item.prompt}</span></div>
+                <div className="grid min-h-[58px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4" dir="rtl">
+                  <b dir="ltr" className="w-full text-left text-sm leading-5 text-slate-950">{item.title}</b>
+                  <span className="w-full text-right text-xs leading-6 text-slate-500">{item.prompt}</span>
+                </div>
               </button>
             ))}
           </div>
