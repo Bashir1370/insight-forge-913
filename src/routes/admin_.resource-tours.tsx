@@ -11,6 +11,7 @@ import {
   toGdcQuestionGuideContent,
   type GdcQuestionGuideConfig,
 } from "@/features/data-resources/gdc-question-guide-config";
+import { upgradeGdcQuestionGuideConfig } from "@/features/data-resources/gdc-question-guide-upgrade";
 import {
   loadResourceTourAdmin,
   saveResourceContent,
@@ -60,13 +61,17 @@ export const Route = createFileRoute("/admin_/resource-tours")({
   component: ResourceToursAdmin,
 });
 
+function loadGuideConfig(items: EditableResourceContent[]) {
+  return upgradeGdcQuestionGuideConfig(getGdcQuestionGuideConfig(items));
+}
+
 function ResourceToursAdmin() {
   const [imageUrl, setImageUrl] = useState(DEFAULT_GDC_IMAGE_URL);
   const [content, setContent] = useState<EditableResourceContent[]>(
     DEFAULT_GDC_CONTENT.map((item) => ({ ...item })),
   );
   const [guideConfig, setGuideConfig] = useState<GdcQuestionGuideConfig>(() =>
-    getGdcQuestionGuideConfig([]),
+    loadGuideConfig([]),
   );
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
@@ -81,7 +86,7 @@ function ResourceToursAdmin() {
 
         setImageUrl(data.imageUrl);
         setContent(data.content);
-        setGuideConfig(getGdcQuestionGuideConfig(data.content));
+        setGuideConfig(loadGuideConfig(data.content));
         setWarning(
           data.persisted
             ? null
@@ -134,7 +139,7 @@ function ResourceToursAdmin() {
         merged,
       );
       setContent(saved);
-      setGuideConfig(getGdcQuestionGuideConfig(saved));
+      setGuideConfig(loadGuideConfig(saved));
       setWarning(null);
       toast.success("محتوای عمومی صفحه GDC ذخیره شد.");
     } catch (error) {
@@ -146,7 +151,8 @@ function ResourceToursAdmin() {
 
   async function handleGuideSave(nextConfig: GdcQuestionGuideConfig) {
     try {
-      const guideBlock = toGdcQuestionGuideContent(nextConfig);
+      const upgraded = upgradeGdcQuestionGuideConfig(nextConfig);
+      const guideBlock = toGdcQuestionGuideContent(upgraded);
       const merged = [
         ...content.filter((item) => item.key !== guideBlock.key),
         guideBlock,
@@ -158,7 +164,7 @@ function ResourceToursAdmin() {
         merged,
       );
       setContent(saved);
-      setGuideConfig(getGdcQuestionGuideConfig(saved));
+      setGuideConfig(loadGuideConfig(saved));
       setWarning(null);
       toast.success("آموزش سؤال‌محور GDC ذخیره شد.");
     } catch (error) {
