@@ -1,10 +1,6 @@
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
-import {
-  GDC_PRIMARY_SITE_BUNDLED_REF,
-  resolveGdcGuideImageUrl,
-} from "./gdc-question-guide-assets";
 
-const LEGACY_PRIMARY_IMAGE = "/images/gdc/gdc-primary-site.webp";
+const PRIMARY_SITE_IMAGE = "/images/gdc/gdc-primary-site.webp";
 
 const NEW_PRIMARY_SECTIONS = [
   {
@@ -38,13 +34,21 @@ function looksLikeLegacyPrimarySite(config: GdcQuestionGuideConfig) {
   );
 }
 
+function shouldUseBundledPrimaryImage(value?: string) {
+  if (!value) return true;
+  if (value.startsWith("hubgene://gdc-primary-site")) return true;
+  if (value.startsWith("data:image/")) return true;
+  if (value.includes("/images/gdc/gdc-primary-site")) return true;
+  return false;
+}
+
 export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
   const next = structuredClone(config);
   const primary = next.projects.facets.find((item) => item.id === "primarySite");
   if (!primary) return next;
 
-  if (!primary.imageUrl || primary.imageUrl === LEGACY_PRIMARY_IMAGE) {
-    primary.imageUrl = GDC_PRIMARY_SITE_BUNDLED_REF;
+  if (shouldUseBundledPrimaryImage(primary.imageUrl)) {
+    primary.imageUrl = PRIMARY_SITE_IMAGE;
   }
 
   if (looksLikeLegacyPrimarySite(config)) {
@@ -57,10 +61,5 @@ export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): G
 }
 
 export function prepareGdcQuestionGuideForDisplay(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
-  const next = structuredClone(config);
-  next.projects.facets = next.projects.facets.map((facet) => ({
-    ...facet,
-    imageUrl: resolveGdcGuideImageUrl(facet.imageUrl),
-  }));
-  return next;
+  return structuredClone(config);
 }
