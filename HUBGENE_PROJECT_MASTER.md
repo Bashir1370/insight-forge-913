@@ -1,6 +1,6 @@
 # HubGene — Project Master Context
 
-**Updated:** 2026-08-23  
+**Updated:** 2026-09-03  
 **Repository:** `Bashir1370/insight-forge-913`  
 **Primary branch:** `main`  
 **Purpose:** the single Markdown source for HubGene product decisions, scientific-learning standards, architecture, recovery notes, stabilization status, and the current development direction.
@@ -217,57 +217,78 @@ reference screenshot / visual asset
 
 Do **not** make live iframe embedding the default architecture. External portals can change, block embedding, or produce unstable learner experiences. HubGene should own the educational state and use a stable visual reference, with a clear link to the official live portal.
 
-### Long-term CMS goal
+### Resource authoring direction
 
-After the UX is validated, an admin should be able to:
+The original plan was to postpone a second CMS schema until the first GDC UX was validated. A focused **Resource Tour Visual CMS** was subsequently implemented for GDC because the visual-positioning and content-authoring workflow itself became part of the MVP validation.
+
+The current focused authoring layer can:
+
+- upload/replace a resource screenshot,
+- place and resize hotspots visually,
+- edit structured teaching content for each hotspot,
+- edit page-level title/description content,
+- persist managed overrides in Supabase,
+- preserve code-backed defaults as a fallback.
+
+This does **not** mean a fully generic multi-resource CMS is finished. Before generalizing to GEO/SRA/other resources, validate the GDC workflow and extract only the parts that are genuinely reusable.
+
+Longer-term goals still include:
 
 - create/edit a Resource,
-- upload/replace screen captures or approved visual assets,
-- place hotspots visually,
-- write guided steps,
 - define tasks/scenarios,
-- add quizzes/checkpoints,
-- connect the Resource to several scientific learning paths,
-- publish revisions without code deployment.
-
-Do not build a new database schema for this until the first GDC learning experience validates the content/UX model.
+- add quizzes/checkpoints beyond the current hotspot exercise pattern,
+- connect a Resource to several scientific learning paths,
+- publish/version resource revisions without code deployment.
 
 ---
 
 ## 4. Data Resources MVP — implementation checkpoint
 
-Feature branch:
+Original feature branch:
 
 ```text
 feature/data-resources-mvp
 ```
 
-Base branch:
+Original base branch:
 
 ```text
 stabilization/security-ci-2026-08-23
 ```
+
+The Data Resources implementation and subsequent GDC Visual CMS work are now present on `main`.
 
 Current routes:
 
 ```text
 /resources
 /resources/$slug
+/admin/resource-tours
 ```
 
-Primary navigation now exposes:
+Primary navigation exposes:
 
 ```text
 منابع داده
 ```
 
-Current implementation files:
+Key implementation files now include:
 
 ```text
 src/features/data-resources/resource-catalog.ts
 src/features/data-resources/GuidedPortalTour.tsx
+src/features/data-resources/gdc-home.tsx
+src/features/data-resources/gdc-dynamic-page.tsx
+src/features/data-resources/resource-tour-model.ts
+src/features/data-resources/resource-tour-loader.ts
+src/features/data-resources/resource-tour-admin-service.ts
+src/features/data-resources/VisualPageEditor.tsx
+src/features/data-resources/VisualAssetEditor.tsx
+src/features/data-resources/VisualContentEditor.tsx
+src/features/data-resources/HotspotContentEditor.tsx
 src/routes/resources.tsx
 src/routes/resources.$slug.tsx
+src/routes/admin_.resource-tours.tsx
 src/components/site/header.tsx
 ```
 
@@ -297,9 +318,9 @@ UniProt — planned
 
 This list is an initial development map, not a claim that these are the final or only important resources.
 
-### Generic GuidedPortalTour
+### Generic GuidedPortalTour and current GDC runtime
 
-`GuidedPortalTour.tsx` currently supports:
+`GuidedPortalTour.tsx` established the reusable interaction pattern with:
 
 - interactive hotspots,
 - normalized overlay coordinates,
@@ -310,9 +331,17 @@ This list is an initial development map, not a claim that these are the final or
 - progress indicator,
 - previous/next controls,
 - external link to the official resource,
-- a wireframe fallback when no screenshot asset is connected.
+- a wireframe fallback when no screenshot asset is available.
 
-The user-provided current GDC homepage screenshot is the intended first real visual reference. The MVP currently keeps the engine independent from a specific binary asset; connecting/versioning the approved screenshot is the next visual-content step.
+The current GDC page uses the richer `GdcHomeTour` runtime while preserving the same conceptual engine. It now supports a fixed approved GDC screenshot plus Supabase-managed overrides.
+
+Current visual state:
+
+- default screenshot: `/images/gdc/gdc-home-clean.webp`,
+- an admin can upload a new image to the `learning-media` bucket or save a direct image URL,
+- hotspot geometry is percent-based and responsive,
+- a fallback educational portal mock is shown if the screenshot fails,
+- Supabase-managed image/content/hotspots override defaults without deleting the code-backed fallback model.
 
 ---
 
@@ -334,7 +363,7 @@ Verified current concepts:
 
 This distinction must remain explicit in HubGene because it prevents a common conceptual error.
 
-Initial GDC homepage hotspots:
+Current GDC homepage hotspots:
 
 ```text
 Analysis Center
@@ -371,6 +400,38 @@ case
 sample/biospecimen
 file
 ```
+
+### Structured Persian hotspot learning content — 2026-08-27 milestone
+
+The seven GDC hotspots now use a shared structured learning model. The **English hotspot title remains aligned with the real GDC interface**, while Persian teaching content is editable separately.
+
+Current hotspot teaching fields:
+
+```text
+title (English interface term)
+persianLabel
+description / «در یک جمله»
+whyItMatters
+researchExample
+commonMistake
+exerciseQuestion
+exerciseAnswer
+action / connection to next step
+x, y, width, height
+```
+
+The learner-facing GDC step card now renders:
+
+- English interface title,
+- Persian educational label,
+- one-sentence explanation,
+- why it matters,
+- expandable research example,
+- common mistake,
+- “خودت امتحان کن” exercise with revealable answer,
+- explicit connection to the next step.
+
+The current admin editor includes a dedicated `HotspotContentEditor` so this structured Persian content can be changed without editing source code.
 
 ### Relationship to the real RNA-seq case study
 
@@ -675,6 +736,7 @@ Important current routes include:
 /dashboard
 /admin
 /admin/content
+/admin/resource-tours
 /consultation
 ```
 
@@ -690,13 +752,40 @@ Principle:
 
 > Stabilize scientific architecture and learner experience first; migrate URLs later if the benefit justifies the cost.
 
-Important admin route rule:
+### Admin route rule after GDC editor routing fix
+
+Operational admin remains:
 
 ```text
 src/routes/admin.tsx
+→ /admin
 ```
 
-is the intended operational admin route. Do not create a competing route mapping to the same URL.
+The GDC Resource Tour editor is deliberately a **standalone admin page**, not content appended through an `<Outlet />` inside the large operational admin dashboard.
+
+Current file-route implementation:
+
+```text
+src/routes/admin_.resource-tours.tsx
+```
+
+Rendered browser URL:
+
+```text
+/admin/resource-tours
+```
+
+Important TanStack convention:
+
+- the `_` in the filename/route id is used to break layout nesting,
+- it is **not** part of the desired browser URL,
+- links must use `/admin/resource-tours`, not `/admin_/resource-tours`,
+- do not re-add an `<Outlet />` to `admin.tsx` merely to make this editor render,
+- do not create a competing nested route that maps to the same rendered URL.
+
+The admin-only “ویرایش GDC” button in `gdc-dynamic-page.tsx` currently links to `/admin/resource-tours`.
+
+Generated `src/routeTree.gen.ts` is a TanStack-generated artifact and should not be manually edited as the source of a routing fix; route generation should come from the file-route structure during dev/build.
 
 ---
 
@@ -767,17 +856,39 @@ Build:
 bun run build
 ```
 
-Deploy:
+Current GitHub Actions deployment workflow:
 
 ```text
-npx wrangler deploy
+.github/workflows/deploy-cloudflare.yml
 ```
 
-Important lesson:
+It runs on pushes to `main` and by manual `workflow_dispatch`.
+
+Current deployment sequence:
+
+```text
+checkout
+→ setup Bun
+→ bun install --frozen-lockfile
+→ bun run build
+→ bunx wrangler@4 deploy --config .output/server/wrangler.json
+```
+
+The deploy step runs only when the GitHub Actions secret is available:
+
+```text
+CLOUDFLARE_API_TOKEN
+```
+
+If the token is missing, the workflow emits a warning and skips deployment after a successful build rather than failing with a misleading deploy error.
+
+Important lessons:
 
 > Build the TanStack Start application before Wrangler deploy. Skipping the build can lead to missing `@tanstack/react-start/server-entry` output.
 
-`@lovable.dev/vite-tanstack-config` already provides the main TanStack/React/Tailwind integration; do not duplicate those plugins casually.
+> Deploy the Nitro-generated worker configuration (`.output/server/wrangler.json`) rather than assuming a root Wrangler config represents the built TanStack Start output.
+
+`@lovable.dev/vite-tanstack-config` already provides the main TanStack/React/Tailwind/Nitro integration; do not duplicate those plugins casually.
 
 ---
 
@@ -878,7 +989,7 @@ There is no known `quote_approved` status.
 
 ---
 
-## 18. Admin and Learning CMS
+## 18. Admin, Learning CMS, and Resource Tour Visual CMS
 
 Operational admin:
 
@@ -921,7 +1032,48 @@ src/features/learning/cms/useStableGuidedLessonCms.ts
 
 Complex React behavior remains in code; editable scientific content is structured CMS data.
 
-The new Data Resources engine is **not yet CMS-backed**. Reuse the proven content/code separation pattern after GDC UX validation rather than prematurely creating a second CMS architecture.
+### GDC Resource Tour Visual CMS
+
+The Data Resources engine now has a focused database-backed authoring layer for GDC.
+
+Standalone admin page:
+
+```text
+/admin/resource-tours
+```
+
+Route file:
+
+```text
+src/routes/admin_.resource-tours.tsx
+```
+
+Admin access checks both authentication and an `admin` row in `user_roles`. Non-admin users are redirected away from the editor.
+
+Current editor capabilities:
+
+- load persisted GDC Resource Tour state from Supabase,
+- show safe defaults plus a warning if persistence is unavailable,
+- upload screenshots directly to `learning-media`,
+- save a screenshot URL,
+- drag/resize hotspot geometry visually,
+- save semantic hotspot keys and ordering,
+- edit structured Persian hotspot teaching content,
+- edit page-level title/description blocks,
+- open `/resources/gdc` as a preview.
+
+Key files:
+
+```text
+src/features/data-resources/resource-tour-model.ts
+src/features/data-resources/resource-tour-admin-service.ts
+src/features/data-resources/VisualAssetEditor.tsx
+src/features/data-resources/VisualPageEditor.tsx
+src/features/data-resources/HotspotContentEditor.tsx
+src/features/data-resources/VisualContentEditor.tsx
+```
+
+This authoring layer is currently **GDC-focused**, not yet the final generic CMS for every Data Resource.
 
 ---
 
@@ -990,6 +1142,9 @@ research_assessments
 learning_content_drafts
 learning_content_published
 learning_content_revisions
+resource_tours
+resource_hotspots
+resource_content_blocks
 ```
 
 Known Storage buckets include:
@@ -999,7 +1154,7 @@ project-files
 learning-media
 ```
 
-Repository migrations at the 2026-08-23 checkpoint:
+Earlier repository migrations at the 2026-08-23 checkpoint:
 
 ```text
 20260819164500_add_cross_device_learning_progress_state.sql
@@ -1007,18 +1162,54 @@ Repository migrations at the 2026-08-23 checkpoint:
 20260819173349_optimize_learning_content_cms_policies.sql
 ```
 
-Recovery gap:
+Resource Tour migrations added afterward include:
 
-- first migration alters a pre-existing `learning_progress` table,
-- CMS policies depend on `private.has_role`,
+```text
+20260824213000_resource_tours_hotspots.sql
+20260824220000_visual_content_blocks.sql
+20260827201000_finalize_resource_tour_editor.sql
+20260827211500_gdc_hotspot_learning_content.sql
+```
+
+Resource Tour persistence model now includes:
+
+```text
+resource_tours
+  └── one row per resource slug / image metadata
+
+resource_hotspots
+  └── semantic hotspot_key + geometry + structured teaching fields
+
+resource_content_blocks
+  └── page-level editable key/value content
+```
+
+The finalization migration:
+
+- adds/normalizes semantic `hotspot_key`,
+- creates uniqueness on `(resource_id, hotspot_key)`,
+- creates uniqueness on `(resource_id, key)` for content blocks,
+- applies `updated_at` triggers,
+- replaces the early permissive authenticated Resource Tour policies with admin policies based on `private.has_role('admin'::text)`,
+- keeps public read access for Resource Tour content,
+- seeds the GDC resource/hotspot/content records without overwriting already-saved admin values.
+
+The later GDC learning-content migration adds structured Persian educational fields while preserving the English GDC interface labels.
+
+### Remaining recovery/type gap
+
+The broader recovery gap still exists:
+
+- the first learning-progress migration alters a pre-existing `learning_progress` table,
+- CMS and finalized Resource Tour policies depend on `private.has_role`,
 - multiple production tables predate repository migration history,
 - generated Supabase types contain only part of the live schema.
 
-Safe stabilization decision:
+Safe stabilization decision remains:
 
-- no guessed production migration was added,
-- generated `src/integrations/supabase/types.ts` remains untouched,
-- `src/integrations/supabase/database.ts` provides temporary compatibility widening.
+- do not invent missing security-sensitive production schema,
+- generated `src/integrations/supabase/types.ts` remains a generated artifact,
+- compatibility widening is temporary where required.
 
 When direct live-schema export is available:
 
@@ -1103,8 +1294,10 @@ Non-blocking issues:
 4. Learning progress is not bound to content revision.
 5. Generated Supabase database types are stale; compatibility widening is temporary.
 6. Several routes/components are very large (admin, dashboard, Navigator, Project Mode).
-7. Data Resources MVP is currently code-backed; a CMS authoring layer comes after UX validation.
+7. Resource Tour authoring is currently GDC-focused; generic multi-resource authoring still needs deliberate abstraction before GEO/SRA expansion.
 8. Versioned screenshot/resource-page maintenance needs a deliberate content policy because external portals evolve.
+9. The Resource Tour editor uses code-backed defaults plus database overrides; future versioning/publish states should be designed before many resources depend on the same tables.
+10. Generated TanStack route-tree artifacts can appear stale in Git; do not manually patch them instead of fixing file-route structure and regenerating during build/dev.
 
 Refactor when a milestone benefits from it, not merely because files are long.
 
@@ -1160,12 +1353,15 @@ Stabilization changes include:
 - historical Markdown documentation consolidated into this single master file,
 - other repository-level Markdown project documents removed.
 
-Known quality state at this checkpoint:
+Known quality state from that checkpoint:
 
 - dependency installation succeeded in the first quality workflow run,
 - `lint` failed,
-- `typecheck` and `build` were therefore skipped,
-- do not claim CI is green until a successful run is observed.
+- `typecheck` and `build` were therefore skipped.
+
+This documentation update did not independently re-establish a green `quality.yml` run. Do not claim the quality workflow is green until a successful run is observed.
+
+A separate Cloudflare deployment workflow now exists and should not be confused with the quality gate.
 
 ---
 
@@ -1219,27 +1415,50 @@ Recovery sequence:
 9. `bun run typecheck`,
 10. `bun run build`,
 11. deploy,
-12. test auth, dashboard, admin, consultation, Learn, Data Resources, RNA-seq persistence, project files/messages, quotes and invoices.
+12. test auth, dashboard, admin, consultation, Learn, Data Resources, GDC editor/persistence, RNA-seq persistence, project files/messages, quotes and invoices.
+
+For GDC Resource Tour recovery specifically, verify:
+
+- `resource_tours`, `resource_hotspots`, `resource_content_blocks`,
+- `learning-media` files referenced by resource screenshots,
+- RLS/admin role behavior,
+- `/resources/gdc`,
+- `/admin/resource-tours`,
+- image/hotspot/content save and reload.
 
 Do not rely on a ChatGPT conversation as the only project backup.
 
 ---
 
-## 26. Current development checkpoint
+## 26. Current development checkpoint — 2026-09-03
 
-The newer explicit product decision supersedes the previous “go directly to TCGA-LIHC analysis” checkpoint.
+The previous checkpoint said to connect the GDC visual reference and postpone CMS wiring. That milestone has materially advanced.
 
-Current order:
+Completed/implemented since the 2026-08-23 master snapshot:
 
-1. validate **Data Resources** as an independent reusable pillar,
-2. use **GDC / TCGA** as the first Resource Learning Engine implementation,
-3. connect the approved/current GDC visual reference and calibrate hotspots,
-4. build one complete task-based GDC mission around finding/understanding RNA-seq data,
-5. validate UX before adding CMS schema,
-6. then connect this upstream data-source learning to the **TCGA-LIHC real RNA-seq analysis with R** experience,
-7. after GDC succeeds, expand the same engine to GEO/SRA and then resources from Genomics/Proteomics and other domains.
+1. GDC visual screenshot is connected to the learner-facing guided tour.
+2. Hotspot geometry has a responsive visual drag/resize editor.
+3. GDC Resource Tour persistence is connected to Supabase.
+4. Page image can be uploaded to `learning-media` or supplied by URL.
+5. Page-level title/description are editable and persisted.
+6. Managed GDC values override the static guided tour while static defaults remain available as fallback.
+7. GDC editor is a standalone admin page at `/admin/resource-tours`, separate from the large operational `/admin` dashboard.
+8. Resource Tour RLS was tightened from early permissive authenticated policies to admin-role management policies.
+9. Seven GDC hotspots now have structured Persian educational content with example, mistake, exercise, answer and next-step fields.
+10. Cloudflare deployment automation was updated to build first and deploy the generated Nitro Worker config with Wrangler 4.
 
-This order tests whether the reusable learning engine works before multiplying content.
+### Current next order
+
+1. validate the complete GDC learner/admin workflow in production: load → edit → save → reload → learner-facing override,
+2. calibrate hotspot positions and teaching text against the approved/current GDC visual reference and actual learner behavior,
+3. complete/validate the first end-to-end task-based GDC mission around finding and understanding RNA-seq data,
+4. document/version the external GDC screenshot/source context so future portal changes can be maintained safely,
+5. only then generalize the Resource Tour authoring model for the next resource, with **GEO** as the leading candidate,
+6. avoid creating a separate hard-coded GEO editor if the existing Resource Tour model can be generalized cleanly,
+7. connect the validated GDC provenance/data-discovery experience to the **TCGA-LIHC real RNA-seq analysis with R** Golden Template,
+8. continue expansion to SRA and then resources from Genomics/Proteomics/other domains after the engine proves reusable.
+
+This order validates both the educational runtime and the authoring/persistence workflow before multiplying resources.
 
 ---
 
@@ -1257,6 +1476,11 @@ This order tests whether the reusable learning engine works before multiplying c
 - keep one canonical Resource page and cross-link it from relevant domains,
 - distinguish external official resources from HubGene educational overlays,
 - record source/release/version context when external data portals change,
+- keep English portal labels aligned with the actual external interface and place Persian explanation in a separate teaching layer,
+- use semantic hotspot keys rather than depending only on step numbers,
+- preserve code-backed defaults so a persistence failure does not destroy the teaching experience,
+- do not manually edit generated `routeTree.gen.ts` as a routing strategy,
+- keep `/admin` operational admin and `/admin/resource-tours` standalone unless a deliberate shared admin layout is designed later,
 - never equate paired-end files/technical replicates with biological replicates,
 - never use TPM/FPKM as raw-count substitutes for standard DESeq2 teaching,
 - never auto-delete a sample from one PCA/QC signal,
@@ -1268,8 +1492,12 @@ This order tests whether the reusable learning engine works before multiplying c
 
 # Current status
 
-**Repository stabilization exists on PR #20 and still has an unresolved lint quality-gate failure.**
+**Data Resources is an implemented independent product pillar on `main`, with GDC/TCGA as the first active Resource Learning Engine experience.**
 
-**Data Resources is now the approved independent product pillar and has an MVP implementation on `feature/data-resources-mvp`, with GDC/TCGA as the first active Resource.**
+**The GDC visual reference, responsive hotspots, Supabase-managed overrides, image upload, page content editing, and structured Persian hotspot teaching content are now implemented.**
 
-**Next product-validation step: connect the real GDC visual reference, calibrate the guided hotspots, and complete the first task-based GDC workflow before expanding the same engine to more databases/resources or wiring it into CMS.**
+**The GDC editor is intentionally standalone at `/admin/resource-tours`; `src/routes/admin_.resource-tours.tsx` uses TanStack's non-nested file-route convention while the browser URL remains `/admin/resource-tours`.**
+
+**Cloudflare deployment now has a dedicated GitHub Actions workflow that builds the TanStack Start/Nitro output and deploys `.output/server/wrangler.json` with Wrangler 4 when `CLOUDFLARE_API_TOKEN` is configured.**
+
+**Next product-validation step: verify GDC editing/persistence end to end in production, complete the first task-based RNA-seq data-discovery mission, then generalize the proven Resource Tour model toward GEO rather than creating a second one-off editor.**
