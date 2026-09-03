@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
-import { GdcQuestionDrivenGuideV5 } from "./GdcQuestionDrivenGuideV5";
+import { GdcQuestionDrivenGuideV6 } from "./GdcQuestionDrivenGuideV6";
 import { getGdcQuestionGuideConfig } from "./gdc-question-guide-config";
 import {
   prepareGdcQuestionGuideForDisplay,
@@ -73,7 +73,7 @@ export function GdcDynamicPage() {
         </a>
       ) : null}
 
-      <GdcQuestionDrivenGuideV5
+      <GdcQuestionDrivenGuideV6
         imageUrl={resource?.image_url}
         managedHotspots={(resource?.hotspots ?? []) as any[]}
         pageTitle={content.title}
