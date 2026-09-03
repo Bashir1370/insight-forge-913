@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Save } from "lucide-react";
 
+import { GdcFacetPanelsAdminEditor } from "./GdcFacetPanelsAdminEditor";
 import { HotspotCanvasEditor } from "./HotspotCanvasEditor";
 import { VisualAssetEditor } from "./VisualAssetEditor";
 import type { EditableResourceHotspot } from "./resource-tour-model";
@@ -152,7 +153,7 @@ export function GdcQuestionGuideAdminEditor({
           <div className="text-xs font-black text-teal-700">ویرایشگر آموزش سؤال‌محور</div>
           <h2 className="mt-1 text-2xl font-black text-slate-950">GDC Question Guide</h2>
           <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
-            متن مراحل، سؤال‌های مادر، محتوای فیلترها، پنل‌های توضیحی و جایگاه/ابعاد Hotspotهای صفحه Projects از همین بخش قابل ویرایش است.
+            متن مراحل، سؤال‌های مادر، محتوای فیلترها، پنل‌های توضیحی، تصاویر و جایگاه/ابعاد Hotspotهای صفحه Projects از همین بخش قابل ویرایش است.
           </p>
         </div>
         <button
@@ -298,44 +299,11 @@ export function GdcQuestionGuideAdminEditor({
           </div>
         </details>
 
-        <details className="rounded-2xl border border-slate-200 p-4">
-          <summary className="cursor-pointer font-black text-slate-900">فیلترها و پنل‌های توضیحی مرحله ۲</summary>
-          <div className="mt-4 space-y-4">
-            {draft.projects.facets.map((facet) => (
-              <div key={facet.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="grid gap-3 lg:grid-cols-2">
-                  <Input label="نام انگلیسی" value={facet.title} onChange={(value) => updateFacet(facet.id, { title: value })} />
-                  <Input label="سؤال ساده برای کاربر" value={facet.prompt} onChange={(value) => updateFacet(facet.id, { prompt: value })} />
-                  <Input label="عنوان پنل موقت" value={facet.lensTitle} onChange={(value) => updateFacet(facet.id, { lensTitle: value })} />
-                  <Input label="زیرعنوان پنل" value={facet.lensSubtitle} onChange={(value) => updateFacet(facet.id, { lensSubtitle: value })} />
-                  <Input label="URL تصویر پنل (اختیاری)" value={facet.imageUrl ?? ""} onChange={(value) => updateFacet(facet.id, { imageUrl: value })} />
-                </div>
-                <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                  {facet.sections.map((section, index) => (
-                    <div key={index} className="rounded-xl border border-slate-200 bg-white p-3">
-                      <Input
-                        label={`تیتر توضیح ${index + 1}`}
-                        value={section.title}
-                        onChange={(value) => updateFacet(facet.id, {
-                          sections: facet.sections.map((item, itemIndex) => itemIndex === index ? { ...item, title: value } : item),
-                        })}
-                      />
-                      <div className="mt-2">
-                        <Textarea
-                          label="متن"
-                          value={section.body}
-                          onChange={(value) => updateFacet(facet.id, {
-                            sections: facet.sections.map((item, itemIndex) => itemIndex === index ? { ...item, body: value } : item),
-                          })}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </details>
+        <GdcFacetPanelsAdminEditor
+          config={draft}
+          onChange={setDraft}
+          onSave={saveAll}
+        />
       </div>
     </section>
   );
