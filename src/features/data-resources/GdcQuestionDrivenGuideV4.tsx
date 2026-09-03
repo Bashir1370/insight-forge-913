@@ -75,13 +75,19 @@ function StoryPanel({ onContinue }: { onContinue: () => void }) {
         </div>
 
         <div className="rounded-2xl border border-slate-200 p-4">
-          <div className="text-xs font-black text-slate-500">جای Project در نقشه GDC</div>
+          <div className="text-xs font-black text-slate-600">چند اصطلاح مهم در معماری GDC</div>
+          <p className="mt-2 text-sm leading-7 text-slate-700">
+            بیایید قبل از ادامه، چند اصطلاح پرکاربرد در GDC را خیلی ساده بشناسیم و ببینیم <b dir="ltr">Project</b> دقیقاً کجای معماری این دیتابیس قرار می‌گیرد.
+          </p>
           <div className="mt-3 grid gap-2 text-center text-[11px] font-black sm:grid-cols-4" dir="ltr">
-            <div className="rounded-xl bg-slate-100 px-2 py-3">Program<br /><span className="font-medium text-slate-500">چتر پژوهشی بزرگ‌تر</span></div>
-            <div className="rounded-xl border border-teal-200 bg-teal-50 px-2 py-3 text-teal-900">Project<br /><span className="font-medium text-teal-700">واحد مشخص مطالعه</span></div>
-            <div className="rounded-xl bg-slate-100 px-2 py-3">Cases<br /><span className="font-medium text-slate-500">موارد پژوهشی</span></div>
-            <div className="rounded-xl bg-slate-100 px-2 py-3">Data / Files<br /><span className="font-medium text-slate-500">داده‌ها و فایل‌ها</span></div>
+            <div className="rounded-xl bg-slate-100 px-2 py-3">Program<br /><span className="font-medium text-slate-500">برنامه پژوهشی بزرگ‌تر</span></div>
+            <div className="rounded-xl border border-teal-200 bg-teal-50 px-2 py-3 text-teal-900">Project<br /><span className="font-medium text-teal-700">یک مطالعه مشخص</span></div>
+            <div className="rounded-xl bg-slate-100 px-2 py-3">Cases<br /><span className="font-medium text-slate-500">موارد یا بیماران مطالعه</span></div>
+            <div className="rounded-xl bg-slate-100 px-2 py-3">Data / Files<br /><span className="font-medium text-slate-500">داده‌ها و فایل‌های مرتبط</span></div>
           </div>
+          <p className="mt-3 text-xs leading-6 text-slate-500">
+            خیلی ساده: یک <b dir="ltr">Program</b> می‌تواند چند Project داشته باشد؛ هر <b dir="ltr">Project</b> شامل Caseهای مطالعه است و داده‌ها و فایل‌ها به همین موارد پژوهشی مرتبط می‌شوند.
+          </p>
         </div>
 
         <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
