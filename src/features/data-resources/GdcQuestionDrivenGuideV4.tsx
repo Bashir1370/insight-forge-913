@@ -84,13 +84,6 @@ function StoryPanel({ onContinue }: { onContinue: () => void }) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
-          <div className="text-xs font-black text-sky-800">یک اصطلاح برای ادامه مسیر</div>
-          <p className="mt-2 text-sm leading-7 text-sky-950/80">
-            بعدتر از میان Caseهای مناسب یک <b dir="ltr">Cohort</b> می‌سازیم؛ یعنی مجموعه Caseهایی که قرار است گروه مطالعه ما را تشکیل دهند. فعلاً هنوز در آن مرحله نیستیم.
-          </p>
-        </div>
-
         <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
           <div className="text-xs font-black text-amber-900">مأموریت فعلی</div>
           <p className="mt-2 text-sm leading-7 text-amber-950/80">
