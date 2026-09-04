@@ -19,10 +19,29 @@ export function GdcQuestionDrivenGuideV6(props: Props) {
     <GdcStudyDesignProvider config={studyDesign}>
       <div className="gdc-guide-v6">
         <style>{`
+          .gdc-guide-v6 p {
+            text-align: justify !important;
+            text-align-last: right;
+            text-justify: inter-word;
+          }
+
+          .gdc-guide-v6 .mt-5.grid.gap-5 {
+            direction: ltr;
+          }
+
+          .gdc-guide-v6 .mt-5.grid.gap-5 > aside {
+            direction: rtl;
+          }
+
           .gdc-guide-v6 .fixed.inset-0 > section {
             width: min(96vw, ${layout.modalMaxWidth}px) !important;
             max-width: ${layout.modalMaxWidth}px !important;
             max-height: 96vh !important;
+            direction: ltr !important;
+          }
+
+          .gdc-guide-v6 .fixed.inset-0 > section > div:last-of-type {
+            direction: rtl !important;
           }
 
           @media (min-width: 1024px) {
