@@ -43,7 +43,6 @@ const questions = [
 const stages = [
   ["از کجا شروع کنم؟", "اگر می‌خواهم بفهمم برای سرطان یا موضوع پژوهشی من چه داده‌ای وجود دارد، از کدام بخش GDC شروع کنم؟", "برای دیدن داده‌ها در سطح پروژه از Projects شروع می‌کنیم.", "قبل از ساخت Cohort یا انتخاب فایل باید بدانیم پروژه مرتبط و نوع داده موردنیاز اصلاً وجود دارد یا نه."],
   ["Projects را بخوان", "صفحه Projects چگونه اطلاعات را به ما نشان می‌دهد؟", "فیلترهای سمت چپ سؤال پژوهشی را محدود می‌کنند و جدول سمت راست Projectهای سازگار با معیارهای فعلی را نشان می‌دهد.", "اول نقشه صفحه را می‌خوانیم؛ بعد هر مفهوم را فقط زمانی که به آن نیاز داریم باز می‌کنیم."],
-  ["Program و Project", "Program و Project چه فرقی دارند؟", "Program چارچوب پژوهشی بزرگ‌تر است و Project واحد مشخص‌تری برای سازمان‌دهی داده‌هاست.", "انتخاب عملی داده در ادامه در سطح Project و سپس Case و File دقیق‌تر می‌شود."],
   ["پروژه مرتبط را محدود کن", "چطور ده‌ها پروژه را به پروژه‌های مرتبط با سرطان و نوع داده خودم محدود کنم؟", "Facetها را بر اساس سؤال پژوهشی یکی‌یکی اعمال می‌کنیم.", "به‌جای مرور دستی همه پروژه‌ها، ویژگی‌های سؤال پژوهشی را به فیلترهای GDC تبدیل می‌کنیم."],
   ["نوع داده را بررسی کن", "از کجا بفهمم Project انتخاب‌شده واقعاً داده مناسب تحلیل من را دارد؟", "Experimental Strategy، Data Category و سپس Project Summary را بررسی می‌کنیم.", "نام پروژه کافی نیست؛ داده موجود باید با طراحی تحلیل شما سازگار باشد."],
   ["تصمیم بعدی", "وقتی Project و نوع داده مناسب را پیدا کردم، قدم بعدی چیست؟", "برای انتخاب دقیق Caseها به Cohort Builder و برای رسیدن به فایل‌ها به Repository می‌رویم.", "اینجا جست‌وجوی پروژه به مسیر عملی پژوهش متصل می‌شود."],
@@ -93,9 +92,8 @@ function ProjectsView({ stage, selectedFacet, selectFacet }: { stage: number; se
         <div className="pointer-events-none absolute left-[1.2%] top-[39%] rounded-full bg-teal-700 px-3 py-1.5 text-[10px] font-black text-white shadow">Filters · سؤال را محدود می‌کنیم</div>
         <div className="pointer-events-none absolute left-[23%] top-[39%] rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black text-white shadow">Projects Table · نتیجه را می‌خوانیم</div>
       </> : null}
-      {stage === 2 && src ? <><div className="pointer-events-none absolute left-[22%] top-[40%] h-[55%] w-[10%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /><div className="pointer-events-none absolute left-[62%] top-[40%] h-[55%] w-[9%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10" /></> : null}
-      {stage === 3 && src ? <div className="pointer-events-none absolute left-[.7%] top-[36%] h-[59%] w-[20%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /> : null}
-      {stage === 4 && src ? <div className="pointer-events-none absolute left-[75%] top-[40%] h-[55%] w-[24%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.08)]" /> : null}
+      {stage === 2 && src ? <div className="pointer-events-none absolute left-[.7%] top-[36%] h-[59%] w-[20%] rounded-lg border-[3px] border-teal-400 bg-teal-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.10)]" /> : null}
+      {stage === 3 && src ? <div className="pointer-events-none absolute left-[75%] top-[40%] h-[55%] w-[24%] rounded-lg border-[3px] border-sky-400 bg-sky-300/10 shadow-[0_0_0_999px_rgba(15,23,42,.08)]" /> : null}
     </div>
   );
 }
