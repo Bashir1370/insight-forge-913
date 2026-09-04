@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
 import { VisualAssetEditor } from "@/features/data-resources/VisualAssetEditor";
@@ -217,6 +218,12 @@ function ResourceToursAdmin() {
           <GdcQuestionGuideAdminEditor config={guideConfig} onSave={handleGuideSave} />
 
           <GdcStudyDesignAdminEditor
+            config={guideConfig}
+            onChange={setGuideConfig}
+            onSave={handleGuideSave}
+          />
+
+          <GdcProjectDecisionAdminEditor
             config={guideConfig}
             onChange={setGuideConfig}
             onSave={handleGuideSave}
