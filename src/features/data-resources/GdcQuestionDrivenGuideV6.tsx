@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { useEffect, useRef } from "react";
 
 import { GdcQuestionDrivenGuideV5 } from "./GdcQuestionDrivenGuideV5";
 import { GdcStudyDesignProvider } from "./GdcStudyDesignContext";
@@ -10,14 +11,71 @@ import {
 
 type Props = ComponentProps<typeof GdcQuestionDrivenGuideV5>;
 
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"] as const;
+
+function toPersianDigits(value: string) {
+  return value.replace(/[0-9]/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
+}
+
+function localizeTextNode(node: Text) {
+  const parentTag = node.parentElement?.tagName;
+  if (parentTag === "SCRIPT" || parentTag === "STYLE") return;
+
+  const current = node.nodeValue ?? "";
+  const localized = toPersianDigits(current);
+  if (localized !== current) node.nodeValue = localized;
+}
+
+function localizeVisibleNumbers(root: HTMLElement) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+  while (node) {
+    localizeTextNode(node as Text);
+    node = walker.nextNode();
+  }
+}
+
 export function GdcQuestionDrivenGuideV6(props: Props) {
+  const rootRef = useRef<HTMLDivElement>(null);
   const layout = getGdcLensLayout(props.guideConfig.projects);
   const imageHeight = layout.imageHeight > 0 ? `${layout.imageHeight}px` : "auto";
   const studyDesign = getGdcStudyDesignConfig(props.guideConfig);
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    localizeVisibleNumbers(root);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === "characterData") {
+          localizeTextNode(mutation.target as Text);
+          continue;
+        }
+
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            localizeTextNode(node as Text);
+          } else if (node instanceof HTMLElement) {
+            localizeVisibleNumbers(node);
+          }
+        });
+      }
+    });
+
+    observer.observe(root, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <GdcStudyDesignProvider config={studyDesign}>
-      <div className="gdc-guide-v6">
+      <div ref={rootRef} className="gdc-guide-v6">
         <style>{`
           .gdc-guide-v6 p {
             text-align: justify !important;
