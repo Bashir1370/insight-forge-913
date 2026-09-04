@@ -10,8 +10,15 @@ import {
 } from "./gdc-lens-layout";
 
 type Props = ComponentProps<typeof GdcQuestionDrivenGuideV5>;
+type GuideConfig = Props["guideConfig"];
 
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"] as const;
+const FINAL_PROJECT_STAGE_TITLE = "ارزیابی پروژه یا پروژه‌های نهایی";
+const LEGACY_FINAL_PROJECT_TITLES = new Set([
+  "از ۳ Project مرتبط تا انتخاب پژوهشی",
+  "از 3 Project مرتبط تا انتخاب پژوهشی",
+  "نوع داده را بررسی کن",
+]);
 
 function toPersianDigits(value: string) {
   return value.replace(/[0-9]/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
@@ -35,11 +42,21 @@ function localizeVisibleNumbers(root: HTMLElement) {
   }
 }
 
+function prepareDisplayGuideConfig(config: GuideConfig): GuideConfig {
+  const next = structuredClone(config);
+  const stageIndex = next.stageTitles.findIndex((title) => LEGACY_FINAL_PROJECT_TITLES.has(title.trim()));
+  if (stageIndex >= 0) {
+    next.stageTitles[stageIndex] = FINAL_PROJECT_STAGE_TITLE;
+  }
+  return next;
+}
+
 export function GdcQuestionDrivenGuideV6(props: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const layout = getGdcLensLayout(props.guideConfig.projects);
+  const displayGuideConfig = prepareDisplayGuideConfig(props.guideConfig);
+  const layout = getGdcLensLayout(displayGuideConfig.projects);
   const imageHeight = layout.imageHeight > 0 ? `${layout.imageHeight}px` : "auto";
-  const studyDesign = getGdcStudyDesignConfig(props.guideConfig);
+  const studyDesign = getGdcStudyDesignConfig(displayGuideConfig);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -159,7 +176,7 @@ export function GdcQuestionDrivenGuideV6(props: Props) {
             }
           }
         `}</style>
-        <GdcQuestionDrivenGuideV5 {...props} />
+        <GdcQuestionDrivenGuideV5 {...props} guideConfig={displayGuideConfig} />
       </div>
     </GdcStudyDesignProvider>
   );
