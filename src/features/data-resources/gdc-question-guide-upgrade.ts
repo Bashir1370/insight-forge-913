@@ -120,14 +120,24 @@ function looksLikeLegacyExperimentalStrategy(config: GdcQuestionGuideConfig) {
 function shouldUseBundledPrimaryImage(value?: string) {
   if (!value) return true;
   if (value.startsWith("hubgene://gdc-primary-site")) return true;
-  if (value.includes("/images/gdc/gdc-primary-site")) return true;
+  if (value.includes(PRIMARY_SITE_IMAGE_PATH)) return true;
   return false;
+}
+
+function removeRedundantProgramProjectStage(config: GdcQuestionGuideConfig) {
+  const redundantIndex = config.stageTitles.findIndex((title) =>
+    title.trim().toLowerCase() === "program و project".toLowerCase(),
+  );
+  if (redundantIndex >= 0) {
+    config.stageTitles.splice(redundantIndex, 1);
+  }
 }
 
 export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
   const next = structuredClone(config);
-  const primary = next.projects.facets.find((item) => item.id === "primarySite");
+  removeRedundantProgramProjectStage(next);
 
+  const primary = next.projects.facets.find((item) => item.id === "primarySite");
   if (primary) {
     if (shouldUseBundledPrimaryImage(primary.imageUrl)) {
       primary.imageUrl = PRIMARY_SITE_IMAGE;
@@ -152,6 +162,7 @@ export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): G
 
 export function prepareGdcQuestionGuideForDisplay(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
   const next = structuredClone(config);
+  removeRedundantProgramProjectStage(next);
   const primary = next.projects.facets.find((item) => item.id === "primarySite");
   if (primary && shouldUseBundledPrimaryImage(primary.imageUrl)) {
     primary.imageUrl = PRIMARY_SITE_IMAGE;
