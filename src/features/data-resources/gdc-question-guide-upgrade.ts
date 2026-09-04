@@ -133,9 +133,17 @@ function removeRedundantProgramProjectStage(config: GdcQuestionGuideConfig) {
   }
 }
 
+function upgradeStudyDesignStageTitle(config: GdcQuestionGuideConfig) {
+  const stageIndex = config.stageTitles.findIndex((title) => title.trim() === "پروژه مرتبط را محدود کن");
+  if (stageIndex >= 0) {
+    config.stageTitles[stageIndex] = "طراحی مطالعه و اعمال فیلترها";
+  }
+}
+
 export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
   const next = structuredClone(config);
   removeRedundantProgramProjectStage(next);
+  upgradeStudyDesignStageTitle(next);
 
   const primary = next.projects.facets.find((item) => item.id === "primarySite");
   if (primary) {
@@ -163,6 +171,7 @@ export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): G
 export function prepareGdcQuestionGuideForDisplay(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
   const next = structuredClone(config);
   removeRedundantProgramProjectStage(next);
+  upgradeStudyDesignStageTitle(next);
   const primary = next.projects.facets.find((item) => item.id === "primarySite");
   if (primary && shouldUseBundledPrimaryImage(primary.imageUrl)) {
     primary.imageUrl = PRIMARY_SITE_IMAGE;
