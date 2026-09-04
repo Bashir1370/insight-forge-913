@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { GdcProjectDecisionStage } from "./GdcProjectDecisionStage";
 import { GdcQuestionDrivenGuideV3 as PreviousGuide } from "./GdcQuestionDrivenGuideV3";
 import { GdcStudyDesignStage } from "./GdcStudyDesignStage";
 import {
@@ -402,7 +403,16 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
   const [lensOpen, setLensOpen] = useState(false);
   const [bridgeTarget, setBridgeTarget] = useState<BridgeTarget>(null);
 
-  const selectedFacetConfig = guideConfig.projects.facets.find((item) => item.id === selectedFacet) ?? guideConfig.projects.facets[0];
+  const stageTitles = useMemo(() => [
+    guideConfig.stageTitles[0] ?? "اول محدوده داده‌ها را پیدا کنیم",
+    guideConfig.stageTitles[1] ?? "Projects را بخوان",
+    guideConfig.stageTitles[2] ?? "طراحی مطالعه و اعمال فیلترها",
+    "از ۳ Project مرتبط تا انتخاب پژوهشی",
+    "تصمیم بعدی",
+  ], [guideConfig.stageTitles]);
+
+  const displayConfig = useMemo(() => ({ ...guideConfig, stageTitles }), [guideConfig, stageTitles]);
+  const selectedFacetConfig = displayConfig.projects.facets.find((item) => item.id === selectedFacet) ?? displayConfig.projects.facets[0];
 
   if (bridgeTarget) {
     return (
@@ -433,7 +443,7 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
         <div className="rounded-3xl border bg-white p-5 shadow-sm">
           <div className="flex items-center gap-2 text-sm font-black text-teal-700"><Target className="h-4 w-4" />برای چه کاری وارد GDC شده‌اید؟</div>
           <div className="mt-4 grid gap-3 lg:grid-cols-5">
-            {guideConfig.questions.map((question) => {
+            {displayConfig.questions.map((question) => {
               const Icon = questionIcons[question.id];
               return (
                 <button
@@ -451,10 +461,10 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
         </div>
 
         <div className="mt-6 flex gap-2 overflow-x-auto pb-2">
-          {guideConfig.stageTitles.map((title, index) => (
+          {stageTitles.map((title, index) => (
             <button
               key={`${title}-${index}`}
-              onClick={() => index <= 2 ? setStage(index) : setBridgeTarget({ questionId: "discover", stageIndex: index })}
+              onClick={() => index <= 3 ? setStage(index) : setBridgeTarget({ questionId: "discover", stageIndex: 4 })}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-black ${stage === index ? "bg-teal-700 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}
             >
               {index + 1}. {title}
@@ -470,24 +480,32 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
                 <div className="pointer-events-none absolute left-[12.6%] top-[8.8%] h-[7%] w-[9%] rounded-lg border-[3px] border-teal-400 bg-teal-300/20 shadow-[0_0_0_999px_rgba(15,23,42,.18)]" />
               </div>
             </div>
-            <StoryPanel config={guideConfig} onContinue={() => setStage(1)} />
+            <StoryPanel config={displayConfig} onContinue={() => setStage(1)} />
           </div>
         ) : stage === 1 ? (
           <ProjectsStage
-            config={guideConfig}
+            config={displayConfig}
             selectedFacet={selectedFacet}
             onSelectFacet={setSelectedFacet}
             onOpenFacet={() => setLensOpen(true)}
             onPrevious={() => setStage(0)}
             onNext={() => setStage(2)}
           />
-        ) : (
+        ) : stage === 2 ? (
           <GdcStudyDesignStage
-            title={guideConfig.stageTitles[2] ?? "طراحی مطالعه و اعمال فیلترها"}
+            title={stageTitles[2]}
             stageNumber={3}
-            stageTotal={guideConfig.stageTitles.length}
+            stageTotal={stageTitles.length}
             onPrevious={() => setStage(1)}
-            onNext={() => setBridgeTarget({ questionId: "discover", stageIndex: 3 })}
+            onNext={() => setStage(3)}
+          />
+        ) : (
+          <GdcProjectDecisionStage
+            title={stageTitles[3]}
+            stageNumber={4}
+            stageTotal={stageTitles.length}
+            onPrevious={() => setStage(2)}
+            onNext={() => setBridgeTarget({ questionId: "discover", stageIndex: 4 })}
           />
         )}
       </section>
