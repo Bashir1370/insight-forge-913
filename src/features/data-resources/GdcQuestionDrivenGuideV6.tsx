@@ -14,11 +14,7 @@ type GuideConfig = Props["guideConfig"];
 
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"] as const;
 const FINAL_PROJECT_STAGE_TITLE = "ارزیابی پروژه یا پروژه‌های نهایی";
-const LEGACY_FINAL_PROJECT_TITLES = new Set([
-  "از ۳ Project مرتبط تا انتخاب پژوهشی",
-  "از 3 Project مرتبط تا انتخاب پژوهشی",
-  "نوع داده را بررسی کن",
-]);
+const FINAL_PROJECT_STAGE_INDEX = 3;
 
 function toPersianDigits(value: string) {
   return value.replace(/[0-9]/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
@@ -44,9 +40,8 @@ function localizeVisibleNumbers(root: HTMLElement) {
 
 function prepareDisplayGuideConfig(config: GuideConfig): GuideConfig {
   const next = structuredClone(config);
-  const stageIndex = next.stageTitles.findIndex((title) => LEGACY_FINAL_PROJECT_TITLES.has(title.trim()));
-  if (stageIndex >= 0) {
-    next.stageTitles[stageIndex] = FINAL_PROJECT_STAGE_TITLE;
+  if (next.stageTitles.length > FINAL_PROJECT_STAGE_INDEX) {
+    next.stageTitles[FINAL_PROJECT_STAGE_INDEX] = FINAL_PROJECT_STAGE_TITLE;
   }
   return next;
 }
