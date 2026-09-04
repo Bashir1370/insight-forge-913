@@ -68,12 +68,52 @@ const NEW_PRIMARY_SECTIONS = [
   },
 ];
 
+const NEW_EXPERIMENTAL_STRATEGY_SECTIONS = [
+  {
+    title: "Experimental Strategy در عمل چه چیزی را نشان می‌دهد؟",
+    body: "بعد از اینکه با Data Category مشخص کردیم دنبال چه خانواده‌ای از داده هستیم، Experimental Strategy به ما می‌گوید آن داده با چه روش آزمایشی یا فناوری توالی‌یابی تولید شده است. در این فهرست گزینه‌هایی مثل RNA-Seq، WXS، WGS، miRNA-Seq و Methylation Array را می‌بینیم.",
+    tone: "neutral" as const,
+  },
+  {
+    title: "چند Strategy مهم را ساده بشناسیم",
+    body: "RNA-Seq → بررسی RNA و بیان ژن‌ها\nWXS → توالی‌یابی بخش‌های کدکننده ژنوم یا Exome\nWGS → توالی‌یابی کل ژنوم\nmiRNA-Seq → بررسی microRNAها\nMethylation Array → بررسی الگوهای متیلاسیون DNA\n\nلازم نیست همه روش‌ها را حفظ کنید؛ مهم این است که Strategy انتخابی با سؤال پژوهشی و تحلیل شما هماهنگ باشد.",
+    tone: "sky" as const,
+  },
+  {
+    title: "تفاوت Experimental Strategy با Data Category چیست؟",
+    body: "Data Category می‌گوید چه خانواده‌ای از داده در Project وجود دارد؛ Experimental Strategy می‌گوید آن داده با چه روش یا فناوری‌ای تولید شده است. مثلاً ممکن است Data Category برابر Transcriptome Profiling باشد و روش تولید داده RNA-Seq باشد.",
+    tone: "amber" as const,
+  },
+  {
+    title: "عدد و درصد کنار هر روش را چطور بخوانیم؟",
+    body: "مثلاً RNA-Seq — 88 (94.62%) یعنی در وضعیت فعلی 88 Project داده‌ای دارند که با RNA-Seq تولید شده و این Projectها 94.62٪ از Projectهای فعلی را تشکیل می‌دهند. یک Project می‌تواند چند Experimental Strategy داشته باشد؛ بنابراین مجموع درصدها الزاماً 100٪ نمی‌شود.",
+    tone: "teal" as const,
+  },
+  {
+    title: "یک مثال از مسیر پژوهش",
+    body: "فرض کنید موضوع ما بیان ژن در سرطان پستان است. بعد از پیدا کردن Projectهای مرتبط و انتخاب Data Category = Transcriptome Profiling، با Experimental Strategy = RNA-Seq می‌توانیم Projectهایی را پیدا کنیم که داده مناسب سؤال ما با RNA-Seq تولید شده است. حالا علاوه بر اینکه می‌دانیم چه داده‌ای وجود دارد، می‌دانیم این داده چگونه تولید شده است.",
+    tone: "neutral" as const,
+  },
+];
+
 function looksLikeLegacyPrimarySite(config: GdcQuestionGuideConfig) {
   const primary = config.projects.facets.find((item) => item.id === "primarySite");
   if (!primary) return false;
   return (
     primary.sections[0]?.title === "این لیست همه سرطان‌ها نیست" ||
     primary.sections[1]?.title === "عدد و درصد روبه‌روی هر مورد چیست؟"
+  );
+}
+
+function looksLikeLegacyExperimentalStrategy(config: GdcQuestionGuideConfig) {
+  const experimental = config.projects.facets.find((item) => item.id === "experimentalStrategy");
+  if (!experimental) return false;
+  return (
+    experimental.lensTitle === "Experimental Strategy یعنی چه؟" &&
+    (
+      experimental.sections[0]?.title === "با Data Category اشتباه نگیرید" ||
+      experimental.sections[1]?.title === "عدد و درصد کنار روش‌ها چیست؟"
+    )
   );
 }
 
@@ -87,16 +127,24 @@ function shouldUseBundledPrimaryImage(value?: string) {
 export function upgradeGdcQuestionGuideConfig(config: GdcQuestionGuideConfig): GdcQuestionGuideConfig {
   const next = structuredClone(config);
   const primary = next.projects.facets.find((item) => item.id === "primarySite");
-  if (!primary) return next;
 
-  if (shouldUseBundledPrimaryImage(primary.imageUrl)) {
-    primary.imageUrl = PRIMARY_SITE_IMAGE;
+  if (primary) {
+    if (shouldUseBundledPrimaryImage(primary.imageUrl)) {
+      primary.imageUrl = PRIMARY_SITE_IMAGE;
+    }
+
+    if (looksLikeLegacyPrimarySite(config)) {
+      primary.lensTitle = "Primary Site را چطور بخوانیم؟";
+      primary.lensSubtitle = "محل اولیه‌ای که تومور از آن شروع شده؛ یکی از راه‌های محدود کردن Projectها در GDC";
+      primary.sections = NEW_PRIMARY_SECTIONS.map((item) => ({ ...item }));
+    }
   }
 
-  if (looksLikeLegacyPrimarySite(config)) {
-    primary.lensTitle = "Primary Site را چطور بخوانیم؟";
-    primary.lensSubtitle = "محل اولیه‌ای که تومور از آن شروع شده؛ یکی از راه‌های محدود کردن Projectها در GDC";
-    primary.sections = NEW_PRIMARY_SECTIONS.map((item) => ({ ...item }));
+  const experimental = next.projects.facets.find((item) => item.id === "experimentalStrategy");
+  if (experimental && looksLikeLegacyExperimentalStrategy(config)) {
+    experimental.lensTitle = "Experimental Strategy را چطور بخوانیم؟";
+    experimental.lensSubtitle = "روشی که داده با آن تولید شده است؛ مثل RNA-Seq، WXS یا WGS";
+    experimental.sections = NEW_EXPERIMENTAL_STRATEGY_SECTIONS.map((item) => ({ ...item }));
   }
 
   return next;
