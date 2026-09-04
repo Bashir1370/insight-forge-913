@@ -5,7 +5,6 @@ import {
   ChevronRight,
   CircleHelp,
   FlaskConical,
-  Lightbulb,
   LockKeyhole,
   RotateCcw,
   Target,
@@ -28,8 +27,13 @@ const FALLBACK_SCREENSHOT_PATHS: Record<GdcFacetId, string> = {
   experimentalStrategy: "/images/gdc/study-design-kidney/step-5.txt",
 };
 
-type StudyMode = "guided" | "challenge";
 type Confidence = "low" | "medium" | "high";
+
+const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"] as const;
+
+function faDigits(value: string | number) {
+  return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)] ?? digit);
+}
 
 function hotspotStyle(item: GdcGuideHotspot) {
   return {
@@ -93,7 +97,6 @@ export function GdcStudyDesignStageManaged({
   onNext: () => void;
 }) {
   const fallback = useFallbackImages();
-  const [mode, setMode] = useState<StudyMode>("guided");
   const [answers, setAnswers] = useState<Partial<Record<GdcFacetId, string>>>({});
   const [activeFilter, setActiveFilter] = useState<GdcFacetId | null>(null);
   const [confidence, setConfidence] = useState<Confidence | null>(null);
@@ -117,7 +120,6 @@ export function GdcStudyDesignStageManaged({
 
   const complete = tasks.length > 0 && completedPrefix === tasks.length;
   const latestTask = completedPrefix > 0 ? tasks[completedPrefix - 1] : null;
-  const currentTask = completedPrefix < tasks.length ? tasks[completedPrefix] : tasks[tasks.length - 1] ?? null;
   const currentImage = latestTask
     ? latestTask.imageUrl || fallback.steps[latestTask.id] || config.baselineImageUrl || fallback.baseline
     : config.baselineImageUrl || fallback.baseline;
@@ -150,19 +152,21 @@ export function GdcStudyDesignStageManaged({
     ? { height: `${config.imageHeight}px`, objectFit: config.imageFit }
     : { objectFit: config.imageFit };
 
+  const progress = tasks.length ? Math.round((completedPrefix / tasks.length) * 100) : 0;
+
   return (
     <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.65fr)_500px]">
       <div className="xl:sticky xl:top-5 xl:self-start">
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3" dir="rtl">
             <div>
-              <div className="text-xs font-black text-teal-700">{config.liveTitle}</div>
+              <div className="text-xs font-black text-teal-700">{faDigits(config.liveTitle)}</div>
               <div className="mt-1 text-sm font-bold text-slate-700">
-                {latestTask ? latestTask.resultCaption : config.initialCaption}
+                {faDigits(latestTask ? latestTask.resultCaption : config.initialCaption)}
               </div>
             </div>
-            <div className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black text-white" dir="ltr">
-              {visibleProjectCount} Projects
+            <div className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-black text-white">
+              {faDigits(visibleProjectCount)} <span dir="ltr">Projects</span>
             </div>
           </div>
 
@@ -176,7 +180,7 @@ export function GdcStudyDesignStageManaged({
                 style={imageStyle}
               />
             ) : (
-              <div className="flex aspect-[1905/847] items-center justify-center text-sm font-bold text-slate-400">
+              <div className="flex aspect-[1905/847] items-center justify-center text-sm font-bold text-slate-400" dir="rtl">
                 تصویری برای این مرحله تعریف نشده است.
               </div>
             )}
@@ -187,8 +191,8 @@ export function GdcStudyDesignStageManaged({
                 className="pointer-events-none absolute rounded-md border-[3px] border-teal-400 bg-teal-300/15 shadow-sm"
                 style={hotspotStyle(hotspot)}
               >
-                <span className="absolute left-1 top-1 max-w-[90%] rounded bg-slate-950/90 px-2 py-1 text-[10px] font-black text-white shadow">
-                  {hotspot.title}
+                <span className="absolute left-1 top-1 max-w-[90%] rounded bg-slate-950/90 px-2 py-1 text-[10px] font-black text-white shadow" dir="rtl">
+                  {faDigits(hotspot.title)}
                 </span>
               </div>
             )) : null}
@@ -196,21 +200,21 @@ export function GdcStudyDesignStageManaged({
 
           <div className="border-t bg-slate-50 px-4 py-3" dir="rtl">
             <div className="flex flex-wrap items-center gap-2 text-[11px] font-black">
-              <span className="rounded-full bg-slate-900 px-3 py-1.5 text-white" dir="ltr">{config.initialProjectCount}</span>
+              <span className="rounded-full bg-slate-900 px-3 py-1.5 text-white">{faDigits(config.initialProjectCount)}</span>
               {tasks.map((task, index) => {
                 const done = completedPrefix > index;
                 return (
                   <div key={task.id} className="flex items-center gap-2">
                     <span className="text-slate-300">←</span>
                     <span className={`rounded-full border px-3 py-1.5 ${done ? "border-teal-300 bg-teal-50 text-teal-800" : "border-slate-200 bg-white text-slate-400"}`}>
-                      <span dir="ltr">{task.label}</span> · {task.projectCount}
+                      <span dir="ltr">{task.label}</span> · {faDigits(task.projectCount)}
                     </span>
                   </div>
                 );
               })}
             </div>
             {completedPrefix >= Math.min(4, tasks.length) && config.researchNote ? (
-              <p className="mt-2 text-xs leading-6 text-slate-600">{config.researchNote}</p>
+              <p className="mt-2 text-xs leading-6 text-slate-600">{faDigits(config.researchNote)}</p>
             ) : null}
           </div>
         </div>
@@ -229,39 +233,22 @@ export function GdcStudyDesignStageManaged({
       <aside className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6" dir="rtl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-xs font-black text-teal-700">مرحله {stageNumber} از {stageTotal}</div>
-            <h2 className="mt-2 text-2xl font-black text-slate-950">{title}</h2>
+            <div className="text-xs font-black text-teal-700">مرحله {faDigits(stageNumber)} از {faDigits(stageTotal)}</div>
+            <h2 className="mt-2 text-2xl font-black text-slate-950">{faDigits(title)}</h2>
           </div>
           <button
             type="button"
             onClick={resetStudy}
             className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-slate-600 hover:border-teal-300 hover:text-teal-700"
           >
-            <RotateCcw className="h-4 w-4" /> {config.restartLabel}
+            <RotateCcw className="h-4 w-4" /> {faDigits(config.restartLabel)}
           </button>
         </div>
 
         <div className="mt-5 rounded-2xl border border-violet-100 bg-violet-50/70 p-4">
-          <div className="flex items-center gap-2 text-xs font-black text-violet-800"><FlaskConical className="h-4 w-4" /> {config.scenarioLabel}</div>
-          <p className="mt-2 whitespace-pre-line text-sm font-bold leading-7 text-violet-950">{config.scenarioBody}</p>
-          {config.scenarioHelp ? <p className="mt-2 whitespace-pre-line text-xs leading-6 text-violet-900/75">{config.scenarioHelp}</p> : null}
-        </div>
-
-        <div className="mt-4 flex rounded-xl bg-slate-100 p-1">
-          <button
-            type="button"
-            onClick={() => setMode("guided")}
-            className={`flex-1 rounded-lg px-3 py-2 text-xs font-black ${mode === "guided" ? "bg-white text-teal-800 shadow-sm" : "text-slate-500"}`}
-          >
-            {config.guidedLabel}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("challenge")}
-            className={`flex-1 rounded-lg px-3 py-2 text-xs font-black ${mode === "challenge" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500"}`}
-          >
-            {config.challengeLabel}
-          </button>
+          <div className="flex items-center gap-2 text-xs font-black text-violet-800"><FlaskConical className="h-4 w-4" /> {faDigits(config.scenarioLabel)}</div>
+          <p className="mt-2 whitespace-pre-line text-sm font-bold leading-7 text-violet-950">{faDigits(config.scenarioBody)}</p>
+          {config.scenarioHelp ? <p className="mt-2 whitespace-pre-line text-xs leading-6 text-violet-900/75">{faDigits(config.scenarioHelp)}</p> : null}
         </div>
 
         {!tasks.length ? (
@@ -293,10 +280,10 @@ export function GdcStudyDesignStageManaged({
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${isCorrect ? "bg-emerald-600 text-white" : "bg-slate-900 text-white"}`}>{index + 1}</span>
+                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-black ${isCorrect ? "bg-emerald-600 text-white" : "bg-slate-900 text-white"}`}>{faDigits(index + 1)}</span>
                       <b dir="ltr" className="text-sm text-slate-950">{task.label}</b>
                     </div>
-                    <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-600">{task.cue}</p>
+                    <p className="mt-2 whitespace-pre-line text-xs leading-6 text-slate-600">{faDigits(task.cue)}</p>
                   </div>
                   {isCorrect ? <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" /> : locked ? <LockKeyhole className="h-4 w-4 shrink-0 text-slate-400" /> : null}
                 </div>
@@ -306,7 +293,6 @@ export function GdcStudyDesignStageManaged({
                     {task.options.map((option) => {
                       const chosen = selected === option;
                       const correctOption = option === task.target;
-                      const revealCorrect = mode === "guided" && Boolean(selected);
                       return (
                         <button
                           key={option}
@@ -320,9 +306,7 @@ export function GdcStudyDesignStageManaged({
                               ? "border-emerald-300 bg-emerald-50 text-emerald-900"
                               : chosen
                                 ? "border-rose-300 bg-rose-50 text-rose-900"
-                                : revealCorrect && correctOption
-                                  ? "border-emerald-200 bg-emerald-50/40 text-emerald-800"
-                                  : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+                                : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
                           }`}
                           dir="ltr"
                         >
@@ -336,23 +320,16 @@ export function GdcStudyDesignStageManaged({
                   <p className="mt-3 text-[11px] font-bold text-slate-400">ابتدا فیلتر مرحله قبل را درست انتخاب کنید.</p>
                 )}
 
-                {mode === "guided" && !selected && !locked && task.hint ? (
-                  <div className="mt-3 flex items-start gap-2 rounded-xl bg-amber-50 px-3 py-2 text-xs leading-6 text-amber-900">
-                    <Lightbulb className="mt-1 h-4 w-4 shrink-0" />
-                    <span><b>Hint:</b> {task.hint}</span>
-                  </div>
-                ) : null}
-
                 {isCorrect && task.rationale ? (
                   <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-900">
-                    <b>درست.</b> {task.rationale}
+                    <b>درست.</b> {faDigits(task.rationale)}
                   </div>
                 ) : null}
 
                 {isWrong && task.wrongFeedback ? (
                   <div className="mt-3 flex items-start gap-2 rounded-xl bg-rose-50 px-3 py-2 text-xs leading-6 text-rose-900">
                     <CircleHelp className="mt-1 h-4 w-4 shrink-0" />
-                    <span>{task.wrongFeedback}</span>
+                    <span>{faDigits(task.wrongFeedback)}</span>
                   </div>
                 ) : null}
               </section>
@@ -362,18 +339,18 @@ export function GdcStudyDesignStageManaged({
 
         <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2 text-xs font-black text-slate-700"><Target className="h-4 w-4" /> {config.progressTitle}</div>
-            <span className="text-xs font-black text-teal-700">{tasks.length ? Math.round((completedPrefix / tasks.length) * 100) : 0}٪</span>
+            <div className="flex items-center gap-2 text-xs font-black text-slate-700"><Target className="h-4 w-4" /> {faDigits(config.progressTitle)}</div>
+            <span className="text-xs font-black text-teal-700">{faDigits(progress)}٪</span>
           </div>
           <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
-            <div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${tasks.length ? (completedPrefix / tasks.length) * 100 : 0}%` }} />
+            <div className="h-full rounded-full bg-teal-600 transition-all" style={{ width: `${progress}%` }} />
           </div>
         </div>
 
         {complete ? (
           <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-4">
-            <div className="flex items-center gap-2 text-sm font-black text-teal-900"><CheckCircle2 className="h-5 w-5" /> {config.finalTitle}</div>
-            {config.finalBody ? <p className="mt-2 whitespace-pre-line text-xs leading-6 text-teal-900/80">{config.finalBody}</p> : null}
+            <div className="flex items-center gap-2 text-sm font-black text-teal-900"><CheckCircle2 className="h-5 w-5" /> {faDigits(config.finalTitle)}</div>
+            {config.finalBody ? <p className="mt-2 whitespace-pre-line text-xs leading-6 text-teal-900/80">{faDigits(config.finalBody)}</p> : null}
 
             {config.candidateProjects.length ? (
               <div className="mt-3 grid gap-2 sm:grid-cols-3" dir="ltr">
@@ -384,7 +361,7 @@ export function GdcStudyDesignStageManaged({
             ) : null}
 
             <div className="mt-4">
-              <div className="text-xs font-black text-teal-900">{config.confidenceQuestion}</div>
+              <div className="text-xs font-black text-teal-900">{faDigits(config.confidenceQuestion)}</div>
               <div className="mt-2 grid grid-cols-3 gap-2">
                 {([[
                   "low",
@@ -402,11 +379,13 @@ export function GdcStudyDesignStageManaged({
               </div>
               {confidence ? (
                 <p className="mt-2 whitespace-pre-line text-xs leading-6 text-teal-900/75">
-                  {confidence === "low"
-                    ? config.confidenceLowFeedback
-                    : confidence === "medium"
-                      ? config.confidenceMediumFeedback
-                      : config.confidenceHighFeedback}
+                  {faDigits(
+                    confidence === "low"
+                      ? config.confidenceLowFeedback
+                      : confidence === "medium"
+                        ? config.confidenceMediumFeedback
+                        : config.confidenceHighFeedback,
+                  )}
                 </p>
               ) : null}
             </div>
@@ -415,14 +394,14 @@ export function GdcStudyDesignStageManaged({
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <button onClick={onPrevious} className="rounded-xl border px-4 py-3 text-sm font-bold">
-            <ChevronRight className="inline h-4 w-4" /> {config.previousButton}
+            <ChevronRight className="inline h-4 w-4" /> {faDigits(config.previousButton)}
           </button>
           <button
             onClick={onNext}
             disabled={!complete}
             className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {config.nextButton} <ChevronLeft className="inline h-4 w-4" />
+            {faDigits(config.nextButton)} <ChevronLeft className="inline h-4 w-4" />
           </button>
         </div>
       </aside>
