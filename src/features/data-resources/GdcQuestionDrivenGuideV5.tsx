@@ -181,6 +181,46 @@ function FacetMock({ facet }: { facet: GdcFacetConfig }) {
   );
 }
 
+function LensBody({ body }: { body: string }) {
+  const lines = body
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  if (lines.length <= 1) {
+    return <p className="mt-2 text-sm leading-7 opacity-80">{body}</p>;
+  }
+
+  return (
+    <div className="mt-2 space-y-2 text-sm leading-7 opacity-80">
+      {lines.map((line, index) => {
+        const bulletMatch = line.match(/^(?:[-*•–—]\s*)?(.*)$/);
+        const text = bulletMatch?.[1]?.trim() ?? line;
+        const arrowIndex = text.indexOf("→");
+
+        if (arrowIndex > 0) {
+          const label = text.slice(0, arrowIndex).trim();
+          const description = text.slice(arrowIndex + 1).trim();
+          return (
+            <div key={`${line}-${index}`} className="flex items-start gap-3 rounded-lg bg-white/50 px-3 py-2" dir="rtl">
+              <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-40" aria-hidden="true" />
+              <span className="min-w-0 flex-1 text-right">{description}</span>
+              <b dir="ltr" className="shrink-0 text-left font-bold opacity-90">{label}</b>
+            </div>
+          );
+        }
+
+        return (
+          <div key={`${line}-${index}`} className="flex items-start gap-2" dir="rtl">
+            <span className="mt-[11px] h-1.5 w-1.5 shrink-0 rounded-full bg-current opacity-40" aria-hidden="true" />
+            <span className="min-w-0 flex-1 text-right">{text}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function FacetLens({ facet, close }: { facet: GdcFacetConfig; close: () => void }) {
   const toneClass = (tone: string | undefined) => {
     if (tone === "teal") return "border-teal-100 bg-teal-50/70 text-teal-950";
@@ -213,7 +253,7 @@ function FacetLens({ facet, close }: { facet: GdcFacetConfig; close: () => void 
             {facet.sections.map((section, index) => (
               <div key={index} className={`rounded-2xl border p-5 ${toneClass(section.tone)}`}>
                 <h3 className="text-sm font-black">{section.title}</h3>
-                <p className="mt-2 text-sm leading-7 opacity-80">{section.body}</p>
+                <LensBody body={section.body} />
               </div>
             ))}
           </div>
