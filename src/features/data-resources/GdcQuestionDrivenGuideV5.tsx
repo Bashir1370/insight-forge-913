@@ -13,6 +13,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 import { GdcQuestionDrivenGuideV3 as PreviousGuide } from "./GdcQuestionDrivenGuideV3";
+import { GdcStudyDesignStage } from "./GdcStudyDesignStage";
 import {
   DEFAULT_GDC_QUESTION_GUIDE,
   type GdcFacetConfig,
@@ -453,7 +454,7 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
           {guideConfig.stageTitles.map((title, index) => (
             <button
               key={`${title}-${index}`}
-              onClick={() => index <= 1 ? setStage(index) : setBridgeTarget({ questionId: "discover", stageIndex: index })}
+              onClick={() => index <= 2 ? setStage(index) : setBridgeTarget({ questionId: "discover", stageIndex: index })}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-black ${stage === index ? "bg-teal-700 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}
             >
               {index + 1}. {title}
@@ -471,14 +472,22 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
             </div>
             <StoryPanel config={guideConfig} onContinue={() => setStage(1)} />
           </div>
-        ) : (
+        ) : stage === 1 ? (
           <ProjectsStage
             config={guideConfig}
             selectedFacet={selectedFacet}
             onSelectFacet={setSelectedFacet}
             onOpenFacet={() => setLensOpen(true)}
             onPrevious={() => setStage(0)}
-            onNext={() => setBridgeTarget({ questionId: "discover", stageIndex: 2 })}
+            onNext={() => setStage(2)}
+          />
+        ) : (
+          <GdcStudyDesignStage
+            title={guideConfig.stageTitles[2] ?? "طراحی مطالعه و اعمال فیلترها"}
+            stageNumber={3}
+            stageTotal={guideConfig.stageTitles.length}
+            onPrevious={() => setStage(1)}
+            onNext={() => setBridgeTarget({ questionId: "discover", stageIndex: 3 })}
           />
         )}
       </section>
