@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
+import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
 import { VisualAssetEditor } from "@/features/data-resources/VisualAssetEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
 import {
@@ -214,6 +215,12 @@ function ResourceToursAdmin() {
 
         <div className="mt-6 space-y-6">
           <GdcQuestionGuideAdminEditor config={guideConfig} onSave={handleGuideSave} />
+
+          <GdcStudyDesignAdminEditor
+            config={guideConfig}
+            onChange={setGuideConfig}
+            onSave={handleGuideSave}
+          />
 
           <section className="rounded-3xl border border-slate-200 bg-white p-6">
             <h2 className="text-xl font-black text-slate-950">تصویر اصلی مرحله ۱</h2>
