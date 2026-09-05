@@ -293,16 +293,16 @@ function sanitizeProgressState(value: unknown, itemCount: number): ProgressState
       ? (value as Record<string, unknown>)
       : {};
   const lastIndex = Math.max(0, itemCount - 1);
-  const restoredCurrent = clampIndex(record.currentIndex, lastIndex);
+  const restoredCurrent = clampIndex(record["currentIndex"], lastIndex);
   const restoredUnlocked = Math.max(
     restoredCurrent,
-    clampIndex(record.maxUnlocked, lastIndex),
+    clampIndex(record["maxUnlocked"], lastIndex),
   );
 
   return {
     currentIndex: restoredCurrent,
     maxUnlocked: restoredUnlocked,
-    answers: sanitizeAnswers(record.answers, lastIndex),
+    answers: sanitizeAnswers(record["answers"], lastIndex),
   };
 }
 
