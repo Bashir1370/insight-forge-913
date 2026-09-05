@@ -124,7 +124,8 @@ export function GuidedConceptLesson({
   }
 
   const selected = answers[sectionIndex];
-  const isCorrect = selected === section.question.correctIndex;
+  const correctIndex = section.question.correctIndex;
+  const isCorrect = selected === correctIndex;
   const progress = Math.round(
     ((sectionIndex + 1) / normalizedSections.length) * 100,
   );
@@ -156,7 +157,7 @@ export function GuidedConceptLesson({
   function answerQuestion(optionIndex: number) {
     setAnswers((current) => ({ ...current, [sectionIndex]: optionIndex }));
 
-    if (optionIndex === section.question.correctIndex) {
+    if (optionIndex === correctIndex) {
       setMaxUnlocked((current) =>
         Math.max(
           current,
