@@ -1,9 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
-const db = supabase as any;
-
 export async function loadResourceTour(slug: string) {
-  const { data: resource, error: resourceError } = await db
+  const { data: resource, error: resourceError } = await supabase
     .from("resource_tours")
     .select("*")
     .eq("slug", slug)
@@ -12,12 +10,12 @@ export async function loadResourceTour(slug: string) {
   if (resourceError || !resource) return null;
 
   const [hotspotResult, contentResult] = await Promise.all([
-    db
+    supabase
       .from("resource_hotspots")
       .select("*")
       .eq("resource_id", resource.id)
       .order("step", { ascending: true }),
-    db
+    supabase
       .from("resource_content_blocks")
       .select("*")
       .eq("resource_id", resource.id)
