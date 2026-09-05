@@ -777,7 +777,7 @@ function PancreasModelLab() {
 
 function MasteryMap() {
   const [open, setOpen] = useState<number | null>(0);
-  const items = [
+  const items: Array<readonly [string, string]> = [
     ["نرمال‌سازی", "مدیریت تفاوت مقیاس و ترکیب نمونه‌ها"],
     ["پراکندگی", "مدل‌کردن تغییرپذیری بین تکرارهای زیستی"],
     ["اندازه اثر", "جهت و بزرگی تغییر با log2 fold change"],
