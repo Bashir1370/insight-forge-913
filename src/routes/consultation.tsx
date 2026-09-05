@@ -101,7 +101,8 @@ function ConsultationPage() {
    * Load user's real projects
    */
   useEffect(() => {
-    if (!user?.id) {
+    const userId = user?.id;
+    if (!userId) {
       setProjects([]);
       return;
     }
@@ -111,7 +112,7 @@ function ConsultationPage() {
     async function loadProjects() {
       setProjectsLoading(true);
 
-      const { data, error } = await listMyProjects(user.id);
+      const { data, error } = await listMyProjects(userId);
 
       if (!mounted) return;
 
