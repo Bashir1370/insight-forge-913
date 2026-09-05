@@ -28,6 +28,5 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Typecheck legacy debt report
-        continue-on-error: true
+      - name: Typecheck
         run: bun run typecheck
