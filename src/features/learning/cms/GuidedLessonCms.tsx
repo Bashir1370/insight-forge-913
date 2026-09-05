@@ -417,7 +417,11 @@ export function GuidedLessonCmsAdmin({
   );
 }
 
-export function LearningMediaBlocks({ items }: { items?: LearningMedia[] }) {
+export function LearningMediaBlocks({
+  items,
+}: {
+  items?: LearningMedia[] | undefined;
+}) {
   if (!items?.length) return null;
 
   return (
