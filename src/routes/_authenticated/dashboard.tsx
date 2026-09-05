@@ -1441,9 +1441,7 @@ function Dashboard() {
           {
             cacheControl: "3600",
             upsert: false,
-            contentType:
-              file.type ||
-              undefined,
+            ...(file.type ? { contentType: file.type } : {}),
           },
         );
 
@@ -3226,14 +3224,12 @@ function buildPersonalResearchPlan(
             learningCompleted > 0
               ? `${new Intl.NumberFormat("fa-IR").format(learningCompleted)} مرحله از مسیر یادگیری را تا اینجا طی کرده‌اید.`
               : "برای ساختن نقشه ذهنی اولیه می‌توانید مسیر تعاملی RNA-seq را شروع کنید.",
-          href:
-            learningCompleted > 0
-              ? undefined
-              : "/learn/rna-seq/navigator",
-          actionLabel:
-            learningCompleted > 0
-              ? undefined
-              : "شروع یادگیری",
+          ...(learningCompleted > 0
+            ? {}
+            : {
+                href: "/learn/rna-seq/navigator",
+                actionLabel: "شروع یادگیری",
+              }),
         },
         {
           state: "current",
@@ -3984,7 +3980,7 @@ function buildPersonalizedGuidance(
   const required =
     goalRequirements[
       assessment.analysis_goal ?? "unsure"
-    ] ?? goalRequirements.unsure;
+    ] ?? goalRequirements["unsure"] ?? [];
 
   const needsAttention = required.filter(
     (nodeId) =>
@@ -4006,10 +4002,12 @@ function buildPersonalizedGuidance(
     );
 
     const firstFocusId =
-      focusNodeIds[0];
+      focusNodeIds[0] ?? "research-question";
 
     const firstFocusTitle =
-      focusNodes[0];
+      focusNodes[0] ??
+      nodeTitles[firstFocusId] ??
+      firstFocusId;
 
     const goalQuery =
       assessment.analysis_goal ??
@@ -4294,7 +4292,7 @@ function LearningProgressCard({
               asChild
               variant="hero"
             >
-              <Link to="/learn/rna-seq/navigator">
+              <Link to="/learn/rna-seq/navigator" search={{}}>
                 شروع یادگیری RNA-seq
               </Link>
             </Button>
@@ -4389,7 +4387,7 @@ function LearningProgressCard({
                   asChild
                   variant="hero"
                 >
-                  <Link to="/learn/rna-seq/navigator">
+                  <Link to="/learn/rna-seq/navigator" search={{}}>
                     {finished
                       ? "مرور دوباره مسیر"
                       : "ادامه مسیر یادگیری"}
