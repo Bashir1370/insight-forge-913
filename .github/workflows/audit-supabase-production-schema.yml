@@ -1,0 +1,94 @@
+name: Audit Supabase Production Schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare Supabase project
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init --force
+          fi
+
+      - name: Link production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase link             --project-ref "$PROJECT_REF"             --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Dump public schema
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          mkdir -p supabase-audit
+          supabase db dump             --linked             --password "$SUPABASE_DB_PASSWORD"             --schema public             --file supabase-audit/production-public.sql
+
+      - name: Dump private schema if present
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set +e
+          supabase db dump             --linked             --password "$SUPABASE_DB_PASSWORD"             --schema private             --file supabase-audit/production-private.sql             > supabase-audit/private-dump.log 2>&1
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "Private schema dump was unavailable or empty." > supabase-audit/production-private.NOT_AVAILABLE.txt
+          fi
+          exit 0
+
+      - name: Capture migration history
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase migration list             --linked             --password "$SUPABASE_DB_PASSWORD"             > supabase-audit/migration-list.txt
+
+      - name: Diff custom Auth and Storage schema changes
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          set +e
+          supabase db diff             --linked             --schema auth,storage             > supabase-audit/auth-storage-diff.sql             2> supabase-audit/auth-storage-diff.log
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            echo "Auth/Storage diff could not be generated in this run." > supabase-audit/auth-storage-diff.NOT_AVAILABLE.txt
+          fi
+          exit 0
+
+      - name: Write audit manifest
+        run: |
+          {
+            echo "Generated at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "Commit: $GITHUB_SHA"
+            echo
+            echo "Files:"
+            find supabase-audit -maxdepth 1 -type f -printf '%f\n' | sort
+          } > supabase-audit/README.txt
+
+      - name: Upload schema audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-production-schema-audit
+          path: supabase-audit/
+          if-no-files-found: error
+          retention-days: 7
