@@ -1052,9 +1052,7 @@ function Admin() {
         {
           cacheControl: "3600",
           upsert: false,
-          contentType:
-            file.type ||
-            undefined,
+          ...(file.type ? { contentType: file.type } : {}),
         },
       );
 
