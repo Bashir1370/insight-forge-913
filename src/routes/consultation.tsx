@@ -109,10 +109,10 @@ function ConsultationPage() {
 
     let mounted = true;
 
-    async function loadProjects() {
+    async function loadProjects(currentUserId: string) {
       setProjectsLoading(true);
 
-      const { data, error } = await listMyProjects(userId);
+      const { data, error } = await listMyProjects(currentUserId);
 
       if (!mounted) return;
 
@@ -126,7 +126,7 @@ function ConsultationPage() {
       setProjectsLoading(false);
     }
 
-    loadProjects();
+    void loadProjects(userId);
 
     return () => {
       mounted = false;
