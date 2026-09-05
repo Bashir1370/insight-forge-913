@@ -752,13 +752,18 @@ function DecisionThresholdLab() {
 
 function PancreasModelLab() {
   const [step, setStep] = useState(0);
-  const steps = [
+  const steps: Array<readonly [string, string, string]> = [
     ["۱", "ماتریس + فراداده", "شناسه ستون‌ها با نمونه‌ها تطبیق داده می‌شود."],
     ["۲", "ضریب مقیاس", "DESeq2 مقیاس نسبی نمونه‌ها را برآورد می‌کند."],
     ["۳", "پراکندگی", "تغییرپذیری ژن‌ها با استفاده از تکرارهای زیستی برآورد می‌شود."],
     ["۴", "مدل", "اثر شرایط با درنظرگرفتن دسته آزمایشی برآورد می‌شود."],
     ["۵", "نتیجه", "log2 fold change، مقدار p و padj برای مقایسه استخراج می‌شوند."],
   ];
+  const currentStep = steps[step] ?? steps[0];
+
+  if (!currentStep) {
+    return null;
+  }
 
   return (
     <LabFrame title="مسیر مفهومی DESeq2 را مرحله‌به‌مرحله باز کنید">
@@ -766,8 +771,8 @@ function PancreasModelLab() {
         {steps.map((item, index) => <ChoiceButton key={item[0]} active={step === index} onClick={() => setStep(index)}>مرحله {item[0]}</ChoiceButton>)}
       </div>
       <div className="mt-5 rounded-2xl border border-teal-200 bg-teal-50 p-5">
-        <p className="font-black text-teal-950">{steps[step][1]}</p>
-        <p className="mt-2 text-sm leading-7 text-teal-900">{steps[step][2]}</p>
+        <p className="font-black text-teal-950">{currentStep[1]}</p>
+        <p className="mt-2 text-sm leading-7 text-teal-900">{currentStep[2]}</p>
       </div>
       <pre className="mt-4 overflow-x-auto rounded-2xl bg-slate-950 p-4 text-left text-xs leading-7 text-slate-200" dir="ltr">{`design = ~ batch + condition\nDESeq()  # size factors → dispersion → model/test\nresults() # log2FoldChange, pvalue, padj`}</pre>
       <p className="mt-3 text-xs leading-6 text-slate-500">کد فقط نقشه ابزار است؛ منطق هر خط را در بخش‌های قبل ساخته‌ایم.</p>
