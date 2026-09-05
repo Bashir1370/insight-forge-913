@@ -324,7 +324,7 @@ export function GeneExpressionLesson() {
       subtitle="وجود یک ژن در DNA فقط می‌گوید آن اطلاعات ژنتیکی وجود دارد. در این درس با دست خودتان می‌بینید که مقدار RNA مربوط به یک ژن می‌تواند بین سلول‌ها و شرایط مختلف تغییر کند."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
       <section id="f2-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
