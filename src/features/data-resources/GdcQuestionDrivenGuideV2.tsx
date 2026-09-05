@@ -75,7 +75,7 @@ const questions: Question[] = [
   },
 ];
 
-const primarySites = [
+const primarySites: Array<readonly [string, string]> = [
   ["bronchus and lung", "27 (29.03%)"],
   ["unknown", "22 (23.66%)"],
   ["breast", "21 (22.58%)"],
@@ -294,6 +294,10 @@ export function GdcQuestionDrivenGuideV2({
   const [zoomed, setZoomed] = useState(false);
   const selectedQuestion = questions.find((item) => item.id === questionId) ?? questions[0];
 
+  if (!selectedQuestion) {
+    throw new Error("GDC V2 requires at least one research question.");
+  }
+
   const stages = [
     {
       title: 'از کجا شروع کنم؟',
@@ -333,7 +337,11 @@ export function GdcQuestionDrivenGuideV2({
     },
   ];
 
-  const current = stages[Math.min(stageIndex, stages.length - 1)];
+  const current = stages[Math.min(stageIndex, stages.length - 1)] ?? stages[0];
+
+  if (!current) {
+    throw new Error("GDC V2 requires at least one discovery stage.");
+  }
   const discoveryActive = selectedQuestion.id === 'discover';
 
   function chooseQuestion(id: string) {
