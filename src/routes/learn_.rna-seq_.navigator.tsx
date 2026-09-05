@@ -11,16 +11,16 @@ import { useAuth } from "@/hooks/use-auth";
 export const Route = createFileRoute("/learn_/rna-seq_/navigator")({
   validateSearch: (search: Record<string, unknown>) => ({
     node:
-      typeof search.node === "string"
-        ? search.node
+      typeof search["node"] === "string"
+        ? search["node"]
         : undefined,
     source:
-      typeof search.source === "string"
-        ? search.source
+      typeof search["source"] === "string"
+        ? search["source"]
         : undefined,
     goal:
-      typeof search.goal === "string"
-        ? search.goal
+      typeof search["goal"] === "string"
+        ? search["goal"]
         : undefined,
   }),
   component: RnaSeqLearningNavigator,
@@ -546,6 +546,18 @@ const confidenceOptions: {
   },
 ];
 
+function getNavigatorNode(index: number): NavigatorNode {
+  const node = navigatorNodes[index] ?? navigatorNodes[0];
+
+  if (!node) {
+    throw new Error(
+      "RNA-seq learning navigator requires at least one navigation node.",
+    );
+  }
+
+  return node;
+}
+
 function RnaSeqLearningNavigator() {
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
@@ -587,7 +599,7 @@ function RnaSeqLearningNavigator() {
 
   const [saveError, setSaveError] = useState("");
 
-  const currentNode = navigatorNodes[currentIndex];
+  const currentNode = getNavigatorNode(currentIndex);
 
   const selectedAnswer = answers[currentNode.id];
   const hasAnswered = selectedAnswer !== undefined;
