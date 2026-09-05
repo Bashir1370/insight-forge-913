@@ -382,7 +382,8 @@ function ResearchProfilePage() {
   );
 
   useEffect(() => {
-    if (!user?.id) return;
+    const userId = user?.id;
+    if (!userId) return;
 
     let cancelled = false;
 
@@ -405,7 +406,7 @@ function ResearchProfilePage() {
             notes
           `,
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle();
 
       if (cancelled) return;
