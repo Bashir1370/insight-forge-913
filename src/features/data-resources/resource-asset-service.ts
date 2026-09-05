@@ -1,11 +1,20 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export async function updateResourceImage(slug: string, imageUrl: string) {
-  const { data: resource } = await supabase
+  const { data: resource, error } = await supabase
     .from("resource_tours")
-    .upsert({ slug, image_url: imageUrl }, { onConflict: "slug" })
+    .update({ image_url: imageUrl })
+    .eq("slug", slug)
     .select("id")
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!resource) {
+    throw new Error(`Resource tour not found: ${slug}`);
+  }
 
   return resource;
 }
