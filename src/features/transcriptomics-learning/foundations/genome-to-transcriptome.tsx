@@ -186,7 +186,7 @@ export function GenomeToTranscriptomeLesson() {
         ...item,
         value: Math.max(
           4,
-          Math.min(100, item.value + adjustments[index]),
+          Math.min(100, item.value + (adjustments[index] ?? 0)),
         ),
       };
     });
@@ -295,7 +295,7 @@ export function GenomeToTranscriptomeLesson() {
       subtitle="این درس با تعریف شروع نمی‌شود. ابتدا یک مسئله زیستی را کشف می‌کنید و بعد با چند تعامل ساده می‌بینید چرا داشتن یک ژن با بیان آن ژن یک چیز نیست."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
       <section id="f1-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
