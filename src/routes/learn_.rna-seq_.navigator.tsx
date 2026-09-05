@@ -1496,7 +1496,7 @@ function DashboardRecommendationContext({
   goal,
 }: {
   node: NavigatorNode;
-  goal?: string;
+  goal?: string | undefined;
 }) {
   const goalLabel = navigatorGoalLabel(goal);
 
