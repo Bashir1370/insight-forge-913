@@ -93,7 +93,7 @@ export function GuidedPortalTour({
 
           <PortalCanvas
             screen={screen}
-            activeHotspot={activeHotspot}
+            {...(activeHotspot ? { activeHotspot } : {})}
             onSelectHotspot={(hotspotId) => {
               const index = stepByHotspotId.get(hotspotId);
               if (index !== undefined) setCurrentStepIndex(index);
