@@ -271,7 +271,7 @@ export function BulkSingleCellSpatialLesson() {
       subtitle="در این درس سه سطح مشاهده را از هم جدا می‌کنیم. هدف این است که «سطح مشاهده» را با «فناوری اندازه‌گیری» قاطی نکنیم و روش را بر اساس سؤال پژوهشی انتخاب کنیم."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
       <section id="f6-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
