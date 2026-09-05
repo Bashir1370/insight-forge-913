@@ -26,15 +26,15 @@ import { usePersistentLessonProgress } from "@/features/learning/usePersistentLe
 
 export type LearningTerm = {
   term: string;
-  persianLabel?: string;
+  persianLabel?: string | undefined;
   explanation: string;
-  example?: string;
+  example?: string | undefined;
 };
 
 export type GuidedConcept = {
   title: string;
   text: string;
-  emphasized?: boolean;
+  emphasized?: boolean | undefined;
 };
 
 export type GuidedQuestion = {
@@ -48,7 +48,7 @@ export type GuidedQuestion = {
 export type GuidedScenario = {
   title: string;
   description: string;
-  items?: string[];
+  items?: string[] | undefined;
 };
 
 export type ConceptBridge = {
@@ -61,13 +61,13 @@ export type GuidedLessonSection = {
   eyebrow: string;
   headline: string;
   lead: string;
-  connection?: string;
-  flow?: string[];
-  concepts?: GuidedConcept[];
-  terms?: LearningTerm[];
-  scenario?: GuidedScenario;
-  insight?: ReactNode;
-  media?: LearningMedia[];
+  connection?: string | undefined;
+  flow?: string[] | undefined;
+  concepts?: GuidedConcept[] | undefined;
+  terms?: LearningTerm[] | undefined;
+  scenario?: GuidedScenario | undefined;
+  insight?: ReactNode | undefined;
+  media?: LearningMedia[] | undefined;
   question: GuidedQuestion;
   bridge: ConceptBridge;
 };
@@ -116,7 +116,13 @@ export function GuidedConceptLesson({
     itemCount: normalizedSections.length,
   });
 
-  const section = normalizedSections[sectionIndex];
+  const section =
+    normalizedSections[sectionIndex] ?? normalizedSections[0];
+
+  if (!section) {
+    return null;
+  }
+
   const selected = answers[sectionIndex];
   const isCorrect = selected === section.question.correctIndex;
   const progress = Math.round(
