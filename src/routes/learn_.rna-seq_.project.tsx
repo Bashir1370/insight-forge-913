@@ -955,7 +955,7 @@ function QuestionTypeStep({
   value,
   onChange,
 }: {
-  value?: QuestionType;
+  value: QuestionType | undefined;
   onChange: (
     value: QuestionType,
   ) => void;
@@ -1023,7 +1023,7 @@ function DataStageStep({
   value,
   onChange,
 }: {
-  value?: DataStage;
+  value: DataStage | undefined;
   onChange: (value: DataStage) => void;
 }) {
   return (
@@ -1102,7 +1102,7 @@ function ReplicateStep({
   value,
   onChange,
 }: {
-  value?: ReplicateLevel;
+  value: ReplicateLevel | undefined;
   onChange: (
     value: ReplicateLevel,
   ) => void;
@@ -1168,7 +1168,7 @@ function MetadataStep({
   value,
   onChange,
 }: {
-  value?: MetadataLevel;
+  value: MetadataLevel | undefined;
   onChange: (
     value: MetadataLevel,
   ) => void;
@@ -1222,7 +1222,7 @@ function GoalStep({
   value,
   onChange,
 }: {
-  value?: AnalysisGoal;
+  value: AnalysisGoal | undefined;
   onChange: (
     value: AnalysisGoal,
   ) => void;
