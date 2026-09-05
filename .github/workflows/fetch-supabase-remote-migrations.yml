@@ -1,0 +1,63 @@
+name: Fetch Supabase Remote Migrations
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-remote-migrations:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Create isolated audit project
+        run: |
+          mkdir -p /tmp/hubgene-remote-migrations
+          cd /tmp/hubgene-remote-migrations
+          supabase init --force
+
+      - name: Link production project
+        working-directory: /tmp/hubgene-remote-migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase link             --project-ref "$PROJECT_REF"             --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Fetch remote migration history
+        working-directory: /tmp/hubgene-remote-migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase migration fetch --linked
+
+      - name: Create manifest
+        run: |
+          {
+            echo "Remote migrations fetched from production."
+            echo "Generated at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo
+            find /tmp/hubgene-remote-migrations/supabase/migrations               -maxdepth 1 -type f -printf '%f\n' | sort
+          } > /tmp/hubgene-remote-migrations/README.txt
+
+      - name: Upload remote migrations audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-remote-migrations
+          path: |
+            /tmp/hubgene-remote-migrations/README.txt
+            /tmp/hubgene-remote-migrations/supabase/migrations/
+          if-no-files-found: error
+          retention-days: 7
