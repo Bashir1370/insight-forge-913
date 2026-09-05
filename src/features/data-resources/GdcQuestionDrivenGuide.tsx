@@ -171,7 +171,11 @@ export function GdcQuestionDrivenGuide({
 
   const selectedQuestion =
     researchQuestions.find((item) => item.id === questionId) ?? researchQuestions[0];
-  const currentStage = discoveryStages[stageIndex];
+  const currentStage = discoveryStages[stageIndex] ?? discoveryStages[0];
+
+  if (!selectedQuestion || !currentStage) {
+    throw new Error("GDC question guide requires at least one question and one discovery stage.");
+  }
 
   const projectsBox = useMemo(() => {
     const managed = managedHotspots.find(
