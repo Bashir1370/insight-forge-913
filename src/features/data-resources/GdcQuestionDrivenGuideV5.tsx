@@ -39,10 +39,10 @@ const questionIcons = {
 } as const;
 
 type Props = {
-  imageUrl?: string | null;
-  managedHotspots?: unknown[];
-  pageTitle?: string | null;
-  pageDescription?: string | null;
+  imageUrl?: string | null | undefined;
+  managedHotspots?: unknown[] | undefined;
+  pageTitle?: string | null | undefined;
+  pageDescription?: string | null | undefined;
   guideConfig: GdcQuestionGuideConfig;
 };
 
@@ -283,7 +283,15 @@ function ProjectsStage({
 }) {
   const projects = config.projects;
   const src = useProjectsImage(projects.imageUrl);
-  const facet = projects.facets.find((item) => item.id === selectedFacet) ?? projects.facets[0];
+  const facet =
+    projects.facets.find((item) => item.id === selectedFacet) ??
+    projects.facets[0] ??
+    DEFAULT_GDC_QUESTION_GUIDE.projects.facets[0];
+
+  if (!facet) {
+    throw new Error("GDC Projects stage requires at least one facet.");
+  }
+
   const hotspotMap = useMemo(() => new Map(projects.hotspots.map((item) => [item.key, item])), [projects.hotspots]);
   const filtersArea = hotspotMap.get("filtersArea");
   const tableArea = hotspotMap.get("projectsTable");
@@ -493,7 +501,7 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
           />
         ) : stage === 2 ? (
           <GdcStudyDesignStage
-            title={stageTitles[2]}
+            title={stageTitles[2] ?? ""}
             stageNumber={3}
             stageTotal={stageTitles.length}
             onPrevious={() => setStage(1)}
@@ -501,7 +509,7 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
           />
         ) : (
           <GdcProjectDecisionStage
-            title={stageTitles[3]}
+            title={stageTitles[3] ?? ""}
             stageNumber={4}
             stageTotal={stageTitles.length}
             onPrevious={() => setStage(2)}
