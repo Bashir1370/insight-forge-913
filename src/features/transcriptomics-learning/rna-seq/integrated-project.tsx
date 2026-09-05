@@ -247,6 +247,17 @@ const defaultMissions: Mission[] = [
   },
 ];
 
+function getMission(missions: Mission[], index: number): Mission {
+  const mission =
+    missions[index] ?? missions[0] ?? defaultMissions[0];
+
+  if (!mission) {
+    throw new Error("RNA-seq integrated project requires at least one mission.");
+  }
+
+  return mission;
+}
+
 export function RnaSeqIntegratedProjectLesson() {
   const cms = useIntegratedProjectCms({
     pageKey: "project:rna-seq-integrated-project",
@@ -273,7 +284,7 @@ export function RnaSeqIntegratedProjectLesson() {
   });
   const [dossierOpen, setDossierOpen] = useState(true);
 
-  const mission = missions[missionIndex];
+  const mission = getMission(missions, missionIndex);
   const selected = answers[missionIndex];
   const solved = selected === mission.correctIndex;
   const completed = missions.filter(
