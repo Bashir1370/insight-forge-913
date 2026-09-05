@@ -4292,7 +4292,14 @@ function LearningProgressCard({
               asChild
               variant="hero"
             >
-              <Link to="/learn/rna-seq/navigator" search={{}}>
+              <Link
+                    to="/learn/rna-seq/navigator"
+                    search={{
+                      node: undefined,
+                      source: undefined,
+                      goal: undefined,
+                    }}
+                  >
                 شروع یادگیری RNA-seq
               </Link>
             </Button>
@@ -4387,7 +4394,14 @@ function LearningProgressCard({
                   asChild
                   variant="hero"
                 >
-                  <Link to="/learn/rna-seq/navigator" search={{}}>
+                  <Link
+                    to="/learn/rna-seq/navigator"
+                    search={{
+                      node: undefined,
+                      source: undefined,
+                      goal: undefined,
+                    }}
+                  >
                     {finished
                       ? "مرور دوباره مسیر"
                       : "ادامه مسیر یادگیری"}
