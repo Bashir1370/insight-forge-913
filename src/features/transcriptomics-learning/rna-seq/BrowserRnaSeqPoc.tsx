@@ -473,7 +473,7 @@ function CodeCell({
 }: {
   step: Step;
   code: string;
-  result?: StepResult;
+  result: StepResult | undefined;
   running: boolean;
   ready: boolean;
   completed: boolean;
