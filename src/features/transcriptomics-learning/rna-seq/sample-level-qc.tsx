@@ -14,6 +14,17 @@ const samples = [
   { id: "T3", group: "درمان", batch: "دسته B", total: 15, pc1: 83, pc2: 24, note: "از بقیه دورتر است؛ نیازمند بررسی، نه حذف خودکار" },
 ];
 
+function getSample(selectedId: string) {
+  const sample =
+    samples.find((item) => item.id === selectedId) ?? samples[0];
+
+  if (!sample) {
+    throw new Error("Sample-level QC requires at least one sample.");
+  }
+
+  return sample;
+}
+
 const sections: GuidedLessonSection[] = [
   {
     title: "چرا از ژن به نمونه برمی‌گردیم؟",
@@ -491,7 +502,7 @@ function StudyViewLab() {
 function LibrarySizeLab() {
   const [selected, setSelected] = useState("T3");
   const max = Math.max(...samples.map((sample) => sample.total));
-  const current = samples.find((sample) => sample.id === selected) ?? samples[0];
+  const current = getSample(selected);
 
   return (
     <LabFrame title="آزمایشگاه اندازه کتابخانه">
@@ -566,7 +577,7 @@ function SimilarityLab() {
 
 function PcaLab() {
   const [selected, setSelected] = useState("T3");
-  const current = samples.find((sample) => sample.id === selected) ?? samples[0];
+  const current = getSample(selected);
 
   return (
     <LabFrame title="روی نقاط PCA کلیک کنید">
@@ -665,7 +676,7 @@ function OutlierTriageLab() {
 
 function ProjectDashboardLab() {
   const [selected, setSelected] = useState("T3");
-  const current = samples.find((sample) => sample.id === selected) ?? samples[0];
+  const current = getSample(selected);
 
   const status = useMemo(() => {
     if (current.id === "T3") return "نیازمند بررسی چندمنبعی";
