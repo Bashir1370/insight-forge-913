@@ -46,10 +46,10 @@ type ManagedHotspot = {
 };
 
 type LearningStep = GuidedPortalStep & {
-  persianLabel?: string;
-  researchExample?: string;
-  exerciseQuestion?: string;
-  exerciseAnswer?: string;
+  persianLabel?: string | undefined;
+  researchExample?: string | undefined;
+  exerciseQuestion?: string | undefined;
+  exerciseAnswer?: string | undefined;
 };
 
 type GdcHomeTourProps = {
@@ -141,7 +141,7 @@ function GdcPortalCanvas({
   hotspots: PortalHotspot[];
   activeHotspotId: string;
   onHotspotClick: (hotspotId: string) => void;
-  imageUrl?: string | null;
+  imageUrl?: string | null | undefined;
 }) {
   const [snapshotFailed, setSnapshotFailed] = useState(false);
 
@@ -370,7 +370,12 @@ export function GdcHomeTour({
     );
   }
 
-  const currentStep = steps[stepIndex];
+  const currentStep = steps[stepIndex] ?? steps[0];
+
+  if (!currentStep) {
+    return null;
+  }
+
   const activeHotspot = screen.hotspots.find((hotspot) => hotspot.id === currentStep.hotspotId);
 
   const selectHotspot = (hotspotId: string) => {
