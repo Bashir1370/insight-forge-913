@@ -144,7 +144,10 @@ export function GdcStudyDesignStageManaged({
     setConfidence(null);
 
     if (option === task.target && taskIndex < tasks.length - 1) {
-      window.setTimeout(() => setActiveFilter(tasks[taskIndex + 1].id), 180);
+      const nextTask = tasks[taskIndex + 1];
+      if (nextTask) {
+        window.setTimeout(() => setActiveFilter(nextTask.id), 180);
+      }
     }
   }
 
