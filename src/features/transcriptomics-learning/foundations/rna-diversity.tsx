@@ -371,7 +371,7 @@ export function RnaDiversityLesson() {
       subtitle="ترنسکریپتوم از خانواده‌های متنوع RNA تشکیل شده است. در این درس می‌بینید چرا نوع سؤال پژوهشی و روش آماده‌سازی کتابخانه روی بخشی از دنیای RNA که مشاهده می‌کنیم اثر می‌گذارد."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
       <section id="f3-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
