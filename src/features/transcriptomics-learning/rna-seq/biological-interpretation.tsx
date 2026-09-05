@@ -418,7 +418,7 @@ function GeneSetLab() {
       <div className="flex flex-wrap gap-2">
         {items.map((item, index) => <ChoiceButton key={item[0]} active={selected === index} onClick={() => setSelected(index)}>{item[0]}</ChoiceButton>)}
       </div>
-      <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-7 text-slate-700">{items[selected][1]}</p>
+      <p className="mt-4 rounded-2xl bg-slate-50 p-4 text-sm leading-7 text-slate-700">{items[selected]?.[1] ?? ""}</p>
     </LabFrame>
   );
 }
@@ -565,7 +565,7 @@ function ClaimBuilderLab() {
   return (
     <LabFrame title="ادعای علمی را مرحله‌به‌مرحله بسازید">
       <div className="flex flex-wrap gap-2">{steps.map((item, index) => <ChoiceButton key={item[0]} active={step === index} onClick={() => setStep(index)}>مرحله {(index + 1).toLocaleString("fa-IR")}</ChoiceButton>)}</div>
-      <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-5"><p className="font-black text-teal-950">{steps[step][0]}</p><p className="mt-2 text-sm leading-7 text-teal-900">{steps[step][1]}</p></div>
+      <div className="mt-4 rounded-2xl border border-teal-200 bg-teal-50 p-5"><p className="font-black text-teal-950">{steps[step]?.[0] ?? ""}</p><p className="mt-2 text-sm leading-7 text-teal-900">{steps[step]?.[1] ?? ""}</p></div>
     </LabFrame>
   );
 }
