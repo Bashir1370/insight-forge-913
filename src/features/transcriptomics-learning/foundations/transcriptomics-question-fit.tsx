@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
@@ -8,8 +7,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Compass,
-  FlaskConical,
   Lightbulb,
   Loader2,
   RotateCcw,
@@ -19,6 +16,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { InteractiveLessonShell } from "../components/InteractiveLessonShell";
+import { TranscriptomicsTechnologyVisual } from "@/components/learning/TranscriptomicsTechnologyVisual";
 
 type Confidence = "unclear" | "developing" | "clear";
 
@@ -29,25 +27,6 @@ type SaveState =
   | "saving"
   | "saved"
   | "error";
-
-type QuestionDomain =
-  | "transcriptomics"
-  | "genomics"
-  | "proteomics"
-  | "phenotype";
-
-type ScenarioId =
-  | "drug-expression"
-  | "germline-variant"
-  | "protein-abundance"
-  | "cell-migration";
-
-type ProjectReflection =
-  | "expression"
-  | "variant"
-  | "protein"
-  | "phenotype"
-  | "unsure";
 
 type LearningProgressRow = {
   status:
@@ -62,131 +41,87 @@ type LearningProgressRow = {
 };
 
 const RESEARCH_LINE = "transcriptomics-foundations";
-const NODE_ID = "f5-transcriptomics-question-fit";
+const NODE_ID = "f7-rna-seq-in-transcriptomics";
 
 const sceneTitles = [
-  "سؤال مناسب چیست؟",
-  "چه لایه‌ای را می‌خواهید؟",
-  "آزمایشگاه انتخاب حوزه",
-  "سؤال‌های مرزی",
-  "پروژه داروی X",
-  "کلینیک اشتباه",
-  "تسلط",
+  "از مبانی به فناوری‌ها",
+  "نقشه فناوری‌ها",
+  "RNA-seq در برابر میکروآرایه",
+  "فناوری‌های دیگر کجا قرار می‌گیرند؟",
+  "نوع داده چه سرنخی می‌دهد؟",
+  "انتخاب فناوری بر اساس سؤال",
+  "تسلط و ورود به مسیر تخصصی",
 ];
 
-const domainInfo: Record<
-  QuestionDomain,
+const technologies = [
   {
-    title: string;
-    description: string;
-    example: string;
-  }
-> = {
-  transcriptomics: {
-    title: "ترنسکریپتومیکس",
+    title: "RNA-seq توده‌ای",
     description:
-      "وقتی سؤال اصلی درباره الگوی RNA و تغییر بیان در یک وضعیت زیستی است.",
-    example:
-      "بعد از تیمار، کدام ژن‌ها در سطح RNA تغییر کرده‌اند؟",
+      "اندازه‌گیری RNA در سطح نمونه با فناوری مبتنی بر توالی‌یابی.",
+    note: "مسیر تخصصی فعال هاب‌ژن",
   },
-  genomics: {
-    title: "ژنومیکس",
+  {
+    title: "میکروآرایه",
     description:
-      "وقتی سؤال اصلی درباره توالی DNA، واریانت‌ها یا تغییرات ژنومی است.",
-    example:
-      "آیا یک واریانت ژنتیکی در بیماران وجود دارد؟",
+      "اندازه‌گیری بیان با پروب‌های از پیش طراحی‌شده و شدت سیگنال.",
+    note: "مسیر تخصصی آینده",
   },
-  proteomics: {
-    title: "پروتئومیکس",
+  {
+    title: "RNA-seq تک‌سلولی",
     description:
-      "وقتی سؤال اصلی مستقیماً درباره فراوانی یا وضعیت پروتئین‌هاست.",
-    example:
-      "سطح پروتئین X بعد از تیمار چقدر تغییر کرده است؟",
+      "اندازه‌گیری RNA در سطح سلول‌ها برای مشاهده ناهمگنی سلولی.",
+    note: "خانواده مبتنی بر توالی‌یابی",
   },
-  phenotype: {
-    title: "آزمون فنوتیپی",
+  {
+    title: "ترنسکریپتومیکس فضایی",
     description:
-      "وقتی سؤال اصلی درباره رفتار یا عملکرد قابل مشاهده سلول، بافت یا موجود زنده است.",
-    example:
-      "آیا مهاجرت یا زنده‌مانی سلول بعد از تیمار تغییر کرده است؟",
-  },
-};
-
-const scenarios: Array<{
-  id: ScenarioId;
-  question: string;
-  correct: QuestionDomain;
-  explanation: string;
-}> = [
-  {
-    id: "drug-expression",
-    question:
-      "می‌خواهم بدانم داروی X چه تغییراتی در الگوی RNA سلول‌های سرطان پانکراس ایجاد می‌کند.",
-    correct: "transcriptomics",
-    explanation:
-      "سؤال مستقیماً درباره تغییرات RNA است، بنابراین ترنسکریپتومیکس انتخاب طبیعی‌تری است.",
+      "مطالعه RNA همراه با اطلاعات مکانی بافت؛ فناوری‌های این حوزه متنوع‌اند.",
+    note: "خانواده فناوری‌های متنوع",
   },
   {
-    id: "germline-variant",
-    question:
-      "می‌خواهم یک واریانت ارثی DNA مرتبط با خطر بیماری را پیدا کنم.",
-    correct: "genomics",
-    explanation:
-      "سؤال درباره تغییر در سطح DNA است، نه RNA.",
+    title: "ترنسکریپتومیکس خوانش‌بلند",
+    description:
+      "استفاده از خوانش‌های بلندتر برای مطالعه ساختار ترنسکریپت و ایزوفرم‌ها.",
+    note: "خانواده مبتنی بر توالی‌یابی",
   },
   {
-    id: "protein-abundance",
-    question:
-      "می‌خواهم مقدار پروتئین X را بعد از تیمار به‌صورت مستقیم اندازه بگیرم.",
-    correct: "proteomics",
-    explanation:
-      "اگر هدف مستقیم مقدار پروتئین است، اندازه‌گیری پروتئینی مناسب‌تر است.",
-  },
-  {
-    id: "cell-migration",
-    question:
-      "می‌خواهم بدانم داروی X مهاجرت سلول‌های سرطانی را کاهش می‌دهد یا نه.",
-    correct: "phenotype",
-    explanation:
-      "سؤال اصلی درباره رفتار سلول است و به یک آزمون فنوتیپی مستقیم نیاز دارد؛ ترنسکریپتومیکس می‌تواند اطلاعات تکمیلی بدهد.",
+    title: "RNA-seq برای RNAهای کوچک",
+    description:
+      "توالی‌یابی با طراحی مناسب برای RNAهای کوچک مانند miRNA.",
+    note: "خانواده مبتنی بر توالی‌یابی",
   },
 ];
 
-const reflectionLabels: Record<ProjectReflection, string> = {
-  expression: "سؤال اصلی من درباره تغییر بیان ژن است",
-  variant: "سؤال اصلی من درباره DNA یا واریانت‌هاست",
-  protein: "سؤال اصلی من درباره پروتئین است",
-  phenotype: "سؤال اصلی من درباره رفتار یا فنوتیپ است",
-  unsure: "هنوز سؤال اصلی پروژه‌ام روشن نیست",
-};
-
-export function TranscriptomicsQuestionFitLesson() {
+export function RnaSeqInTranscriptomicsLesson() {
   const { session } = useAuth();
   const userId = session?.user?.id ?? null;
 
   const [scene, setScene] = useState(0);
-  const [openingAnswer, setOpeningAnswer] = useState<number | null>(null);
-  const [selectedDomain, setSelectedDomain] =
-    useState<QuestionDomain>("transcriptomics");
 
-  const [scenarioAnswers, setScenarioAnswers] = useState<
-    Record<ScenarioId, QuestionDomain | null>
-  >({
-    "drug-expression": null,
-    "germline-variant": null,
-    "protein-abundance": null,
-    "cell-migration": null,
-  });
+  const [openingAnswer, setOpeningAnswer] =
+    useState<number | null>(null);
+  const [mapAnswer, setMapAnswer] =
+    useState<number | null>(null);
+  const [pathAnswer, setPathAnswer] =
+    useState<number | null>(null);
+  const [familyAnswer, setFamilyAnswer] =
+    useState<number | null>(null);
+  const [dataAnswer, setDataAnswer] =
+    useState<number | null>(null);
 
-  const [borderlineAnswer, setBorderlineAnswer] = useState<number | null>(null);
-  const [caseAnswer, setCaseAnswer] = useState<number | null>(null);
-  const [mistakeAnswer, setMistakeAnswer] = useState<number | null>(null);
-  const [reflection, setReflection] =
-    useState<ProjectReflection | null>(null);
+  const [case1, setCase1] = useState<number | null>(null);
+  const [case2, setCase2] = useState<number | null>(null);
+  const [case3, setCase3] = useState<number | null>(null);
+  const [case4, setCase4] = useState<number | null>(null);
+  const [case5, setCase5] = useState<number | null>(null);
 
-  const [masteryAnswer, setMasteryAnswer] = useState<number | null>(null);
-  const [confidence, setConfidence] = useState<Confidence | null>(null);
-  const [saveState, setSaveState] = useState<SaveState>("guest");
+  const [masteryAnswer, setMasteryAnswer] =
+    useState<number | null>(null);
+  const [confidence, setConfidence] =
+    useState<Confidence | null>(null);
+
+  const [saveState, setSaveState] =
+    useState<SaveState>("guest");
   const [saveError, setSaveError] = useState("");
   const [savedProgress, setSavedProgress] =
     useState<LearningProgressRow | null>(null);
@@ -216,7 +151,7 @@ export function TranscriptomicsQuestionFitLesson() {
       if (cancelled) return;
 
       if (error) {
-        console.error("Failed to load F5 progress:", error);
+        console.error("Failed to load F7 progress:", error);
         setSaveState("error");
         setSaveError("بازیابی وضعیت قبلی این درس انجام نشد.");
         return;
@@ -248,16 +183,6 @@ export function TranscriptomicsQuestionFitLesson() {
     };
   }, [userId]);
 
-  const selectedDomainInfo = domainInfo[selectedDomain];
-
-  const scenarioScore = useMemo(
-    () =>
-      scenarios.filter(
-        (scenario) => scenarioAnswers[scenario.id] === scenario.correct,
-      ).length,
-    [scenarioAnswers],
-  );
-
   const canFinish =
     masteryAnswer !== null && Boolean(confidence);
 
@@ -265,7 +190,7 @@ export function TranscriptomicsQuestionFitLesson() {
     setScene(nextScene);
 
     window.setTimeout(() => {
-      document.getElementById("f5-scene")?.scrollIntoView({
+      document.getElementById("f7-scene")?.scrollIntoView({
         behavior: "smooth",
         block: "start",
       });
@@ -291,6 +216,7 @@ export function TranscriptomicsQuestionFitLesson() {
     }
 
     const isCorrect = masteryAnswer === 1;
+
     const status =
       confidence === "unclear" || !isCorrect
         ? "needs_review"
@@ -318,7 +244,7 @@ export function TranscriptomicsQuestionFitLesson() {
       );
 
     if (error) {
-      console.error("Failed to save F5 progress:", error);
+      console.error("Failed to save F7 progress:", error);
       setSaveState("error");
       setSaveError("ذخیره نتیجه این درس انجام نشد.");
       return;
@@ -338,17 +264,17 @@ export function TranscriptomicsQuestionFitLesson() {
   function restartLesson() {
     setScene(0);
     setOpeningAnswer(null);
-    setSelectedDomain("transcriptomics");
-    setScenarioAnswers({
-      "drug-expression": null,
-      "germline-variant": null,
-      "protein-abundance": null,
-      "cell-migration": null,
-    });
-    setBorderlineAnswer(null);
-    setCaseAnswer(null);
-    setMistakeAnswer(null);
-    setReflection(null);
+    setMapAnswer(null);
+    setPathAnswer(null);
+    setFamilyAnswer(null);
+    setDataAnswer(null);
+
+    setCase1(null);
+    setCase2(null);
+    setCase3(null);
+    setCase4(null);
+    setCase5(null);
+
     setMasteryAnswer(null);
     setConfidence(null);
 
@@ -362,15 +288,15 @@ export function TranscriptomicsQuestionFitLesson() {
 
   return (
     <InteractiveLessonShell
-      foundationIndex={5}
+      foundationIndex={7}
       total={7}
-      title="چه سؤال‌هایی برای ترنسکریپتومیکس مناسب‌اند؟"
-      subtitle="در این درس به‌جای شروع از ابزار، از خود سؤال پژوهشی شروع می‌کنیم و یاد می‌گیریم چه زمانی ترنسکریپتومیکس انتخاب مناسبی است و چه زمانی باید سراغ لایه یا روش دیگری رفت."
+      title="نقشه فناوری‌های ترنسکریپتومیکس"
+      subtitle="آخرین درس مبانی ترنسکریپتومیکس: از تفاوت RNA-seq و میکروآرایه تا جایگاه تک‌سلولی، فضایی، خوانش‌بلند و RNA-seq برای RNAهای کوچک."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
-      <section id="f5-scene" className="scroll-mt-6">
+      <section id="f7-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap gap-2">
@@ -403,311 +329,296 @@ export function TranscriptomicsQuestionFitLesson() {
 
           {scene === 0 && (
             <SceneCard
-              eyebrow="شروع از سؤال"
-              title="هر سؤالی که درباره «ژن» باشد، سؤال ترنسکریپتومیکس نیست."
-              description="اول باید مشخص کنیم سؤال اصلی در کدام لایه زیستی قرار دارد."
+              eyebrow="پایان مبانی"
+              title="حالا می‌توانیم از «ترنسکریپتوم چیست؟» وارد «با چه فناوری آن را اندازه بگیریم؟» شویم."
+              description="در درس‌های قبلی درباره ژنوم، ترنسکریپتوم، بیان ژن، طراحی نمونه و سطح مشاهده صحبت کردیم. اینجا برای اولین بار نقشه فناوری‌ها را روی آن مدل ذهنی قرار می‌دهیم."
             >
+              <div className="rounded-3xl border border-slate-200 bg-slate-950 p-6 text-white">
+                <p className="text-xs font-bold text-teal-300">
+                  نقشه تصمیم
+                </p>
+
+                <div dir="rtl" className="mt-5 flex flex-wrap items-center gap-2 text-sm font-black">
+                  {[
+                    "سؤال پژوهشی",
+                    "اطلاعات موردنیاز",
+                    "سطح مشاهده",
+                    "فناوری",
+                    "نوع داده",
+                    "تحلیل",
+                  ].map((item, index, items) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-2"
+                    >
+                      <span className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                        {item}
+                      </span>
+
+                      {index < items.length - 1 && (
+                        <span className="text-teal-300">←</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <DecisionQuestion
-                question="کدام سؤال مستقیماً به ترنسکریپتومیکس نزدیک‌تر است؟"
+                question="کدام جمله مدل ذهنی دقیق‌تری می‌سازد؟"
                 options={[
-                  "آیا واریانت ارثی خاصی در DNA بیماران وجود دارد؟",
-                  "بعد از تیمار، الگوی RNA سلول چگونه تغییر می‌کند؟",
-                  "مقدار پروتئین X چقدر است؟",
-                  "آیا مهاجرت سلول کاهش یافته است؟",
+                  "ترنسکریپتومیکس نام یک فناوری خاص است.",
+                  "ترنسکریپتومیکس یک حوزه است و فناوری‌های مختلفی می‌توانند اطلاعات آن را اندازه‌گیری کنند.",
+                  "RNA-seq تنها راه مطالعه بیان RNA است.",
                 ]}
                 selected={openingAnswer}
                 correctIndex={1}
                 onSelect={setOpeningAnswer}
-                correctFeedback="دقیقاً. سؤال مستقیماً درباره تغییرات RNA است."
-                incorrectFeedback="این سؤال ممکن است مهم باشد، اما لایه اصلی آن DNA، پروتئین یا فنوتیپ است؛ نه RNA."
+                correctFeedback="دقیقاً. همین تفکیک پایه ورود به نقشه فناوری‌هاست."
+                incorrectFeedback="ترنسکریپتومیکس یک حوزه علمی است؛ RNA-seq، میکروآرایه و فناوری‌های دیگر ابزارهای مطالعه آن‌اند."
               />
 
               <InsightBox>
-                اصل این درس: <strong>اول سؤال را در لایه درست قرار بده، بعد روش را انتخاب کن.</strong>
+                از اینجا به بعد، «سؤال» باید قبل از «فناوری» قرار بگیرد.
               </InsightBox>
             </SceneCard>
           )}
 
           {scene === 1 && (
             <SceneCard
-              eyebrow="نقشه سؤال"
-              title="چه چیزی را واقعاً می‌خواهید بدانید؟"
-              description="روی هر حوزه کلیک کنید و نمونه سؤال مناسب آن را ببینید."
+              eyebrow="نقشه فناوری‌ها"
+              title="همه فناوری‌ها یک سؤال یا یک نوع اطلاعات را هدف نمی‌گیرند."
+              description="این کارت‌ها قرار نیست یک طبقه‌بندی تک‌محوری بسازند؛ هدف، آشنا شدن با مسیرهای اصلی در اکوسیستم ترنسکریپتومیکس است."
             >
-              <div className="grid gap-3 md:grid-cols-4">
-                {(Object.keys(domainInfo) as QuestionDomain[]).map(
-                  (domain) => (
-                    <button
-                      key={domain}
-                      type="button"
-                      onClick={() => setSelectedDomain(domain)}
-                      className={[
-                        "rounded-2xl border p-4 text-right transition",
-                        selectedDomain === domain
-                          ? "border-teal-500 bg-teal-50 shadow-sm"
-                          : "border-slate-200 bg-white hover:border-teal-300",
-                      ].join(" ")}
-                    >
-                      <p className="font-black text-slate-950">
-                        {domainInfo[domain].title}
-                      </p>
-                      <p className="mt-2 text-xs leading-6 text-slate-500">
-                        {domainInfo[domain].description}
-                      </p>
-                    </button>
-                  ),
-                )}
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {technologies.map((technology) => (
+                  <TechnologyCard
+                    key={technology.title}
+                    title={technology.title}
+                    description={technology.description}
+                    note={technology.note}
+                  />
+                ))}
               </div>
 
-              <div className="mt-6 rounded-3xl bg-slate-950 p-6 text-white">
-                <div className="flex items-center gap-3">
-                  <Compass className="size-5 text-teal-300" />
-                  <p className="text-xl font-black">
-                    {selectedDomainInfo.title}
-                  </p>
-                </div>
-
-                <p className="mt-4 text-sm leading-8 text-slate-300">
-                  {selectedDomainInfo.example}
-                </p>
-              </div>
+              <DecisionQuestion
+                question="چرا نباید توده‌ای، تک‌سلولی، خوانش‌بلند و میکروآرایه را ساده‌سازی کنیم و همه را دقیقاً یک نوع دسته‌بندی بدانیم؟"
+                options={[
+                  "چون بعضی واژه‌ها درباره سطح مشاهده‌اند و بعضی درباره فناوری یا استراتژی اندازه‌گیری.",
+                  "چون فقط میکروآرایه فناوری واقعی است.",
+                  "چون RNA-seq هیچ ارتباطی با ترنسکریپتومیکس ندارد.",
+                ]}
+                selected={mapAnswer}
+                correctIndex={0}
+                onSelect={setMapAnswer}
+                correctFeedback="دقیقاً. نقشه فناوری‌ها چند محور مفهومی دارد و F6 زمینه همین تفکیک را ساخته بود."
+                incorrectFeedback="توده‌ای و تک‌سلولی بیشتر درباره مقیاس مشاهده‌اند؛ میکروآرایه و RNA-seq درباره منطق فناوری‌اند؛ خوانش‌بلند هم راهبرد توالی‌یابی را تغییر می‌دهد."
+              />
             </SceneCard>
           )}
 
           {scene === 2 && (
             <SceneCard
-              eyebrow="آزمایشگاه انتخاب حوزه"
-              title="برای هر سؤال، لایه مناسب‌تر را انتخاب کنید."
-              description="گاهی چند نوع داده می‌توانند مکمل هم باشند؛ اینجا فقط می‌خواهیم لایه اصلی سؤال را تشخیص دهیم."
+              eyebrow="مقایسه فناوری"
+              title="دو منطق متفاوت برای مطالعه بیان RNA"
+              description="RNA-seq و میکروآرایه هر دو برای مطالعه بیان RNA استفاده می‌شوند، اما منطق تولید داده در آن‌ها متفاوت است."
             >
-              <div className="space-y-5">
-                {scenarios.map((scenario) => {
-                  const selected = scenarioAnswers[scenario.id];
-                  const answered = selected !== null;
-                  const correct = selected === scenario.correct;
+              <TranscriptomicsTechnologyVisual />
 
-                  return (
-                    <div
-                      key={scenario.id}
-                      className="rounded-3xl border border-slate-200 bg-white p-5"
-                    >
-                      <p className="font-bold leading-8 text-slate-950">
-                        {scenario.question}
-                      </p>
+              <DecisionQuestion
+                question="تفاوت بنیادی این دو فناوری چیست؟"
+                options={[
+                  "RNA-seq توالی مولکول‌ها را می‌خواند، اما میکروآرایه شدت اتصال به پروب‌های از پیش طراحی‌شده را می‌سنجد.",
+                  "هر دو فناوری دقیقاً با یک روش داده تولید می‌کنند.",
+                  "میکروآرایه هم مانند RNA-seq الزاماً FASTQ تولید می‌کند.",
+                ]}
+                selected={pathAnswer}
+                correctIndex={0}
+                onSelect={setPathAnswer}
+                correctFeedback="دقیقاً. این همان تفاوت مفهومی اصلی بین این دو فناوری است."
+                incorrectFeedback="به منطق تولید داده نگاه کنید: RNA-seq مبتنی بر توالی‌یابی است؛ میکروآرایه مبتنی بر هیبریداسیون، پروب و شدت سیگنال است."
+              />
 
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        {(Object.keys(domainInfo) as QuestionDomain[]).map(
-                          (domain) => (
-                            <button
-                              key={domain}
-                              type="button"
-                              onClick={() =>
-                                setScenarioAnswers((previous) => ({
-                                  ...previous,
-                                  [scenario.id]: domain,
-                                }))
-                              }
-                              className={[
-                                "rounded-xl border px-3 py-2 text-xs font-bold transition",
-                                selected === domain
-                                  ? domain === scenario.correct
-                                    ? "border-emerald-500 bg-emerald-50 text-emerald-900"
-                                    : "border-amber-400 bg-amber-50 text-amber-900"
-                                  : "border-slate-200 bg-white text-slate-600 hover:border-teal-300",
-                              ].join(" ")}
-                            >
-                              {domainInfo[domain].title}
-                            </button>
-                          ),
-                        )}
-                      </div>
-
-                      {answered && (
-                        <p
-                          className={[
-                            "mt-4 rounded-xl p-3 text-xs font-semibold leading-6",
-                            correct
-                              ? "bg-emerald-50 text-emerald-900"
-                              : "bg-amber-50 text-amber-900",
-                          ].join(" ")}
-                        >
-                          {correct
-                            ? scenario.explanation
-                            : `لایه اصلی این سؤال «${domainInfo[scenario.correct].title}» است.`}
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {Object.values(scenarioAnswers).every(Boolean) && (
-                <div className="mt-6 rounded-2xl border border-teal-200 bg-teal-50 p-5">
-                  <p className="font-bold text-teal-950">
-                    نتیجه شما:{" "}
-                    {new Intl.NumberFormat("fa-IR").format(scenarioScore)} از ۴
-                  </p>
-                  <p className="mt-2 text-sm leading-7 text-teal-900/80">
-                    هدف این آزمایشگاه این نیست که همه پروژه‌ها فقط یک نوع داده داشته باشند؛ هدف این است که «سؤال اصلی» را از ابزار جدا کنیم.
-                  </p>
-                </div>
-              )}
+              <InsightBox>
+                هدف این مقایسه انتخاب «فناوری بهتر» نیست؛ هدف فهم دو منطق متفاوت تولید داده ترنسکریپتومیکس است.
+              </InsightBox>
             </SceneCard>
           )}
 
           {scene === 3 && (
             <SceneCard
-              eyebrow="سؤال‌های مرزی"
-              title="گاهی ترنسکریپتومیکس بخشی از پاسخ است، نه تمام پاسخ."
-              description="علوم زیستی همیشه مرزهای کاملاً جدا ندارند. مهم این است که بدانیم کدام ادعا به کدام داده نیاز دارد."
+              eyebrow="پل به فناوری‌های دیگر"
+              title="فناوری‌های جدیدتر را می‌توان روی همین نقشه ذهنی بهتر فهمید."
+              description="اینجا فقط جایگاه مفهومی را می‌سازیم؛ آموزش عمیق هر فناوری در مسیر تخصصی خودش انجام می‌شود."
             >
-              <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6">
-                <p className="font-black text-slate-950">
-                  سناریو
-                </p>
-                <p className="mt-3 text-sm leading-8 text-slate-600">
-                  پژوهشگری می‌خواهد بفهمد داروی X چرا مهاجرت سلول‌های سرطان پانکراس را کاهش داده است.
-                </p>
+              <div className="grid gap-4 lg:grid-cols-2">
+                <InfoBlock
+                  title="خانواده‌های مبتنی بر توالی‌یابی"
+                  items={[
+                    "RNA-seq توده‌ای: توالی‌یابی RNA در سطح نمونه",
+                    "RNA-seq تک‌سلولی: توالی‌یابی RNA در سطح سلول",
+                    "RNA-seq برای RNAهای کوچک: طراحی کتابخانه متناسب با RNAهای کوچک",
+                    "ترنسکریپتومیکس خوانش‌بلند: خوانش‌های بلندتر برای بررسی رونوشت و ایزوفرم",
+                  ]}
+                  emphasized
+                />
+
+                <InfoBlock
+                  title="فناوری‌هایی با منطق متفاوت یا متنوع"
+                  items={[
+                    "میکروآرایه: پروب، هیبریداسیون و شدت سیگنال",
+                    "ترنسکریپتومیکس فضایی: خانواده‌ای متنوع؛ بسته به پلتفرم ممکن است از sequencing، probe-based detection، imaging یا ترکیبی از این منطق‌ها استفاده کند.",
+                  ]}
+                />
               </div>
 
               <DecisionQuestion
-                question="کدام طراحی فکری مناسب‌تر است؟"
+                question="کدام جمله درباره ترنسکریپتومیکس فضایی دقیق‌تر است؟"
                 options={[
-                  "فقط RNA-seq کافی است و به هیچ آزمون دیگری نیاز نیست.",
-                  "آزمون مهاجرت برای فنوتیپ لازم است و ترنسکریپتومیکس می‌تواند برای بررسی تغییرات RNA به‌عنوان لایه مکمل استفاده شود.",
-                  "چون مهاجرت یک فنوتیپ است، داده RNA هیچ ارزشی ندارد.",
+                  "تمام فناوری‌های فضایی دقیقاً یک پلتفرم و یک منطق اندازه‌گیری دارند.",
+                  "ترنسکریپتومیکس فضایی یک خانواده متنوع است و پلتفرم‌های آن می‌توانند منطق‌های متفاوتی داشته باشند.",
+                  "ترنسکریپتومیکس فضایی هیچ ارتباطی با RNA ندارد.",
                 ]}
-                selected={borderlineAnswer}
+                selected={familyAnswer}
                 correctIndex={1}
-                onSelect={setBorderlineAnswer}
-                correctFeedback="دقیقاً. ترنسکریپتومیکس می‌تواند بخشی از داستان باشد، اما سؤال فنوتیپی به اندازه‌گیری مستقیم فنوتیپ هم نیاز دارد."
-                incorrectFeedback="برای پاسخ کامل باید بین اندازه‌گیری مستقیم فنوتیپ و داده‌های مولکولی مکمل تفکیک کنیم."
+                onSelect={setFamilyAnswer}
+                correctFeedback="درست است. به همین دلیل ترنسکریپتومیکس فضایی را نباید به یک فناوری واحد تقلیل داد."
+                incorrectFeedback="ترنسکریپتومیکس فضایی یک خانواده از فناوری‌هاست، نه یک دستگاه یا مسیر تحلیل واحد."
               />
-
-              <InsightBox>
-                <strong>مناسب بودن یک روش به سؤال بستگی دارد.</strong> یک روش می‌تواند مفید باشد بدون اینکه به‌تنهایی برای پاسخ کامل کافی باشد.
-              </InsightBox>
             </SceneCard>
           )}
 
           {scene === 4 && (
             <SceneCard
-              eyebrow="پروژه همراه شما"
-              title="داروی X در سلول‌های سرطان پانکراس"
-              description="حالا سؤال پروژه را دقیق‌تر می‌کنیم تا ببینیم چه زمانی ترنسکریپتومیکس در مرکز طراحی قرار می‌گیرد."
+              eyebrow="امضای داده"
+              title="نوع فایل و ساختار داده می‌تواند درباره فناوری سرنخ بدهد."
+              description="اما همیشه باید فراداده، روش مقاله و اطلاعات پلتفرم را هم بررسی کنیم."
             >
-              <div className="grid gap-4 md:grid-cols-2">
-                <CaseCard
-                  title="سؤال ۱"
-                  text="داروی X چه تغییراتی در الگوی RNA سلول ایجاد می‌کند؟"
-                  badge="ترنسکریپتومیکس"
-                  emphasized
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <DataCard
+                  title="RNA-seq"
+                  description="داده خام معمولاً به‌صورت FASTQ است. بعد از کنترل کیفیت و کمی‌سازی، به مقادیر بیان ژن و در نهایت ماتریس بیان می‌رسیم."
                 />
 
-                <CaseCard
-                  title="سؤال ۲"
-                  text="داروی X آیا مهاجرت سلول را کاهش می‌دهد؟"
-                  badge="آزمون فنوتیپی"
+                <DataCard
+                  title="میکروآرایه"
+                  description="داده از شدت سیگنال پروب‌ها به دست می‌آید. پس از پردازش و نرمال‌سازی، ماتریس بیان ژن ساخته می‌شود."
+                />
+
+                <DataCard
+                  title="RNA-seq تک‌سلولی"
+                  description="FASTQ نقطه شروع رایج است. پس از پردازش، یک ماتریس ژن × سلول همراه با فراداده سلولی به دست می‌آید."
+                />
+
+                <DataCard
+                  title="فضایی"
+                  description="داده بیان RNA با مختصات مکانی و معمولاً اطلاعات تصویری بافت همراه است؛ بنابراین فقط یک ماتریس بیان ساده نیست."
+                />
+
+                <DataCard
+                  title="خوانش‌بلند"
+                  description="خروجی شامل خوانش‌های بلند است که برای بازسازی رونوشت‌ها و بررسی ایزوفرم‌ها استفاده می‌شود."
+                />
+
+                <DataCard
+                  title="RNA-seq برای RNAهای کوچک"
+                  description="داده خام معمولاً FASTQ است، اما کتابخانه برای RNAهای کوچک طراحی شده و مسیر تحلیل نیز متناسب با همین هدف است."
                 />
               </div>
 
               <DecisionQuestion
-                question="اگر سؤال اصلی پروژه «تغییر الگوی RNA پس از داروی X» باشد، کدام انتخاب منطقی‌تر است؟"
+                question="یک مجموعه‌داده ترنسکریپتومیکس FASTQ ندارد. اولین نتیجه‌گیری درست چیست؟"
                 options={[
-                  "ترنسکریپتومیکس باید یکی از لایه‌های اصلی طراحی باشد.",
-                  "فقط اندازه‌گیری پروتئین کافی است.",
-                  "فقط تعیین توالی DNA کافی است.",
-                  "هیچ داده مولکولی لازم نیست.",
+                  "حتماً داده ناقص است.",
+                  "اول فناوری تولید داده را بررسی می‌کنیم؛ ممکن است میکروآرایه یا یک خروجی پردازش‌شده باشد.",
+                  "حتماً داده DNA است.",
                 ]}
-                selected={caseAnswer}
-                correctIndex={0}
-                onSelect={setCaseAnswer}
-                correctFeedback="درست است. سؤال مستقیماً در لایه RNA تعریف شده است."
-                incorrectFeedback="وقتی سؤال اصلی درباره الگوی RNA است، ترنسکریپتومیکس باید در طراحی دیده شود."
+                selected={dataAnswer}
+                correctIndex={1}
+                onSelect={setDataAnswer}
+                correctFeedback="دقیقاً. نوع فایل را باید در زمینه فناوری و فراداده تفسیر کرد."
+                incorrectFeedback="نبود FASTQ به‌تنهایی نشان نمی‌دهد مجموعه‌داده مربوط به ترنسکریپتومیکس نیست."
               />
-
-              <div className="mt-7 rounded-3xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-6">
-                <div className="flex items-start gap-3">
-                  <FlaskConical className="mt-1 size-5 shrink-0 text-teal-700" />
-
-                  <div>
-                    <p className="font-bold text-teal-950">
-                      تفاوت مهم
-                    </p>
-
-                    <p className="mt-2 text-sm leading-8 text-slate-600">
-                      «می‌توان RNA-seq انجام داد» با «RNA-seq برای سؤال من انتخاب مناسبی است» یک چیز نیست.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-8 border-t border-slate-100 pt-7">
-                <p className="font-bold text-slate-950">
-                  سؤال اصلی پروژه شما بیشتر به کدام دسته نزدیک است؟
-                </p>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {(Object.keys(reflectionLabels) as ProjectReflection[]).map(
-                    (item) => (
-                      <button
-                        key={item}
-                        type="button"
-                        onClick={() => setReflection(item)}
-                        className={[
-                          "rounded-2xl border p-4 text-right text-sm font-semibold leading-7 transition",
-                          reflection === item
-                            ? "border-teal-500 bg-teal-50 text-teal-900"
-                            : "border-slate-200 bg-white text-slate-700 hover:border-teal-300",
-                        ].join(" ")}
-                      >
-                        {reflectionLabels[item]}
-                      </button>
-                    ),
-                  )}
-                </div>
-
-                {reflection && (
-                  <InsightBox>
-                    {reflection === "expression"
-                      ? "سؤال شما به‌طور مستقیم به ترنسکریپتومیکس نزدیک است."
-                      : reflection === "unsure"
-                        ? "اشکالی ندارد. قبل از انتخاب فناوری، روشن‌کردن سؤال اصلی یکی از مهم‌ترین قدم‌های طراحی پروژه است."
-                        : "ترنسکریپتومیکس ممکن است اطلاعات مکمل بدهد، اما لایه اصلی سؤال شما احتمالاً چیز دیگری است."}
-                  </InsightBox>
-                )}
-              </div>
             </SceneCard>
           )}
 
           {scene === 5 && (
             <SceneCard
-              eyebrow="کلینیک اشتباه"
-              title="«هر پروژه زیستی را می‌توان با RNA-seq شروع کرد.»"
-              description="در دسترس بودن یک فناوری دلیل کافی برای مناسب بودن آن نیست."
+              eyebrow="آزمایشگاه تصمیم"
+              title="سؤال پژوهشی، مسیر فناوری را هدایت می‌کند."
+              description="در هر سناریو دنبال «مناسب‌ترین نوع اطلاعات» باشید، نه پیچیده‌ترین فناوری."
             >
-              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
-                <p className="font-black leading-8 text-amber-950">
-                  پژوهشگر قبل از تعریف سؤال، تصمیم گرفته RNA-seq انجام دهد و بعد دنبال سؤال مناسب برای داده می‌گردد.
-                </p>
-              </div>
+              <DecisionQuestion
+                question="۱) می‌خواهم پاسخ کلی بیان ژن یک نمونه را بین کنترل و تیمار مقایسه کنم."
+                options={[
+                  "RNA-seq توده‌ای یا در برخی طراحی‌ها میکروآرایه می‌تواند مناسب باشد.",
+                  "حتماً باید فضایی باشد.",
+                  "حتماً باید خوانش‌بلند باشد.",
+                ]}
+                selected={case1}
+                correctIndex={0}
+                onSelect={setCase1}
+                correctFeedback="درست است. اگر سؤال در سطح نمونه تعریف شده، فناوری توده‌ای می‌تواند کاملاً منطقی باشد."
+                incorrectFeedback="جزئیات بیشتر همیشه لازم نیست؛ اول سطح سؤال را مشخص کنید."
+              />
 
               <DecisionQuestion
-                question="بهترین اصلاح این رویکرد چیست؟"
+                question="۲) می‌خواهم بدانم کدام زیرجمعیت سلولی به درمان پاسخ داده است."
                 options={[
-                  "اول سؤال پژوهشی و لایه زیستی موردنظر را مشخص کنیم، بعد روش را انتخاب کنیم.",
-                  "اگر بودجه کافی باشد، RNA-seq همیشه بهترین انتخاب است.",
-                  "نوع سؤال اهمیتی ندارد؛ فقط حجم داده مهم است.",
+                  "RNA-seq تک‌سلولی",
+                  "میکروآرایه توده‌ای به‌تنهایی",
+                  "فقط توالی‌یابی DNA",
                 ]}
-                selected={mistakeAnswer}
+                selected={case2}
                 correctIndex={0}
-                onSelect={setMistakeAnswer}
-                correctFeedback="دقیقاً. طراحی باید از سؤال شروع شود."
-                incorrectFeedback="ابزار بیشتر یا داده بیشتر الزاماً پاسخ مناسب‌تر تولید نمی‌کند؛ تناسب روش با سؤال مهم است."
+                onSelect={setCase2}
+                correctFeedback="دقیقاً. سؤال درباره ناهمگنی و هویت سلولی است."
+                incorrectFeedback="برای پاسخ مستقیم به تفاوت زیرجمعیت‌ها، سطح تک‌سلولی مناسب‌تر است."
+              />
+
+              <DecisionQuestion
+                question="۳) می‌خواهم بدانم سلول‌های پاسخ‌دهنده در کدام ناحیه بافت قرار گرفته‌اند."
+                options={[
+                  "ترنسکریپتومیکس فضایی",
+                  "میکروآرایه توده‌ای",
+                  "فقط ماتریس شمارش توده‌ای",
+                ]}
+                selected={case3}
+                correctIndex={0}
+                onSelect={setCase3}
+                correctFeedback="بله. موقعیت در بافت بخشی از سؤال است."
+                incorrectFeedback="وقتی مکان مهم است، اطلاعات فضایی باید حفظ شود."
+              />
+
+              <DecisionQuestion
+                question="۴) سؤال اصلی من تفاوت ایزوفرم‌ها و ساختار رونوشت است."
+                options={[
+                  "ترنسکریپتومیکس خوانش‌بلند",
+                  "میکروآرایه ساده",
+                  "فقط تعداد نمونه بیشتر",
+                ]}
+                selected={case4}
+                correctIndex={0}
+                onSelect={setCase4}
+                correctFeedback="درست است. فناوری خوانش‌بلند می‌تواند درباره ساختار رونوشت و ایزوفرم اطلاعات ارزشمندی بدهد."
+                incorrectFeedback="وقتی ساختار رونوشت سؤال اصلی است، راهبرد خوانش‌بلند اهمیت پیدا می‌کند."
+              />
+
+              <DecisionQuestion
+                question="۵) می‌خواهم miRNAها و سایر RNAهای کوچک را بررسی کنم."
+                options={[
+                  "RNA-seq برای RNAهای کوچک",
+                  "هر کتابخانه معمولی RNA-seq بدون تغییر",
+                  "فقط میکروآرایه پروتئینی",
+                ]}
+                selected={case5}
+                correctIndex={0}
+                onSelect={setCase5}
+                correctFeedback="دقیقاً. RNAهای کوچک به طراحی مناسب کتابخانه و مسیر تحلیل مرتبط نیاز دارند."
+                incorrectFeedback="نوع RNA هدف روی طراحی کتابخانه و مسیر تحلیل اثر می‌گذارد."
               />
 
               <InsightBox>
-                اصل هاب‌ژن: <strong>سؤال ← مفهوم ← تصمیم ← ابزار</strong>.
+                اصل هاب‌ژن: <strong>سؤال ← اطلاعات موردنیاز ← فناوری</strong>.
               </InsightBox>
             </SceneCard>
           )}
@@ -715,48 +626,48 @@ export function TranscriptomicsQuestionFitLesson() {
           {scene === 6 && (
             <SceneCard
               eyebrow="ایستگاه تسلط"
-              title="آیا می‌توانید تشخیص دهید چه زمانی ترنسکریپتومیکس انتخاب مناسبی است؟"
-              description="سؤال نهایی از شما می‌خواهد لایه اصلی سؤال را تشخیص دهید."
+              title="مبانی ترنسکریپتومیکس کامل شد."
+              description="حالا باید بتوانید حوزه، سطح مشاهده، فناوری و نوع داده را از هم تفکیک کنید."
             >
               <DecisionQuestion
-                question="یک پژوهشگر می‌خواهد بداند پس از داروی X کدام ژن‌ها در سطح RNA در سلول‌های سرطان پانکراس تغییر کرده‌اند. کدام انتخاب مناسب‌تر است؟"
+                question="کدام جمله دقیق‌ترین تصویر را می‌دهد؟"
                 options={[
-                  "یک آزمون فنوتیپی به‌تنهایی.",
-                  "ترنسکریپتومیکس، چون سؤال اصلی مستقیماً درباره تغییرات RNA است.",
-                  "ژنومیکس به‌تنهایی، چون همه ژن‌ها در DNA قرار دارند.",
-                  "پروتئومیکس به‌تنهایی، چون RNA و پروتئین همیشه یکسان‌اند.",
+                  "ترنسکریپتومیکس همان RNA-seq است و همه مطالعات آن باید FASTQ داشته باشند.",
+                  "ترنسکریپتومیکس یک حوزه است؛ فناوری‌های مختلف با منطق‌های متفاوت می‌توانند اطلاعات آن را اندازه‌گیری کنند و انتخاب فناوری باید از سؤال پژوهشی بیاید.",
+                  "میکروآرایه، تک‌سلولی و فضایی سه واژه هم‌معنی‌اند.",
+                  "پیچیده‌ترین فناوری همیشه بهترین انتخاب است.",
                 ]}
                 selected={masteryAnswer}
                 correctIndex={1}
                 onSelect={setMasteryAnswer}
-                correctFeedback="عالی. شما سؤال را در لایه RNA قرار داده‌اید و روش را بر اساس سؤال انتخاب کرده‌اید."
-                incorrectFeedback="دوباره بپرسید: متغیر اصلی که پژوهشگر می‌خواهد مستقیماً اندازه بگیرد چیست؟ پاسخ اینجا RNA است."
+                correctFeedback="عالی. شما اکنون نقشه مفهومی لازم برای ورود به مسیرهای تخصصی را دارید."
+                incorrectFeedback="به چهار مفهوم برگردید: حوزه علمی، سطح مشاهده، فناوری اندازه‌گیری و نوع داده."
               />
 
               <div className="mt-8">
                 <p className="font-bold text-slate-950">
-                  این مفهوم چقدر برایتان روشن است؟
+                  این نقشه چقدر برایتان روشن است؟
                 </p>
 
                 <div className="mt-4 grid gap-3 md:grid-cols-3">
                   <ConfidenceButton
                     active={confidence === "unclear"}
                     title="هنوز مبهم است"
-                    description="تشخیص لایه اصلی سؤال را دوباره تمرین می‌کنم."
+                    description="فناوری‌ها و نوع اطلاعات برایم هنوز قاطی می‌شوند."
                     onClick={() => setConfidence("unclear")}
                   />
 
                   <ConfidenceButton
                     active={confidence === "developing"}
                     title="تقریباً متوجه شدم"
-                    description="می‌توانم بیشتر سؤال‌ها را دسته‌بندی کنم ولی بعضی موارد مرزی هنوز سخت‌اند."
+                    description="نقشه کلی را می‌فهمم ولی در مجموعه‌داده‌های واقعی تمرین لازم دارم."
                     onClick={() => setConfidence("developing")}
                   />
 
                   <ConfidenceButton
                     active={confidence === "clear"}
                     title="کاملاً روشن است"
-                    description="می‌توانم قبل از انتخاب ابزار، سؤال را در لایه مناسب قرار دهم."
+                    description="می‌توانم سؤال، سطح مشاهده، فناوری و نوع داده را از هم جدا کنم."
                     onClick={() => setConfidence("clear")}
                   />
                 </div>
@@ -764,11 +675,11 @@ export function TranscriptomicsQuestionFitLesson() {
 
               <div className="mt-7 rounded-3xl bg-slate-950 p-6 text-white">
                 <p className="text-xs font-bold text-teal-300">
-                  لحظه فهم این درس
+                  لحظه فهم نهایی
                 </p>
 
                 <p className="mt-3 text-lg font-bold leading-9">
-                  ترنسکریپتومیکس زمانی انتخاب مناسبی است که سؤال اصلی درباره وضعیت یا تغییرات RNA باشد؛ نه صرفاً چون RNA-seq یک فناوری قدرتمند و در دسترس است.
+                  ترنسکریپتومیکس یک حوزه است؛ فناوری‌ها راه‌های متفاوت مشاهده و اندازه‌گیری آن هستند.
                 </p>
               </div>
 
@@ -786,8 +697,8 @@ export function TranscriptomicsQuestionFitLesson() {
                   )}
 
                   {userId
-                    ? "ثبت تسلط درس پنجم"
-                    : "پایان درس پنجم در حالت مهمان"}
+                    ? "ثبت تسلط درس هفتم"
+                    : "پایان درس هفتم در حالت مهمان"}
                 </button>
 
                 <button
@@ -796,7 +707,7 @@ export function TranscriptomicsQuestionFitLesson() {
                   className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
                 >
                   <RotateCcw className="size-4" />
-                  مرور دوباره درس پنجم
+                  مرور دوباره درس هفتم
                 </button>
               </div>
 
@@ -809,13 +720,13 @@ export function TranscriptomicsQuestionFitLesson() {
               {saveState === "saved" && savedProgress && (
                 <div className="mt-5 rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
                   <p className="font-bold text-emerald-900">
-                    وضعیت درس پنجم در حساب شما ذخیره شد.
+                    وضعیت درس هفتم در حساب شما ذخیره شد.
                   </p>
 
                   <p className="mt-2 text-sm leading-7 text-emerald-800">
                     {savedProgress.status === "needs_review"
                       ? "این درس برای مرور دوباره علامت خورده است."
-                      : "درس پنجم با موفقیت تکمیل شده است."}
+                      : "درس هفتم با موفقیت تکمیل شده است."}
                   </p>
                 </div>
               )}
@@ -826,26 +737,44 @@ export function TranscriptomicsQuestionFitLesson() {
                 </div>
               )}
 
-              <div className="mt-8 rounded-3xl border border-slate-200 bg-slate-50 p-6">
+              <div className="mt-8">
                 <p className="text-xs font-bold text-teal-700">
-                  مرحله بعد
+                  مسیرهای تخصصی ترنسکریپتومیکس
                 </p>
 
-                <h3 className="mt-2 text-xl font-black text-slate-950">
-                  درس ۶ — Bulk، Single-cell یا Spatial؟
-                </h3>
+                <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <PathCard
+                    title="RNA-seq توده‌ای"
+                    description="از طراحی مطالعه تا FASTQ، کمی‌سازی، بیان تفاضلی و تفسیر زیستی."
+                    active
+                    href="/learn/rna-seq"
+                  />
 
-                <p className="mt-2 text-sm leading-7 text-slate-600">
-                  در درس ششم یک بافت ناهمگن را از سه زاویه می‌بینیم و یاد می‌گیریم چرا وضوح بیشتر همیشه به معنی انتخاب بهتر نیست.
-                </p>
+                  <PathCard
+                    title="میکروآرایه"
+                    description="از پلتفرم و پروب تا نرمال‌سازی و تحلیل بیان."
+                  />
 
-                <a
-                  href="/learn/transcriptomics/foundations/bulk-single-cell-spatial"
-                  className="mt-5 inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-teal-800"
-                >
-                  ورود به درس ششم
-                  <ArrowLeft className="size-4" />
-                </a>
+                  <PathCard
+                    title="RNA-seq تک‌سلولی"
+                    description="از طراحی نمونه تا ماتریس ژن × سلول و تحلیل جمعیت‌ها."
+                  />
+
+                  <PathCard
+                    title="ترنسکریپتومیکس فضایی"
+                    description="بیان RNA همراه با زمینه مکانی بافت."
+                  />
+
+                  <PathCard
+                    title="ترنسکریپتومیکس خوانش‌بلند"
+                    description="ساختار رونوشت، ایزوفرم و خوانش‌های بلند."
+                  />
+
+                  <PathCard
+                    title="RNA-seq برای RNAهای کوچک"
+                    description="طراحی و تحلیل مناسب RNAهای کوچک."
+                  />
+                </div>
               </div>
             </SceneCard>
           )}
@@ -892,29 +821,59 @@ function SceneCard({
   return (
     <article className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-lg shadow-slate-200/60">
       <div className="border-b border-slate-200 bg-gradient-to-l from-teal-50 via-white to-white p-6 sm:p-8">
-        <p className="text-xs font-bold text-teal-700">{eyebrow}</p>
+        <p className="text-xs font-bold text-teal-700">
+          {eyebrow}
+        </p>
+
         <h2 className="mt-2 text-2xl font-black leading-10 text-slate-950 sm:text-3xl">
           {title}
         </h2>
+
         <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600">
           {description}
         </p>
       </div>
 
-      <div className="p-6 sm:p-8">{children}</div>
+      <div className="p-6 sm:p-8">
+        {children}
+      </div>
     </article>
   );
 }
 
-function CaseCard({
+function TechnologyCard({
   title,
-  text,
-  badge,
+  description,
+  note,
+}: {
+  title: string;
+  description: string;
+  note: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+      <p className="font-black text-slate-950">
+        {title}
+      </p>
+
+      <p className="mt-3 text-sm leading-8 text-slate-600">
+        {description}
+      </p>
+
+      <span className="mt-4 inline-flex rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-500">
+        {note}
+      </span>
+    </div>
+  );
+}
+
+function InfoBlock({
+  title,
+  items,
   emphasized = false,
 }: {
   title: string;
-  text: string;
-  badge: string;
+  items: string[];
   emphasized?: boolean;
 }) {
   return (
@@ -926,14 +885,95 @@ function CaseCard({
           : "border-slate-200 bg-slate-50",
       ].join(" ")}
     >
+      <p className="font-black text-slate-950">
+        {title}
+      </p>
+
+      <ul className="mt-4 space-y-3">
+        {items.map((item) => (
+          <li
+            key={item}
+            className="flex items-start gap-2 text-sm leading-7 text-slate-600"
+          >
+            <CheckCircle2 className="mt-1 size-4 shrink-0 text-teal-700" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DataCard({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+      <p className="font-black text-slate-950">
+        {title}
+      </p>
+
+      <p className="mt-3 text-sm leading-8 text-slate-600">
+        {description}
+      </p>
+    </div>
+  );
+}
+
+function PathCard({
+  title,
+  description,
+  active = false,
+  href,
+}: {
+  title: string;
+  description: string;
+  active?: boolean;
+  href?: string;
+}) {
+  const card = (
+    <>
       <div className="flex items-center justify-between gap-3">
-        <p className="font-black text-slate-950">{title}</p>
-        <span className="rounded-full bg-white px-3 py-1 text-[11px] font-bold text-slate-600">
-          {badge}
+        <p className="font-black text-slate-950">
+          {title}
+        </p>
+
+        <span
+          className={[
+            "rounded-full px-3 py-1 text-[10px] font-bold",
+            active
+              ? "bg-teal-700 text-white"
+              : "bg-slate-200 text-slate-500",
+          ].join(" ")}
+        >
+          {active ? "فعال" : "به‌زودی"}
         </span>
       </div>
 
-      <p className="mt-4 text-sm leading-8 text-slate-600">{text}</p>
+      <p className="mt-3 text-sm leading-7 text-slate-600">
+        {description}
+      </p>
+    </>
+  );
+
+  if (active && href) {
+    return (
+      <a
+        href={href}
+        className="block rounded-3xl border border-teal-300 bg-teal-50 p-5 transition hover:border-teal-500 hover:shadow-sm"
+      >
+        {card}
+      </a>
+    );
+  }
+
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 opacity-80">
+      {card}
     </div>
   );
 }
@@ -965,7 +1005,9 @@ function DecisionQuestion({
           ؟
         </span>
 
-        <p className="font-bold leading-8 text-slate-950">{question}</p>
+        <p className="font-bold leading-8 text-slate-950">
+          {question}
+        </p>
       </div>
 
       <div className="mt-5 grid gap-3">
@@ -1001,10 +1043,11 @@ function DecisionQuestion({
           ].join(" ")}
         >
           <p
-            className={[
-              "text-sm font-bold",
-              correct ? "text-emerald-900" : "text-amber-950",
-            ].join(" ")}
+            className={
+              correct
+                ? "text-sm font-bold text-emerald-900"
+                : "text-sm font-bold text-amber-950"
+            }
           >
             {correct
               ? "مسیر فکری درست ✓"
@@ -1012,7 +1055,9 @@ function DecisionQuestion({
           </p>
 
           <p className="mt-2 text-sm leading-7 text-slate-700">
-            {correct ? correctFeedback : incorrectFeedback}
+            {correct
+              ? correctFeedback
+              : incorrectFeedback}
           </p>
         </div>
       )}
@@ -1028,7 +1073,10 @@ function InsightBox({
   return (
     <div className="mt-6 flex items-start gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-5">
       <Lightbulb className="mt-1 size-5 shrink-0 text-teal-700" />
-      <p className="text-sm leading-8 text-teal-950">{children}</p>
+
+      <p className="text-sm leading-8 text-teal-950">
+        {children}
+      </p>
     </div>
   );
 }
@@ -1055,8 +1103,13 @@ function ConfidenceButton({
           : "border-slate-200 bg-white hover:border-teal-300",
       ].join(" ")}
     >
-      <p className="font-bold text-slate-950">{title}</p>
-      <p className="mt-2 text-xs leading-6 text-slate-500">{description}</p>
+      <p className="font-bold text-slate-950">
+        {title}
+      </p>
+
+      <p className="mt-2 text-xs leading-6 text-slate-500">
+        {description}
+      </p>
     </button>
   );
 }
@@ -1104,7 +1157,7 @@ function SaveIndicator({
     return (
       <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-800">
         <CheckCircle2 className="size-3" />
-        درس پنجم ذخیره شده
+        درس هفتم ذخیره شده
       </span>
     );
   }
