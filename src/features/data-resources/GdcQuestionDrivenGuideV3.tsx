@@ -14,11 +14,11 @@ import {
 import { useEffect, useMemo, useState } from "react";
 
 type Props = {
-  imageUrl?: string | null;
-  managedHotspots?: unknown[];
-  pageTitle?: string | null;
-  pageDescription?: string | null;
-  onOpenLegacyTour?: () => void;
+  imageUrl?: string | null | undefined;
+  managedHotspots?: unknown[] | undefined;
+  pageTitle?: string | null | undefined;
+  pageDescription?: string | null | undefined;
+  onOpenLegacyTour?: (() => void) | undefined;
 };
 
 type FacetId = "primarySite" | "program" | "diseaseType" | "dataCategory" | "experimentalStrategy";
@@ -225,8 +225,15 @@ export function GdcQuestionDrivenGuideV3({ imageUrl, pageTitle, pageDescription,
   const [stage, setStage] = useState(0);
   const [selectedFacet, setSelectedFacet] = useState<FacetId>("primarySite");
   const [lens, setLens] = useState<LensId>(null);
-  const current = stages[stage];
-  const activeFacet = useMemo(() => facets.find((f) => f.id === selectedFacet) || facets[0], [selectedFacet]);
+  const current = stages[stage] ?? stages[0];
+  const activeFacet = useMemo(
+    () => facets.find((f) => f.id === selectedFacet) ?? facets[0],
+    [selectedFacet],
+  );
+
+  if (!current || !activeFacet) {
+    return null;
+  }
 
   return <main dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
     <section className="border-b bg-white"><div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10">
