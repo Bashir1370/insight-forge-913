@@ -294,7 +294,7 @@ export function RnaSeqInTranscriptomicsLesson() {
       subtitle="آخرین درس مبانی ترنسکریپتومیکس: از تفاوت RNA-seq و میکروآرایه تا جایگاه تک‌سلولی، فضایی، خوانش‌بلند و RNA-seq برای RNAهای کوچک."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
       <section id="f7-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
