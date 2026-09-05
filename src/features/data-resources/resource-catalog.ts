@@ -46,8 +46,8 @@ export interface GuidedPortalStep {
   title: string;
   summary: string;
   whyItMatters: string;
-  commonMistake?: string;
-  nextAction?: string;
+  commonMistake?: string | undefined;
+  nextAction?: string | undefined;
 }
 
 export interface GuidedTask {
