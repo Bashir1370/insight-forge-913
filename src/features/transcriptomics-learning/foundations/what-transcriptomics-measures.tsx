@@ -319,7 +319,7 @@ export function WhatTranscriptomicsMeasuresLesson() {
       subtitle="در این درس بین چهار لایه DNA، RNA، پروتئین و فنوتیپ تفکیک می‌کنیم تا یاد بگیریم داده ترنسکریپتومیکس مستقیماً چه چیزی را نشان می‌دهد و کجا برای نتیجه‌گیری به شواهد بیشتری نیاز داریم."
       currentScene={scene}
       sceneCount={sceneTitles.length}
-      sceneLabel={sceneTitles[scene]}
+      sceneLabel={sceneTitles[scene] ?? ""}
     >
       <section id="f4-scene" className="scroll-mt-6">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
