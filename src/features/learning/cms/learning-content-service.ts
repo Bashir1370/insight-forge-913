@@ -7,9 +7,9 @@ export type LearningMedia = {
   id: string;
   type: "image" | "video";
   url: string;
-  storagePath?: string;
-  alt?: string;
-  caption?: string;
+  storagePath?: string | undefined;
+  alt?: string | undefined;
+  caption?: string | undefined;
 };
 
 export type LearningContentRevision<T> = {
