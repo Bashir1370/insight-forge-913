@@ -23,7 +23,7 @@ const LEGACY_FINAL_PROJECT_TITLES = [
 ];
 
 function toPersianDigits(value: string) {
-  return value.replace(/[0-9]/g, (digit) => PERSIAN_DIGITS[Number(digit)]);
+  return value.replace(/[0-9]/g, (digit) => (PERSIAN_DIGITS[Number(digit)] ?? digit));
 }
 
 function transformVisibleText(value: string, finalProjectTitle: string) {
