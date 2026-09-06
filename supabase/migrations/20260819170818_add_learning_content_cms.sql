@@ -126,4 +126,4 @@ to authenticated
 using (
   bucket_id = 'learning-media'
   and (select private.has_role('admin'::text))
-);
+);;
