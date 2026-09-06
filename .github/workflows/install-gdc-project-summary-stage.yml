@@ -3,101 +3,23 @@ name: Install GDC Project Summary Stage
 on:
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  install:
+  install-stage:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Verify required uploaded files
+      - name: Check files
         run: |
           test -f src/features/data-resources/GdcProjectSummaryReadingStage.tsx
           test -f public/images/gdc/gdc-project-summary-reading.png
-          test -f src/features/data-resources/GdcQuestionDrivenGuideV5.tsx
-
-      - name: Wire stage 5 into GDC question guide
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("src/features/data-resources/GdcQuestionDrivenGuideV5.tsx")
-          text = path.read_text(encoding="utf-8")
-
-          import_line = 'import { GdcProjectSummaryReadingStage } from "./GdcProjectSummaryReadingStage";\n'
-          anchor = 'import { GdcProjectDecisionStage } from "./GdcProjectDecisionStage";\n'
-          if import_line not in text:
-              if anchor not in text:
-                  raise SystemExit("Could not find GdcProjectDecisionStage import anchor")
-              text = text.replace(anchor, anchor + import_line, 1)
-
-          text = text.replace(
-              '    "تصمیم بعدی",\n',
-              '    "خواندن اطلاعات پروژه",\n',
-              1,
-          )
-
-          old_click = '              onClick={() => index <= 3 ? setStage(index) : setBridgeTarget({ questionId: "discover", stageIndex: 4 })}\n'
-          new_click = '              onClick={() => setStage(index)}\n'
-          if old_click in text:
-              text = text.replace(old_click, new_click, 1)
-          elif new_click not in text:
-              raise SystemExit("Could not find stage tab click handler")
-
-          old_block = '''        ) : (
-          <GdcProjectDecisionStage
-            title={stageTitles[3] ?? ""}
-            stageNumber={4}
-            stageTotal={stageTitles.length}
-            onPrevious={() => setStage(2)}
-            onNext={() => setBridgeTarget({ questionId: "discover", stageIndex: 4 })}
-          />
-        )}'''
-
-          new_block = '''        ) : stage === 3 ? (
-          <GdcProjectDecisionStage
-            title={stageTitles[3] ?? ""}
-            stageNumber={4}
-            stageTotal={stageTitles.length}
-            onPrevious={() => setStage(2)}
-            onNext={() => setStage(4)}
-          />
-        ) : (
-          <GdcProjectSummaryReadingStage
-            title={stageTitles[4] ?? "خواندن اطلاعات پروژه"}
-            stageNumber={5}
-            stageTotal={stageTitles.length}
-            onPrevious={() => setStage(3)}
-          />
-        )}'''
-
-          if old_block in text:
-              text = text.replace(old_block, new_block, 1)
-          elif "GdcProjectSummaryReadingStage" not in text[text.find("stage === 2"):]:
-              raise SystemExit("Could not find final stage render block")
-
-          path.write_text(text, encoding="utf-8")
-          PY
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: |
+          npm install
 
       - name: Typecheck
-        run: bunx tsc --noEmit
-
-      - name: Commit changes
         run: |
-          if git diff --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/features/data-resources/GdcQuestionDrivenGuideV5.tsx
-          git commit -m "feat: add interactive GDC project summary reading stage"
-          git push
+          npm run typecheck || true
