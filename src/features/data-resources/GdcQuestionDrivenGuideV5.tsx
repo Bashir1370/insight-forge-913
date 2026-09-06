@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { GdcProjectSummaryReadingStage } from "./GdcProjectSummaryReadingStage";
 import { GdcProjectDecisionStage } from "./GdcProjectDecisionStage";
 import { GdcQuestionDrivenGuideV3 as PreviousGuide } from "./GdcQuestionDrivenGuideV3";
 import { GdcStudyDesignStage } from "./GdcStudyDesignStage";
@@ -417,6 +418,7 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
     guideConfig.stageTitles[2] ?? "طراحی مطالعه و اعمال فیلترها",
     "از ۳ Project مرتبط تا انتخاب پژوهشی",
     "تصمیم بعدی",
+    "خواندن اطلاعات پروژه",
   ], [guideConfig.stageTitles]);
 
   const displayConfig = useMemo(() => ({ ...guideConfig, stageTitles }), [guideConfig, stageTitles]);
@@ -507,15 +509,22 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
             onPrevious={() => setStage(1)}
             onNext={() => setStage(3)}
           />
-        ) : (
-          <GdcProjectDecisionStage
-            title={stageTitles[3] ?? ""}
-            stageNumber={4}
-            stageTotal={stageTitles.length}
-            onPrevious={() => setStage(2)}
-            onNext={() => setBridgeTarget({ questionId: "discover", stageIndex: 4 })}
-          />
-        )}
+   ) : stage === 3 ? (
+  <GdcProjectDecisionStage
+    title={stageTitles[3] ?? ""}
+    stageNumber={4}
+    stageTotal={stageTitles.length}
+    onPrevious={() => setStage(2)}
+    onNext={() => setStage(4)}
+  />
+) : (
+  <GdcProjectSummaryReadingStage
+    title={stageTitles[4] ?? "خواندن اطلاعات پروژه"}
+    stageNumber={5}
+    stageTotal={stageTitles.length}
+    onPrevious={() => setStage(3)}
+  />
+)}
       </section>
 
       {lensOpen && selectedFacetConfig ? <FacetLens facet={selectedFacetConfig} close={() => setLensOpen(false)} /> : null}
