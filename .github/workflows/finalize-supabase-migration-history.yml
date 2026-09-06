@@ -1,0 +1,65 @@
+name: Finalize Supabase Migration History
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finalize-history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare Supabase project
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init --force
+          fi
+
+      - name: Link production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase link             --project-ref "$PROJECT_REF"             --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Capture migration history before repair
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          mkdir -p supabase-history-finalization
+          supabase migration list             --linked             --password "$SUPABASE_DB_PASSWORD"             > supabase-history-finalization/before.txt
+
+      - name: Mark reconciled migrations as applied
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase migration repair             20260819160000             20260903113500             20260903122500             20260906175000             --status applied             --linked             --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Capture migration history after repair
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase migration list             --linked             --password "$SUPABASE_DB_PASSWORD"             > supabase-history-finalization/after.txt
+
+      - name: Upload finalization report
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-migration-history-finalization
+          path: supabase-history-finalization/
+          if-no-files-found: error
+          retention-days: 7
