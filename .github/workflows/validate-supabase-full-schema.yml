@@ -1,0 +1,62 @@
+name: Validate Supabase Full Schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-full-schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare Supabase project
+        run: |
+          if [ ! -f supabase/config.toml ]; then
+            supabase init --force
+          fi
+
+      - name: Link production project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase link             --project-ref "$PROJECT_REF"             --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Diff public and private schemas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          mkdir -p supabase-full-validation
+          set +e
+          supabase db diff             --linked             --schema public,private             > supabase-full-validation/public-private-diff.sql             2> supabase-full-validation/public-private-diff.log
+          code=$?
+          echo "$code" > supabase-full-validation/diff-exit-code.txt
+          exit 0
+
+      - name: Capture migration list
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase migration list             --linked             --password "$SUPABASE_DB_PASSWORD"             > supabase-full-validation/migration-list.txt
+
+      - name: Upload validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-full-schema-validation
+          path: supabase-full-validation/
+          if-no-files-found: error
+          retention-days: 7
