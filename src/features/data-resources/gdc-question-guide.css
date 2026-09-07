@@ -1,0 +1,73 @@
+.gdc-question-guide p {
+  text-align: justify;
+  text-align-last: right;
+  text-justify: inter-word;
+}
+
+.gdc-question-guide .fixed.inset-0 > section {
+  width: min(96vw, var(--gdc-lens-modal-max-width, 1500px));
+  max-width: var(--gdc-lens-modal-max-width, 1500px);
+  max-height: 96vh;
+  direction: ltr;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:last-of-type {
+  direction: rtl;
+}
+
+@media (min-width: 1024px) {
+  .gdc-question-guide .fixed.inset-0 > section {
+    grid-template-columns: var(--gdc-lens-image-column-width, 500px) minmax(0, 1fr);
+  }
+
+  .gdc-question-guide .fixed.inset-0 > section:has(img[src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="]) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:first-of-type {
+  padding: 16px;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:first-of-type:has(img[src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="]) {
+  display: none;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:first-of-type img {
+  display: block;
+  width: 100%;
+  height: var(--gdc-lens-image-height, auto);
+  max-height: min(78vh, 1000px);
+  object-fit: var(--gdc-lens-image-fit, contain);
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:last-of-type {
+  padding: 20px 24px;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:last-of-type > .mt-6 {
+  margin-top: 16px;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:last-of-type .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+  margin-top: 12px;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:last-of-type [class*="rounded-2xl border p-5"] {
+  padding: 16px;
+}
+
+.gdc-question-guide .fixed.inset-0 > section > div:last-of-type p.leading-7 {
+  line-height: 1.75rem;
+}
+
+@media (max-width: 1023px) {
+  .gdc-question-guide .fixed.inset-0 {
+    padding: 8px;
+  }
+
+  .gdc-question-guide .fixed.inset-0 > section {
+    width: 98vw;
+    max-height: 98vh;
+  }
+}
