@@ -62,15 +62,24 @@ function enhancePanel(panel: HTMLElement) {
   const footer = createElement("div", "gdc-stage-one-layer-controls");
   const progress = createElement("div", "gdc-stage-one-layer-progress");
   const controls = createElement("div", "gdc-stage-one-layer-buttons");
-  const previous = createElement("button", "gdc-stage-one-layer-button gdc-stage-one-layer-button-secondary", "قبلی");
-  const next = createElement("button", "gdc-stage-one-layer-button gdc-stage-one-layer-button-primary");
+  const previous = createElement(
+    "button",
+    "gdc-stage-one-layer-button gdc-stage-one-layer-button-secondary",
+    "قبلی",
+  );
+  const next = createElement(
+    "button",
+    "gdc-stage-one-layer-button gdc-stage-one-layer-button-primary",
+  );
   previous.type = "button";
   next.type = "button";
   controls.append(previous, next);
   footer.append(progress, controls);
   stack.after(footer);
 
-  const stageNavigation = panel.querySelector<HTMLElement>(":scope > .mt-5.grid.grid-cols-2");
+  const stageNavigation = panel.querySelector<HTMLElement>(
+    ":scope > .mt-5.grid.grid-cols-2",
+  );
   stageNavigation?.classList.add("gdc-stage-one-stage-navigation");
 
   let active = 0;
@@ -105,14 +114,18 @@ function enhancePanel(panel: HTMLElement) {
 
     if (active < cards.length - 1) {
       next.hidden = false;
-      next.textContent = active === 0 ? "بعدی: Project را بشناسیم" : "بعدی: نقشه GDC";
+      next.textContent =
+        active === 0 ? "بعدی: Project را بشناسیم" : "بعدی: نقشه GDC";
     } else {
       next.hidden = true;
     }
 
     if (stageNavigation) {
       stageNavigation.hidden = active !== cards.length - 1;
-      stageNavigation.setAttribute("aria-hidden", active === cards.length - 1 ? "false" : "true");
+      stageNavigation.setAttribute(
+        "aria-hidden",
+        active === cards.length - 1 ? "false" : "true",
+      );
     }
 
     if (focus) {
@@ -139,14 +152,34 @@ function enhancePanel(panel: HTMLElement) {
   setActive(0);
 }
 
+let scanScheduled = false;
+
 function scan() {
+  scanScheduled = false;
   document.querySelectorAll<HTMLElement>(PANEL_SELECTOR).forEach(enhancePanel);
 }
 
+function scheduleScan() {
+  if (scanScheduled) return;
+  scanScheduled = true;
+  window.requestAnimationFrame(scan);
+}
+
 function install() {
+  // The React wrapper adds .gdc-stage-one-panel after the panel already exists.
+  // Observe class changes as well as inserted nodes so the progressive UI cannot
+  // miss that initialization moment.
   scan();
-  const observer = new MutationObserver(scan);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  window.setTimeout(scan, 0);
+  window.setTimeout(scan, 120);
+
+  const observer = new MutationObserver(scheduleScan);
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["class"],
+  });
 }
 
 if (typeof window !== "undefined" && typeof document !== "undefined") {
