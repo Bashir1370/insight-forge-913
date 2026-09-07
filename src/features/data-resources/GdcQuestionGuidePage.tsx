@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 
 import "./gdc-question-guide.css";
 
+import { GdcCohortBuilderFiltersProvider } from "./GdcCohortBuilderFiltersContext";
 import { GdcProjectDecisionProvider } from "./GdcProjectDecisionContext";
 import { GdcProjectSummaryProvider } from "./GdcProjectSummaryContext";
 import {
@@ -9,6 +10,10 @@ import {
   type GdcQuestionOneGuideProps,
 } from "./GdcQuestionOneGuide";
 import { GdcStudyDesignProvider } from "./GdcStudyDesignContext";
+import {
+  DEFAULT_GDC_COHORT_BUILDER_FILTERS_CONFIG,
+  type GdcCohortBuilderFiltersConfig,
+} from "./gdc-cohort-builder-filters-config";
 import {
   DEFAULT_GDC_COHORT_BUILDER_INTRO_CONFIG,
   type GdcCohortBuilderIntroConfig,
@@ -24,6 +29,7 @@ import { getGdcStudyDesignConfig } from "./gdc-study-design-config";
 type Props = Omit<GdcQuestionOneGuideProps, "cohortBuilderIntroConfig"> & {
   projectSummaryConfig?: GdcProjectSummaryConfig;
   cohortBuilderIntroConfig?: GdcCohortBuilderIntroConfig;
+  cohortBuilderFiltersConfig?: GdcCohortBuilderFiltersConfig;
 };
 
 type GuideStyle = CSSProperties & {
@@ -54,6 +60,7 @@ function prepareStageTitles(
 export function GdcQuestionGuidePage({
   projectSummaryConfig = DEFAULT_GDC_PROJECT_SUMMARY_CONFIG,
   cohortBuilderIntroConfig = DEFAULT_GDC_COHORT_BUILDER_INTRO_CONFIG,
+  cohortBuilderFiltersConfig = DEFAULT_GDC_COHORT_BUILDER_FILTERS_CONFIG,
   ...props
 }: Props) {
   const projectDecision = getGdcProjectDecisionConfig(props.guideConfig);
@@ -76,13 +83,15 @@ export function GdcQuestionGuidePage({
     <GdcStudyDesignProvider config={studyDesign}>
       <GdcProjectDecisionProvider config={projectDecision}>
         <GdcProjectSummaryProvider config={projectSummaryConfig}>
-          <div className="gdc-question-guide" style={style}>
-            <GdcQuestionOneGuide
-              {...props}
-              guideConfig={guideConfig}
-              cohortBuilderIntroConfig={cohortBuilderIntroConfig}
-            />
-          </div>
+          <GdcCohortBuilderFiltersProvider config={cohortBuilderFiltersConfig}>
+            <div className="gdc-question-guide" style={style}>
+              <GdcQuestionOneGuide
+                {...props}
+                guideConfig={guideConfig}
+                cohortBuilderIntroConfig={cohortBuilderIntroConfig}
+              />
+            </div>
+          </GdcCohortBuilderFiltersProvider>
         </GdcProjectSummaryProvider>
       </GdcProjectDecisionProvider>
     </GdcStudyDesignProvider>
