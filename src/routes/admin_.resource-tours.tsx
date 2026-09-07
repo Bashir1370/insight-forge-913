@@ -4,11 +4,19 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
+import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProjectSummaryAdminEditor";
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
 import { VisualAssetEditor } from "@/features/data-resources/VisualAssetEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
 import {
+  GDC_PROJECT_SUMMARY_CONTENT_KEY,
+  getGdcProjectSummaryConfig,
+  toGdcProjectSummaryContent,
+  type GdcProjectSummaryConfig,
+} from "@/features/data-resources/gdc-project-summary-config";
+import {
+  GDC_QUESTION_GUIDE_CONTENT_KEY,
   getGdcQuestionGuideConfig,
   toGdcQuestionGuideContent,
   type GdcQuestionGuideConfig,
@@ -75,6 +83,9 @@ function ResourceToursAdmin() {
   const [guideConfig, setGuideConfig] = useState<GdcQuestionGuideConfig>(() =>
     loadGuideConfig([]),
   );
+  const [projectSummaryConfig, setProjectSummaryConfig] = useState<GdcProjectSummaryConfig>(() =>
+    getGdcProjectSummaryConfig([]),
+  );
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
 
@@ -89,6 +100,7 @@ function ResourceToursAdmin() {
         setImageUrl(data.imageUrl);
         setContent(data.content);
         setGuideConfig(loadGuideConfig(data.content));
+        setProjectSummaryConfig(getGdcProjectSummaryConfig(data.content));
         setWarning(
           data.persisted
             ? null
@@ -130,9 +142,15 @@ function ResourceToursAdmin() {
   async function handleContentSave(nextContent: EditableResourceContent[]) {
     try {
       const guideBlock = toGdcQuestionGuideContent(guideConfig);
+      const projectSummaryBlock = toGdcProjectSummaryContent(projectSummaryConfig);
       const merged = [
-        ...nextContent.filter((item) => item.key !== guideBlock.key),
+        ...nextContent.filter(
+          (item) =>
+            item.key !== guideBlock.key &&
+            item.key !== projectSummaryBlock.key,
+        ),
         guideBlock,
+        projectSummaryBlock,
       ];
       const saved = await saveResourceContent(
         RESOURCE_SLUG,
@@ -142,6 +160,7 @@ function ResourceToursAdmin() {
       );
       setContent(saved);
       setGuideConfig(loadGuideConfig(saved));
+      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
       setWarning(null);
       toast.success("محتوای عمومی صفحه GDC ذخیره شد.");
     } catch (error) {
@@ -167,11 +186,37 @@ function ResourceToursAdmin() {
       );
       setContent(saved);
       setGuideConfig(loadGuideConfig(saved));
+      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
       setWarning(null);
       toast.success("آموزش سؤال‌محور GDC ذخیره شد.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره آموزش سؤال‌محور انجام نشد.");
+      throw error;
+    }
+  }
+
+  async function handleProjectSummarySave(nextConfig: GdcProjectSummaryConfig) {
+    try {
+      const summaryBlock = toGdcProjectSummaryContent(nextConfig);
+      const merged = [
+        ...content.filter((item) => item.key !== summaryBlock.key),
+        summaryBlock,
+      ];
+      const saved = await saveResourceContent(
+        RESOURCE_SLUG,
+        RESOURCE_TITLE,
+        imageUrl,
+        merged,
+      );
+      setContent(saved);
+      setGuideConfig(loadGuideConfig(saved));
+      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
+      setWarning(null);
+      toast.success("مرحله ۵ و Project Summary ذخیره شد.");
+    } catch (error) {
+      console.error(error);
+      toast.error("ذخیره مرحله ۵ انجام نشد.");
       throw error;
     }
   }
@@ -229,6 +274,12 @@ function ResourceToursAdmin() {
             onSave={handleGuideSave}
           />
 
+          <GdcProjectSummaryAdminEditor
+            config={projectSummaryConfig}
+            onChange={setProjectSummaryConfig}
+            onSave={handleProjectSummarySave}
+          />
+
           <section className="rounded-3xl border border-slate-200 bg-white p-6">
             <h2 className="text-xl font-black text-slate-950">تصویر اصلی مرحله ۱</h2>
             <p className="mt-2 text-sm text-slate-500">
@@ -243,7 +294,14 @@ function ResourceToursAdmin() {
             </div>
           </section>
 
-          <VisualContentEditor items={content.filter((item) => item.key !== "gdc_question_guide_v1")} onSave={handleContentSave} />
+          <VisualContentEditor
+            items={content.filter(
+              (item) =>
+                item.key !== GDC_QUESTION_GUIDE_CONTENT_KEY &&
+                item.key !== GDC_PROJECT_SUMMARY_CONTENT_KEY,
+            )}
+            onSave={handleContentSave}
+          />
         </div>
       </div>
     </main>
