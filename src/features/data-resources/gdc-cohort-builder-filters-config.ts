@@ -31,7 +31,7 @@ export type GdcCohortBuilderFiltersConfig = {
 
 export const DEFAULT_GDC_COHORT_BUILDER_FILTERS_CONFIG: GdcCohortBuilderFiltersConfig = {
   title: "نقشه فیلترهای Cohort Builder",
-  imageUrl: "",
+  imageUrl: "/images/gdc/gdc-cohort-builder-filters.webp",
   introLabel: "اول ساختار فیلترها را بشناسیم",
   introBody:
     "در Cohort Builder دسته‌های فیلتر در ستون سمت چپ قرار دارند. با انتخاب هر دسته، پنل‌های مرتبط در سمت راست باز می‌شوند. در این مرحله نقش هر دسته را می‌شناسیم تا در مراحل بعدی Cohort را آگاهانه و مرحله‌به‌مرحله محدود کنیم.",
