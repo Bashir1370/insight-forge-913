@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { GdcCohortBuilderFiltersAdminEditor } from "@/features/data-resources/GdcCohortBuilderFiltersAdminEditor";
 import { GdcCohortBuilderIntroAdminEditor } from "@/features/data-resources/GdcCohortBuilderIntroAdminEditor";
 import { GdcDiscoverProjectsStageAdminEditor } from "@/features/data-resources/GdcDiscoverProjectsStageAdminEditor";
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
@@ -10,6 +11,12 @@ import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProje
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
+import {
+  GDC_COHORT_BUILDER_FILTERS_CONTENT_KEY,
+  getGdcCohortBuilderFiltersConfig,
+  toGdcCohortBuilderFiltersContent,
+  type GdcCohortBuilderFiltersConfig,
+} from "@/features/data-resources/gdc-cohort-builder-filters-config";
 import {
   GDC_COHORT_BUILDER_INTRO_CONTENT_KEY,
   getGdcCohortBuilderIntroConfig,
@@ -102,8 +109,18 @@ function ResourceToursAdmin() {
   const [cohortBuilderIntroConfig, setCohortBuilderIntroConfig] = useState<GdcCohortBuilderIntroConfig>(() =>
     getGdcCohortBuilderIntroConfig([]),
   );
+  const [cohortBuilderFiltersConfig, setCohortBuilderFiltersConfig] = useState<GdcCohortBuilderFiltersConfig>(() =>
+    getGdcCohortBuilderFiltersConfig([]),
+  );
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
+
+  function syncManagedConfigs(saved: EditableResourceContent[]) {
+    setGuideConfig(loadGuideConfig(saved));
+    setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
+    setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
+    setCohortBuilderFiltersConfig(getGdcCohortBuilderFiltersConfig(saved));
+  }
 
   useEffect(() => {
     let active = true;
@@ -116,9 +133,7 @@ function ResourceToursAdmin() {
         setImageUrl(data.imageUrl);
         setHotspots(data.hotspots);
         setContent(data.content);
-        setGuideConfig(loadGuideConfig(data.content));
-        setProjectSummaryConfig(getGdcProjectSummaryConfig(data.content));
-        setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(data.content));
+        syncManagedConfigs(data.content);
         setWarning(
           data.persisted
             ? null
@@ -180,12 +195,19 @@ function ResourceToursAdmin() {
       const guideBlock = toGdcQuestionGuideContent(guideConfig);
       const projectSummaryBlock = toGdcProjectSummaryContent(projectSummaryConfig);
       const cohortBuilderIntroBlock = toGdcCohortBuilderIntroContent(cohortBuilderIntroConfig);
-      const managedKeys = [guideBlock.key, projectSummaryBlock.key, cohortBuilderIntroBlock.key];
+      const cohortBuilderFiltersBlock = toGdcCohortBuilderFiltersContent(cohortBuilderFiltersConfig);
+      const managedKeys = [
+        guideBlock.key,
+        projectSummaryBlock.key,
+        cohortBuilderIntroBlock.key,
+        cohortBuilderFiltersBlock.key,
+      ];
       const merged = [
         ...nextContent.filter((item) => !managedKeys.includes(item.key)),
         guideBlock,
         projectSummaryBlock,
         cohortBuilderIntroBlock,
+        cohortBuilderFiltersBlock,
       ];
       const saved = await saveResourceContent(
         RESOURCE_SLUG,
@@ -194,9 +216,7 @@ function ResourceToursAdmin() {
         merged,
       );
       setContent(saved);
-      setGuideConfig(loadGuideConfig(saved));
-      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
-      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
+      syncManagedConfigs(saved);
       setWarning(null);
       toast.success("محتوای عمومی صفحه GDC ذخیره شد.");
     } catch (error) {
@@ -221,9 +241,7 @@ function ResourceToursAdmin() {
         merged,
       );
       setContent(saved);
-      setGuideConfig(loadGuideConfig(saved));
-      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
-      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
+      syncManagedConfigs(saved);
       setWarning(null);
       toast.success("آموزش سؤال‌محور GDC ذخیره شد.");
     } catch (error) {
@@ -247,9 +265,7 @@ function ResourceToursAdmin() {
         merged,
       );
       setContent(saved);
-      setGuideConfig(loadGuideConfig(saved));
-      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
-      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
+      syncManagedConfigs(saved);
       setWarning(null);
       toast.success("مرحله ۵ و Project Summary ذخیره شد.");
     } catch (error) {
@@ -273,14 +289,36 @@ function ResourceToursAdmin() {
         merged,
       );
       setContent(saved);
-      setGuideConfig(loadGuideConfig(saved));
-      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
-      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
+      syncManagedConfigs(saved);
       setWarning(null);
       toast.success("سؤال ۲ · مرحله ۱ ذخیره شد.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره سؤال ۲ · مرحله ۱ انجام نشد.");
+      throw error;
+    }
+  }
+
+  async function handleCohortBuilderFiltersSave(nextConfig: GdcCohortBuilderFiltersConfig) {
+    try {
+      const filtersBlock = toGdcCohortBuilderFiltersContent(nextConfig);
+      const merged = [
+        ...content.filter((item) => item.key !== filtersBlock.key),
+        filtersBlock,
+      ];
+      const saved = await saveResourceContent(
+        RESOURCE_SLUG,
+        RESOURCE_TITLE,
+        imageUrl,
+        merged,
+      );
+      setContent(saved);
+      syncManagedConfigs(saved);
+      setWarning(null);
+      toast.success("سؤال ۲ · مرحله ۲ ذخیره شد.");
+    } catch (error) {
+      console.error(error);
+      toast.error("ذخیره سؤال ۲ · مرحله ۲ انجام نشد.");
       throw error;
     }
   }
@@ -299,29 +337,14 @@ function ResourceToursAdmin() {
       <div className="mx-auto max-w-[1500px]">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <a href="/admin" className="text-sm font-bold text-slate-500 hover:text-teal-700">
-              بازگشت به پنل مدیریت
-            </a>
+            <a href="/admin" className="text-sm font-bold text-slate-500 hover:text-teal-700">بازگشت به پنل مدیریت</a>
             <h1 className="mt-3 text-3xl font-black text-slate-950">GDC Learning Editor</h1>
-            <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
-              آموزش فعلی GDC را بدون تغییر کد مدیریت کنید: سؤال‌ها، روایت مراحل، فیلترها، پنل‌های توضیحی، تصاویر و جایگاه/ابعاد Hotspotها.
-            </p>
+            <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">آموزش فعلی GDC را بدون تغییر کد مدیریت کنید: سؤال‌ها، روایت مراحل، فیلترها، پنل‌های توضیحی، تصاویر و جایگاه/ابعاد Hotspotها.</p>
           </div>
-          <a
-            href="/resources/gdc"
-            target="_blank"
-            rel="noreferrer"
-            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-teal-800"
-          >
-            پیش‌نمایش صفحه GDC
-          </a>
+          <a href="/resources/gdc" target="_blank" rel="noreferrer" className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-teal-800">پیش‌نمایش صفحه GDC</a>
         </div>
 
-        {warning ? (
-          <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-            {warning}
-          </div>
-        ) : null}
+        {warning ? <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">{warning}</div> : null}
 
         <div className="mt-6 space-y-6">
           <GdcDiscoverProjectsStageAdminEditor
@@ -336,36 +359,23 @@ function ResourceToursAdmin() {
 
           <GdcQuestionGuideAdminEditor config={guideConfig} onSave={handleGuideSave} />
 
-          <GdcStudyDesignAdminEditor
-            config={guideConfig}
-            onChange={setGuideConfig}
-            onSave={handleGuideSave}
-          />
+          <GdcStudyDesignAdminEditor config={guideConfig} onChange={setGuideConfig} onSave={handleGuideSave} />
 
-          <GdcProjectDecisionAdminEditor
-            config={guideConfig}
-            onChange={setGuideConfig}
-            onSave={handleGuideSave}
-          />
+          <GdcProjectDecisionAdminEditor config={guideConfig} onChange={setGuideConfig} onSave={handleGuideSave} />
 
-          <GdcProjectSummaryAdminEditor
-            config={projectSummaryConfig}
-            onChange={setProjectSummaryConfig}
-            onSave={handleProjectSummarySave}
-          />
+          <GdcProjectSummaryAdminEditor config={projectSummaryConfig} onChange={setProjectSummaryConfig} onSave={handleProjectSummarySave} />
 
-          <GdcCohortBuilderIntroAdminEditor
-            config={cohortBuilderIntroConfig}
-            onChange={setCohortBuilderIntroConfig}
-            onSave={handleCohortBuilderIntroSave}
-          />
+          <GdcCohortBuilderIntroAdminEditor config={cohortBuilderIntroConfig} onChange={setCohortBuilderIntroConfig} onSave={handleCohortBuilderIntroSave} />
+
+          <GdcCohortBuilderFiltersAdminEditor config={cohortBuilderFiltersConfig} onChange={setCohortBuilderFiltersConfig} onSave={handleCohortBuilderFiltersSave} />
 
           <VisualContentEditor
             items={content.filter(
               (item) =>
                 item.key !== GDC_QUESTION_GUIDE_CONTENT_KEY &&
                 item.key !== GDC_PROJECT_SUMMARY_CONTENT_KEY &&
-                item.key !== GDC_COHORT_BUILDER_INTRO_CONTENT_KEY,
+                item.key !== GDC_COHORT_BUILDER_INTRO_CONTENT_KEY &&
+                item.key !== GDC_COHORT_BUILDER_FILTERS_CONTENT_KEY,
             )}
             onSave={handleContentSave}
           />
