@@ -4,7 +4,6 @@ const COHORT_BUILDER_IMAGE_PARTS = [
   "/images/gdc/cohort-builder-intro-b64/01.txt",
   "/images/gdc/cohort-builder-intro-b64/02.txt",
   "/images/gdc/cohort-builder-intro-b64/03.txt",
-  "/images/gdc/cohort-builder-intro-b64/04.txt",
 ] as const;
 
 export function useGdcCohortBuilderIntroImage(customUrl: string) {
