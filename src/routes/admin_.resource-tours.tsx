@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
 import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProjectSummaryAdminEditor";
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
+import { GdcStageOneAdminEditor } from "@/features/data-resources/GdcStageOneAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
-import { VisualAssetEditor } from "@/features/data-resources/VisualAssetEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
 import {
   GDC_PROJECT_SUMMARY_CONTENT_KEY,
@@ -25,12 +25,15 @@ import { upgradeGdcQuestionGuideConfig } from "@/features/data-resources/gdc-que
 import {
   loadResourceTourAdmin,
   saveResourceContent,
+  saveResourceHotspots,
   saveResourceImage,
 } from "@/features/data-resources/resource-tour-admin-service";
 import {
   DEFAULT_GDC_CONTENT,
+  DEFAULT_GDC_HOTSPOTS,
   DEFAULT_GDC_IMAGE_URL,
   type EditableResourceContent,
+  type EditableResourceHotspot,
 } from "@/features/data-resources/resource-tour-model";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -77,6 +80,9 @@ function loadGuideConfig(items: EditableResourceContent[]) {
 
 function ResourceToursAdmin() {
   const [imageUrl, setImageUrl] = useState(DEFAULT_GDC_IMAGE_URL);
+  const [hotspots, setHotspots] = useState<EditableResourceHotspot[]>(
+    DEFAULT_GDC_HOTSPOTS.map((item) => ({ ...item })),
+  );
   const [content, setContent] = useState<EditableResourceContent[]>(
     DEFAULT_GDC_CONTENT.map((item) => ({ ...item })),
   );
@@ -98,6 +104,7 @@ function ResourceToursAdmin() {
         if (!active) return;
 
         setImageUrl(data.imageUrl);
+        setHotspots(data.hotspots);
         setContent(data.content);
         setGuideConfig(loadGuideConfig(data.content));
         setProjectSummaryConfig(getGdcProjectSummaryConfig(data.content));
@@ -135,6 +142,24 @@ function ResourceToursAdmin() {
     } catch (error) {
       console.error(error);
       toast.error("ذخیره تصویر GDC انجام نشد.");
+      throw error;
+    }
+  }
+
+  async function handleHotspotsSave(nextHotspots: EditableResourceHotspot[]) {
+    try {
+      const saved = await saveResourceHotspots(
+        RESOURCE_SLUG,
+        RESOURCE_TITLE,
+        imageUrl,
+        nextHotspots,
+      );
+      setHotspots(saved);
+      setWarning(null);
+      toast.success("نقطه تمرکز Projects در مرحله ۱ ذخیره شد.");
+    } catch (error) {
+      console.error(error);
+      toast.error("ذخیره Hotspot مرحله ۱ انجام نشد.");
       throw error;
     }
   }
@@ -260,6 +285,13 @@ function ResourceToursAdmin() {
         ) : null}
 
         <div className="mt-6 space-y-6">
+          <GdcStageOneAdminEditor
+            imageUrl={imageUrl}
+            hotspots={hotspots}
+            onImageSave={handleImageSave}
+            onHotspotsSave={handleHotspotsSave}
+          />
+
           <GdcQuestionGuideAdminEditor config={guideConfig} onSave={handleGuideSave} />
 
           <GdcStudyDesignAdminEditor
@@ -279,20 +311,6 @@ function ResourceToursAdmin() {
             onChange={setProjectSummaryConfig}
             onSave={handleProjectSummarySave}
           />
-
-          <section className="rounded-3xl border border-slate-200 bg-white p-6">
-            <h2 className="text-xl font-black text-slate-950">تصویر اصلی مرحله ۱</h2>
-            <p className="mt-2 text-sm text-slate-500">
-              اسکرین‌شات صفحه اصلی GDC که در مرحله اول نمایش داده می‌شود.
-            </p>
-            <div className="mt-4">
-              <VisualAssetEditor
-                resourceSlug={RESOURCE_SLUG}
-                imageUrl={imageUrl}
-                onSave={handleImageSave}
-              />
-            </div>
-          </section>
 
           <VisualContentEditor
             items={content.filter(
