@@ -1,4 +1,6 @@
 import "./gdc-stage-one-cleanup.css";
+import "./gdc-stage-one-layered.css";
+import "./gdc-stage-one-layered";
 
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
 
@@ -13,8 +15,11 @@ const LEGACY_STAGE_ONE_ISSUE =
   "فرض کنید موضوع پژوهش ما سرطان پستان است. قبل از انتخاب بیمار، دانلود فایل یا تحلیل، اول باید روشن کنیم: آیا GDC اصلاً داده مناسبی برای این موضوع دارد؟";
 const POLISHED_STAGE_ONE_ISSUE =
   "فرض کنید می‌خواهیم داده‌های سرطان پستان را در GDC پیدا کنیم. هنوز وقت انتخاب بیمار یا دانلود فایل نیست؛ سؤال اول این است: «اصلاً چه مطالعه‌ها و چه نوع داده‌ای برای این موضوع در GDC وجود دارد؟»";
+const CLEAN_STAGE_ONE_ISSUE =
+  "موضوع پژوهش ما سرطان پستان است. قبل از انتخاب بیمار یا دانلود فایل، باید بفهمیم GDC چه مطالعه‌هایی برای این موضوع دارد و آیا اصلاً مسیر مناسبی برای ادامه پژوهش وجود دارد.";
 const LEGACY_STAGE_ONE_PROJECT_TITLE = "Project در GDC یعنی چه؟";
 const POLISHED_STAGE_ONE_PROJECT_TITLE = "چرا Projects نقطه شروع ماست؟";
+const CLEAN_STAGE_ONE_PROJECT_TITLE = "Project را خیلی ساده بشناسیم";
 
 /**
  * Upgrades bundled / previously polished Stage 1 copy. If an admin has written
@@ -27,36 +32,40 @@ export function prepareGdcStageOnePolish(
   const intro = next.intro;
 
   const isBundledOrPreviousPolish =
-    [LEGACY_STAGE_ONE_ISSUE, POLISHED_STAGE_ONE_ISSUE].includes(intro.issueBody.trim()) &&
-    [LEGACY_STAGE_ONE_PROJECT_TITLE, POLISHED_STAGE_ONE_PROJECT_TITLE].includes(
-      intro.projectTitle.trim(),
-    );
+    [LEGACY_STAGE_ONE_ISSUE, POLISHED_STAGE_ONE_ISSUE, CLEAN_STAGE_ONE_ISSUE].includes(
+      intro.issueBody.trim(),
+    ) &&
+    [
+      LEGACY_STAGE_ONE_PROJECT_TITLE,
+      POLISHED_STAGE_ONE_PROJECT_TITLE,
+      CLEAN_STAGE_ONE_PROJECT_TITLE,
+    ].includes(intro.projectTitle.trim());
 
   if (!isBundledOrPreviousPolish) return next;
 
-  intro.issueLabel = "سؤال این مرحله";
+  intro.issueLabel = "اول سؤال را درست صورت‌بندی کنیم";
   intro.issueBody =
-    "موضوع پژوهش ما سرطان پستان است. قبل از انتخاب بیمار یا دانلود فایل، باید بفهمیم GDC چه مطالعه‌هایی برای این موضوع دارد و آیا اصلاً مسیر مناسبی برای ادامه پژوهش وجود دارد.";
+    "فرض کنید موضوع ما سرطان پستان است. هنوز نباید سراغ بیمار یا فایل برویم؛ اول باید بفهمیم GDC چه مطالعه‌هایی برای این موضوع دارد و کدام مسیر ارزش ادامه دادن دارد.";
   intro.entryBody =
-    "نقطه شروع ما Projects است؛ جایی که مطالعه‌های موجود را می‌بینیم و از میان آن‌ها مسیر مرتبط با سؤال پژوهشی را پیدا می‌کنیم.";
+    "برای همین از Projects شروع می‌کنیم. این صفحه به ما نشان می‌دهد مطالعه‌ها چگونه سازمان‌دهی شده‌اند و نقطه شروع مناسب کجاست.";
 
-  intro.projectTitle = "Project را خیلی ساده بشناسیم";
+  intro.projectTitle = "Project دقیقاً چیست؟";
   intro.projectBody =
-    "در GDC، Project یک مطالعه مشخص است که Caseها، نمونه‌ها و فایل‌های مرتبط را زیر یک چارچوب مشترک سازمان‌دهی می‌کند.";
+    "Project در GDC یعنی یک مطالعه مشخص؛ جایی که Caseها، نمونه‌ها و فایل‌های مرتبط با یک تلاش پژوهشی زیر یک ساختار مشترک قرار گرفته‌اند.";
   intro.projectCaveat =
-    "پس Project را با بیمار، فایل یا نام یک سرطان یکی نگیرید؛ Project ظرفی است که اجزای یک مطالعه را کنار هم نگه می‌دارد.";
+    "پس Project را با یک بیمار، یک فایل یا صرفاً نام یک سرطان یکی نگیرید. Project همان واحد مطالعه است که بقیه اطلاعات را دور خودش جمع می‌کند.";
 
-  intro.architectureTitle = "نقشه ذهنی GDC";
+  intro.architectureTitle = "جای Project در نقشه GDC";
   intro.architectureIntro =
-    "برای گم نشدن در محیط GDC فقط این چهار سطح را در ذهن داشته باشید:";
+    "برای اینکه در مراحل بعدی گم نشویم، فقط این چهار سطح را در ذهن نگه داریم:";
   intro.architectureCards = [
     { title: "Program", subtitle: "چتر پژوهشی بزرگ‌تر" },
-    { title: "Project", subtitle: "مطالعه مشخص" },
+    { title: "Project", subtitle: "یک مطالعه مشخص" },
     { title: "Cases", subtitle: "موارد مطالعه" },
     { title: "Data / Files", subtitle: "داده‌های مربوط به Cases" },
   ];
   intro.architectureSummary =
-    "در این مرحله فقط Project برای ما مهم است. انتخاب Case و فایل در قدم‌های بعدی وارد داستان می‌شود.";
+    "فعلاً فقط Project برای ما مهم است. انتخاب Case و پیدا کردن فایل مناسب در مراحل بعدی وارد مسیر می‌شود.";
 
   // Stage 1 no longer needs a separate mission card. These values are kept
   // empty so older persisted configs also render without the block.
