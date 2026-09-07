@@ -25,8 +25,6 @@ const DEFAULT_PROJECTS_HOTSPOT: HotspotGeometry = {
   height: 7,
 };
 
-const TAB_LABELS = ["چرا Projects؟", "Project چیست؟", "نقشه GDC"] as const;
-
 function toFiniteNumber(value: unknown) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? number : null;
@@ -94,6 +92,7 @@ export function GdcDiscoverProjectsStage({
   const intro = config.intro;
   const hotspot = useMemo(() => getProjectsHotspot(managedHotspots), [managedHotspots]);
   const screenshot = imageUrl || DEFAULT_IMAGE;
+  const tabLabels = [intro.issueLabel, intro.projectTitle, intro.architectureTitle];
 
   const hotspotStyle = {
     left: `${hotspot.x}%`,
@@ -106,7 +105,7 @@ export function GdcDiscoverProjectsStage({
   const zoomCenterY = hotspot.y + hotspot.height / 2;
 
   function goNext() {
-    if (activeTab < TAB_LABELS.length - 1) {
+    if (activeTab < tabLabels.length - 1) {
       setActiveTab((value) => value + 1);
       return;
     }
@@ -114,7 +113,7 @@ export function GdcDiscoverProjectsStage({
   }
 
   return (
-    <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1.9fr)_400px]">
+    <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1.9fr)_400px]" dir="ltr">
       <div className="xl:sticky xl:top-5 xl:self-start">
         <div className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.10)]" dir="ltr">
           <img
@@ -151,18 +150,19 @@ export function GdcDiscoverProjectsStage({
           <h2 className="mt-4 text-2xl font-black leading-9 text-slate-950">{intro.title}</h2>
 
           <div className="mt-5 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1">
-            {TAB_LABELS.map((label, index) => (
+            {tabLabels.map((label, index) => (
               <button
-                key={label}
+                key={`${label}-${index}`}
                 type="button"
+                title={label}
                 onClick={() => setActiveTab(index)}
                 className={
                   activeTab === index
-                    ? "rounded-lg bg-white px-2 py-2 text-[10px] font-black text-teal-700 shadow-sm"
-                    : "rounded-lg px-2 py-2 text-[10px] font-bold text-slate-500 transition hover:text-slate-800"
+                    ? "min-w-0 rounded-lg bg-white px-2 py-2 text-[10px] font-black text-teal-700 shadow-sm"
+                    : "min-w-0 rounded-lg px-2 py-2 text-[10px] font-bold text-slate-500 transition hover:text-slate-800"
                 }
               >
-                {label}
+                <span className="block truncate">{label}</span>
               </button>
             ))}
           </div>
@@ -226,7 +226,7 @@ export function GdcDiscoverProjectsStage({
             </button>
 
             <div className="text-[10px] font-black text-slate-400">
-              {activeTab + 1} / {TAB_LABELS.length}
+              {activeTab + 1} / {tabLabels.length}
             </div>
 
             <button
@@ -234,7 +234,7 @@ export function GdcDiscoverProjectsStage({
               onClick={goNext}
               className="inline-flex items-center gap-1 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-black text-white shadow-[0_8px_20px_rgba(13,148,136,0.18)] transition hover:bg-teal-800"
             >
-              {activeTab === TAB_LABELS.length - 1 ? intro.nextButton || "ورود به Projects" : "بعدی"}
+              {activeTab === tabLabels.length - 1 ? intro.nextButton || "ورود به Projects" : "بعدی"}
               <ChevronLeft className="h-4 w-4" />
             </button>
           </div>
