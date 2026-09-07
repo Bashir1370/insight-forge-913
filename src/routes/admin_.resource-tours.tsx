@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { GdcDiscoverProjectsStageAdminEditor } from "@/features/data-resources/GdcDiscoverProjectsStageAdminEditor";
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
 import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProjectSummaryAdminEditor";
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
-import { GdcStageOneAdminEditor } from "@/features/data-resources/GdcStageOneAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
 import {
@@ -285,7 +285,7 @@ function ResourceToursAdmin() {
         ) : null}
 
         <div className="mt-6 space-y-6">
-          <GdcStageOneAdminEditor
+          <GdcDiscoverProjectsStageAdminEditor
             imageUrl={imageUrl}
             hotspots={hotspots}
             onImageSave={handleImageSave}
