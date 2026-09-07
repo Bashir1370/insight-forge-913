@@ -10,6 +10,10 @@ import {
 } from "./GdcQuestionOneGuide";
 import { GdcStudyDesignProvider } from "./GdcStudyDesignContext";
 import {
+  DEFAULT_GDC_COHORT_BUILDER_INTRO_CONFIG,
+  type GdcCohortBuilderIntroConfig,
+} from "./gdc-cohort-builder-intro-config";
+import {
   DEFAULT_GDC_PROJECT_SUMMARY_CONFIG,
   type GdcProjectSummaryConfig,
 } from "./gdc-project-summary-config";
@@ -17,8 +21,9 @@ import { getGdcProjectDecisionConfig } from "./gdc-project-decision-config";
 import { getGdcLensLayout } from "./gdc-lens-layout";
 import { getGdcStudyDesignConfig } from "./gdc-study-design-config";
 
-type Props = GdcQuestionOneGuideProps & {
+type Props = Omit<GdcQuestionOneGuideProps, "cohortBuilderIntroConfig"> & {
   projectSummaryConfig?: GdcProjectSummaryConfig;
+  cohortBuilderIntroConfig?: GdcCohortBuilderIntroConfig;
 };
 
 type GuideStyle = CSSProperties & {
@@ -48,6 +53,7 @@ function prepareStageTitles(
 
 export function GdcQuestionGuidePage({
   projectSummaryConfig = DEFAULT_GDC_PROJECT_SUMMARY_CONFIG,
+  cohortBuilderIntroConfig = DEFAULT_GDC_COHORT_BUILDER_INTRO_CONFIG,
   ...props
 }: Props) {
   const projectDecision = getGdcProjectDecisionConfig(props.guideConfig);
@@ -71,7 +77,11 @@ export function GdcQuestionGuidePage({
       <GdcProjectDecisionProvider config={projectDecision}>
         <GdcProjectSummaryProvider config={projectSummaryConfig}>
           <div className="gdc-question-guide" style={style}>
-            <GdcQuestionOneGuide {...props} guideConfig={guideConfig} />
+            <GdcQuestionOneGuide
+              {...props}
+              guideConfig={guideConfig}
+              cohortBuilderIntroConfig={cohortBuilderIntroConfig}
+            />
           </div>
         </GdcProjectSummaryProvider>
       </GdcProjectDecisionProvider>
