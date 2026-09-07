@@ -1,6 +1,6 @@
 import "./gdc-stage-one-cleanup.css";
-import "./gdc-stage-one-layered.css";
-import "./gdc-stage-one-layered";
+import "./gdc-stage-one-inspector.css";
+import "./gdc-stage-one-inspector";
 
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
 
