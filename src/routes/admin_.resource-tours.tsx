@@ -3,12 +3,19 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { GdcCohortBuilderIntroAdminEditor } from "@/features/data-resources/GdcCohortBuilderIntroAdminEditor";
 import { GdcDiscoverProjectsStageAdminEditor } from "@/features/data-resources/GdcDiscoverProjectsStageAdminEditor";
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
 import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProjectSummaryAdminEditor";
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
+import {
+  GDC_COHORT_BUILDER_INTRO_CONTENT_KEY,
+  getGdcCohortBuilderIntroConfig,
+  toGdcCohortBuilderIntroContent,
+  type GdcCohortBuilderIntroConfig,
+} from "@/features/data-resources/gdc-cohort-builder-intro-config";
 import {
   GDC_PROJECT_SUMMARY_CONTENT_KEY,
   getGdcProjectSummaryConfig,
@@ -92,6 +99,9 @@ function ResourceToursAdmin() {
   const [projectSummaryConfig, setProjectSummaryConfig] = useState<GdcProjectSummaryConfig>(() =>
     getGdcProjectSummaryConfig([]),
   );
+  const [cohortBuilderIntroConfig, setCohortBuilderIntroConfig] = useState<GdcCohortBuilderIntroConfig>(() =>
+    getGdcCohortBuilderIntroConfig([]),
+  );
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
 
@@ -108,6 +118,7 @@ function ResourceToursAdmin() {
         setContent(data.content);
         setGuideConfig(loadGuideConfig(data.content));
         setProjectSummaryConfig(getGdcProjectSummaryConfig(data.content));
+        setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(data.content));
         setWarning(
           data.persisted
             ? null
@@ -168,14 +179,13 @@ function ResourceToursAdmin() {
     try {
       const guideBlock = toGdcQuestionGuideContent(guideConfig);
       const projectSummaryBlock = toGdcProjectSummaryContent(projectSummaryConfig);
+      const cohortBuilderIntroBlock = toGdcCohortBuilderIntroContent(cohortBuilderIntroConfig);
+      const managedKeys = [guideBlock.key, projectSummaryBlock.key, cohortBuilderIntroBlock.key];
       const merged = [
-        ...nextContent.filter(
-          (item) =>
-            item.key !== guideBlock.key &&
-            item.key !== projectSummaryBlock.key,
-        ),
+        ...nextContent.filter((item) => !managedKeys.includes(item.key)),
         guideBlock,
         projectSummaryBlock,
+        cohortBuilderIntroBlock,
       ];
       const saved = await saveResourceContent(
         RESOURCE_SLUG,
@@ -186,6 +196,7 @@ function ResourceToursAdmin() {
       setContent(saved);
       setGuideConfig(loadGuideConfig(saved));
       setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
+      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
       setWarning(null);
       toast.success("محتوای عمومی صفحه GDC ذخیره شد.");
     } catch (error) {
@@ -212,6 +223,7 @@ function ResourceToursAdmin() {
       setContent(saved);
       setGuideConfig(loadGuideConfig(saved));
       setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
+      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
       setWarning(null);
       toast.success("آموزش سؤال‌محور GDC ذخیره شد.");
     } catch (error) {
@@ -237,11 +249,38 @@ function ResourceToursAdmin() {
       setContent(saved);
       setGuideConfig(loadGuideConfig(saved));
       setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
+      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
       setWarning(null);
       toast.success("مرحله ۵ و Project Summary ذخیره شد.");
     } catch (error) {
       console.error(error);
       toast.error("ذخیره مرحله ۵ انجام نشد.");
+      throw error;
+    }
+  }
+
+  async function handleCohortBuilderIntroSave(nextConfig: GdcCohortBuilderIntroConfig) {
+    try {
+      const cohortBlock = toGdcCohortBuilderIntroContent(nextConfig);
+      const merged = [
+        ...content.filter((item) => item.key !== cohortBlock.key),
+        cohortBlock,
+      ];
+      const saved = await saveResourceContent(
+        RESOURCE_SLUG,
+        RESOURCE_TITLE,
+        imageUrl,
+        merged,
+      );
+      setContent(saved);
+      setGuideConfig(loadGuideConfig(saved));
+      setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
+      setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
+      setWarning(null);
+      toast.success("سؤال ۲ · مرحله ۱ ذخیره شد.");
+    } catch (error) {
+      console.error(error);
+      toast.error("ذخیره سؤال ۲ · مرحله ۱ انجام نشد.");
       throw error;
     }
   }
@@ -315,11 +354,18 @@ function ResourceToursAdmin() {
             onSave={handleProjectSummarySave}
           />
 
+          <GdcCohortBuilderIntroAdminEditor
+            config={cohortBuilderIntroConfig}
+            onChange={setCohortBuilderIntroConfig}
+            onSave={handleCohortBuilderIntroSave}
+          />
+
           <VisualContentEditor
             items={content.filter(
               (item) =>
                 item.key !== GDC_QUESTION_GUIDE_CONTENT_KEY &&
-                item.key !== GDC_PROJECT_SUMMARY_CONTENT_KEY,
+                item.key !== GDC_PROJECT_SUMMARY_CONTENT_KEY &&
+                item.key !== GDC_COHORT_BUILDER_INTRO_CONTENT_KEY,
             )}
             onSave={handleContentSave}
           />
