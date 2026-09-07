@@ -35,10 +35,10 @@ const questionIcons = {
 const PERSIAN_NUMBERS = ["۱", "۲", "۳", "۴", "۵"] as const;
 
 export type GdcQuestionOneGuideProps = {
-  imageUrl?: string | null;
-  managedHotspots?: unknown[];
-  pageTitle?: string | null;
-  pageDescription?: string | null;
+  imageUrl?: string | null | undefined;
+  managedHotspots?: unknown[] | undefined;
+  pageTitle?: string | null | undefined;
+  pageDescription?: string | null | undefined;
   guideConfig: GdcQuestionGuideConfig;
 };
 
