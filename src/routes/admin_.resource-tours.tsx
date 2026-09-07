@@ -286,8 +286,11 @@ function ResourceToursAdmin() {
 
         <div className="mt-6 space-y-6">
           <GdcDiscoverProjectsStageAdminEditor
+            config={guideConfig}
             imageUrl={imageUrl}
             hotspots={hotspots}
+            onChange={setGuideConfig}
+            onGuideSave={handleGuideSave}
             onImageSave={handleImageSave}
             onHotspotsSave={handleHotspotsSave}
           />
