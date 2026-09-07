@@ -209,6 +209,7 @@ function FacetLens({ facet, close }: { facet: GdcFacetConfig; close: () => void 
 export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
   const [selectedFacet, setSelectedFacet] = useState<GdcFacetId>("primarySite");
   const [lensOpen, setLensOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState(0);
   const projects = config.projects;
   const src = useProjectsImage(projects.imageUrl);
   const facet =
@@ -226,14 +227,36 @@ export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
   );
   const filtersArea = hotspotMap.get("filtersArea");
   const tableArea = hotspotMap.get("projectsTable");
+  const sectionLabels = [
+    projects.orientationTitle,
+    projects.facetIntroTitle,
+    projects.tableReadTitle,
+    projects.transitionTitle,
+  ];
+
+  function previousStep() {
+    if (activeSection > 0) {
+      setActiveSection((value) => value - 1);
+      return;
+    }
+    onPrevious();
+  }
+
+  function nextStep() {
+    if (activeSection < sectionLabels.length - 1) {
+      setActiveSection((value) => value + 1);
+      return;
+    }
+    onNext();
+  }
 
   return (
     <>
-      <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.75fr)_420px]">
+      <div className="mt-5 grid items-start gap-5 xl:grid-cols-[minmax(0,1.9fr)_400px]" dir="ltr">
         <div className="xl:sticky xl:top-5 xl:self-start">
-          <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" dir="ltr">
+          <div className="relative overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.10)]" dir="ltr">
             {src ? (
-              <img src={src} alt="صفحه Projects در GDC" className="block w-full" />
+              <img src={src} alt="صفحه Projects در GDC" className="block w-full" loading="eager" decoding="async" />
             ) : (
               <div className="flex aspect-[1905/847] items-center justify-center bg-slate-100 text-sm font-bold text-slate-400">
                 در حال بارگذاری اسکرین‌شات Projects…
@@ -241,42 +264,51 @@ export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
             )}
 
             {src && filtersArea ? (
-              <div className="pointer-events-none absolute rounded-lg border-2 border-dashed border-teal-300/80" style={hotspotStyle(filtersArea)} />
+              <button
+                type="button"
+                aria-label="نمایش بخش فیلترها"
+                onClick={() => setActiveSection(1)}
+                className={`absolute z-10 rounded-lg border-2 transition focus:outline-none focus:ring-4 focus:ring-teal-200/60 ${
+                  activeSection === 1
+                    ? "border-teal-400 bg-teal-300/10"
+                    : "border-teal-300/60 bg-transparent hover:bg-teal-300/10"
+                }`}
+                style={hotspotStyle(filtersArea)}
+              />
             ) : null}
+
             {src && tableArea ? (
-              <div className="pointer-events-none absolute rounded-lg border-2 border-dashed border-slate-300/80" style={hotspotStyle(tableArea)} />
-            ) : null}
-            {src && filtersArea ? (
-              <div
-                className="pointer-events-none absolute rounded-full bg-teal-700 px-3 py-1.5 text-[10px] font-black text-white shadow"
-                style={{ left: `${filtersArea.x + 1}%`, top: `${filtersArea.y}%` }}
-              >
-                {projects.filtersOverlayLabel}
-              </div>
-            ) : null}
-            {src && tableArea ? (
-              <div
-                className="pointer-events-none absolute rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-black text-white shadow"
-                style={{ left: `${tableArea.x + 1}%`, top: `${tableArea.y}%` }}
-              >
-                {projects.tableOverlayLabel}
-              </div>
+              <button
+                type="button"
+                aria-label="نمایش جدول Projects"
+                onClick={() => setActiveSection(2)}
+                className={`absolute z-10 rounded-lg border-2 transition focus:outline-none focus:ring-4 focus:ring-sky-200/60 ${
+                  activeSection === 2
+                    ? "border-sky-400 bg-sky-300/10"
+                    : "border-sky-300/60 bg-transparent hover:bg-sky-300/10"
+                }`}
+                style={hotspotStyle(tableArea)}
+              />
             ) : null}
 
             {src
               ? projects.facets.map((item) => {
                   const hotspot = hotspotMap.get(item.id);
                   if (!hotspot) return null;
+                  const selected = activeSection === 1 && selectedFacet === item.id;
                   return (
                     <button
                       key={item.id}
                       type="button"
                       aria-label={`نمایش ${item.title}`}
-                      onClick={() => setSelectedFacet(item.id)}
-                      className={`absolute rounded-md border-[3px] transition ${
-                        selectedFacet === item.id
-                          ? "border-teal-400 bg-teal-300/15 shadow-[0_0_0_999px_rgba(15,23,42,.08)]"
-                          : "border-transparent bg-transparent hover:border-sky-300 hover:bg-sky-200/10"
+                      onClick={() => {
+                        setSelectedFacet(item.id);
+                        setActiveSection(1);
+                      }}
+                      className={`absolute z-20 rounded-md border-2 transition focus:outline-none focus:ring-4 focus:ring-teal-200/50 ${
+                        selected
+                          ? "border-teal-400 bg-teal-300/12"
+                          : "border-transparent bg-transparent hover:border-teal-300/70 hover:bg-teal-200/10"
                       }`}
                       style={hotspotStyle(hotspot)}
                     />
@@ -286,80 +318,152 @@ export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
           </div>
         </div>
 
-        <aside className="rounded-2xl border bg-white p-5 shadow-sm sm:p-6">
-          <div className="text-xs font-black text-teal-700">مرحله ۲ از {config.stageTitles.length}</div>
-          <h2 className="mt-2 text-2xl font-black">{projects.title}</h2>
-
-          <div className="mt-5 rounded-2xl bg-slate-50 p-4">
-            <div className="text-xs font-black text-slate-500">{projects.orientationTitle}</div>
-            <p className="mt-2 text-sm leading-7 text-slate-700">{projects.orientationBody}</p>
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-teal-100 bg-teal-50/70 p-3">
-                <b className="text-xs text-teal-800">{projects.filtersTitle}</b>
-                <p className="mt-1 text-xs leading-6 text-teal-950/75">{projects.filtersBody}</p>
-              </div>
-              <div className="rounded-xl border border-slate-200 bg-white p-3">
-                <b className="text-xs text-slate-700">{projects.tableTitle}</b>
-                <p className="mt-1 text-xs leading-6 text-slate-600">{projects.tableBody}</p>
-              </div>
+        <aside className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_16px_45px_rgba(15,23,42,0.07)]" dir="rtl">
+          <div className="h-1 bg-gradient-to-l from-sky-400 via-teal-400 to-teal-700" />
+          <div className="p-5 sm:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <span className="rounded-full border border-teal-100 bg-teal-50 px-3 py-1 text-[10px] font-black text-teal-700">
+                مرحله ۲ از {config.stageTitles.length}
+              </span>
+              <span className="text-[10px] font-bold text-slate-400">صفحه Projects</span>
             </div>
-          </div>
 
-          <div className="mt-4 rounded-2xl border border-slate-200 p-3">
-            <div className="px-1 text-xs font-black text-slate-700">{projects.facetIntroTitle}</div>
-            <p className="mt-2 px-1 text-xs leading-6 text-slate-500">{projects.facetIntroBody}</p>
-            <div className="mt-3 space-y-2">
-              {projects.facets.map((item) => (
+            <h2 className="mt-4 text-2xl font-black leading-9 text-slate-950">{projects.title}</h2>
+
+            <div className="mt-5 grid grid-cols-4 gap-1 rounded-xl bg-slate-100 p-1">
+              {sectionLabels.map((label, index) => (
                 <button
-                  key={item.id}
+                  key={`${label}-${index}`}
                   type="button"
-                  onClick={() => setSelectedFacet(item.id)}
-                  className={`w-full rounded-xl border px-4 py-3 text-right transition ${
-                    selectedFacet === item.id
-                      ? "border-teal-300 bg-teal-50"
-                      : "border-slate-200 bg-white hover:border-slate-300"
-                  }`}
+                  title={label}
+                  onClick={() => setActiveSection(index)}
+                  className={
+                    activeSection === index
+                      ? "min-w-0 rounded-lg bg-white px-2 py-2 text-[10px] font-black text-teal-700 shadow-sm"
+                      : "min-w-0 rounded-lg px-2 py-2 text-[10px] font-bold text-slate-500 transition hover:text-slate-800"
+                  }
                 >
-                  <div className="grid min-h-[58px] grid-cols-[132px_minmax(0,1fr)] items-center gap-4" dir="rtl">
-                    <b dir="ltr" className="w-full text-left text-sm leading-5 text-slate-950">{item.title}</b>
-                    <span className="w-full text-right text-xs leading-6 text-slate-500">{item.prompt}</span>
-                  </div>
+                  <span className="block truncate">{label}</span>
                 </button>
               ))}
             </div>
-            <button
-              onClick={() => setLensOpen(true)}
-              className="mt-3 w-full rounded-xl border border-teal-200 bg-white px-4 py-3 text-sm font-black text-teal-800"
-            >
-              {facet.title} را در همین صفحه باز کن
-            </button>
-          </div>
 
-          <div className="mt-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
-            <div className="text-xs font-black text-sky-800">{projects.tableReadTitle}</div>
-            <p className="mt-2 text-xs leading-6 text-sky-950/75">{projects.tableReadBody}</p>
-            <div className="mt-3 space-y-2">
-              {projects.tableReadRows.map((row, index) => (
-                <div key={index} className="rounded-xl bg-white px-3 py-2">
-                  <b dir="ltr" className="text-xs">{row.label}</b>
-                  <span className="mr-2 text-xs text-slate-500">{row.body}</span>
+            <div className="mt-4 min-h-[350px] rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              {activeSection === 0 ? (
+                <div>
+                  <div className="text-xs font-black text-teal-800">{projects.orientationTitle}</div>
+                  <p className="mt-3 text-sm leading-8 text-slate-700">{projects.orientationBody}</p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection(1)}
+                      className="rounded-xl border border-teal-200 bg-white p-3 text-right transition hover:border-teal-400 hover:bg-teal-50"
+                    >
+                      <b className="text-xs text-teal-800">{projects.filtersTitle}</b>
+                      <p className="mt-1 text-xs leading-6 text-slate-600">{projects.filtersBody}</p>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveSection(2)}
+                      className="rounded-xl border border-sky-200 bg-white p-3 text-right transition hover:border-sky-400 hover:bg-sky-50"
+                    >
+                      <b className="text-xs text-sky-800">{projects.tableTitle}</b>
+                      <p className="mt-1 text-xs leading-6 text-slate-600">{projects.tableBody}</p>
+                    </button>
+                  </div>
                 </div>
-              ))}
+              ) : null}
+
+              {activeSection === 1 ? (
+                <div>
+                  <div className="text-xs font-black text-teal-800">{projects.facetIntroTitle}</div>
+                  <p className="mt-2 text-xs leading-6 text-slate-500">{projects.facetIntroBody}</p>
+                  <div className="mt-3 grid gap-2">
+                    {projects.facets.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setSelectedFacet(item.id)}
+                        className={`grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3 rounded-xl border px-3 py-2.5 text-right transition ${
+                          selectedFacet === item.id
+                            ? "border-teal-300 bg-teal-50"
+                            : "border-slate-200 bg-white hover:border-slate-300"
+                        }`}
+                      >
+                        <b dir="ltr" className="text-left text-xs text-slate-900">{item.title}</b>
+                        <span className="text-xs leading-5 text-slate-500">{item.prompt}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 rounded-xl border border-teal-100 bg-white p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <div dir="ltr" className="text-left text-xs font-black text-teal-800">{facet.title}</div>
+                        <div className="mt-1 text-xs leading-5 text-slate-500">{facet.prompt}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setLensOpen(true)}
+                        className="shrink-0 rounded-lg bg-teal-700 px-3 py-2 text-[10px] font-black text-white"
+                      >
+                        توضیح دقیق
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {activeSection === 2 ? (
+                <div>
+                  <div className="text-xs font-black text-sky-800">{projects.tableReadTitle}</div>
+                  <p className="mt-3 text-sm leading-8 text-slate-700">{projects.tableReadBody}</p>
+                  <div className="mt-4 space-y-2">
+                    {projects.tableReadRows.map((row, index) => (
+                      <div key={index} className="grid grid-cols-[130px_minmax(0,1fr)] items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3">
+                        <b dir="ltr" className="text-left text-xs text-slate-900">{row.label}</b>
+                        <span className="text-xs leading-6 text-slate-500">{row.body}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {activeSection === 3 ? (
+                <div className="flex min-h-[300px] flex-col justify-center">
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                    <div className="text-xs font-black text-amber-900">{projects.transitionTitle}</div>
+                    <p className="mt-3 text-sm leading-8 text-amber-950/80">{projects.transitionBody}</p>
+                  </div>
+                  <div className="mt-4 rounded-xl border border-teal-100 bg-white px-4 py-3 text-xs leading-6 text-slate-600">
+                    حالا نقشه صفحه را می‌شناسیم؛ در مرحله بعد سؤال پژوهشی را به فیلترهای واقعی GDC تبدیل می‌کنیم.
+                  </div>
+                </div>
+              ) : null}
             </div>
-          </div>
 
-          <div className="mt-4 rounded-2xl border border-amber-100 bg-amber-50 p-4">
-            <div className="text-xs font-black text-amber-900">{projects.transitionTitle}</div>
-            <p className="mt-2 text-xs leading-6 text-amber-950/75">{projects.transitionBody}</p>
-          </div>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={previousStep}
+                className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-600"
+              >
+                <ChevronRight className="h-4 w-4" />
+                {activeSection === 0 ? "مرحله قبل" : "قبلی"}
+              </button>
 
-          <div className="mt-5 grid grid-cols-2 gap-3">
-            <button onClick={onPrevious} className="rounded-xl border px-4 py-3 text-sm font-bold">
-              <ChevronRight className="inline h-4 w-4" /> قبلی
-            </button>
-            <button onClick={onNext} className="rounded-xl bg-teal-700 px-4 py-3 text-sm font-black text-white">
-              بعدی <ChevronLeft className="inline h-4 w-4" />
-            </button>
+              <div className="text-[10px] font-black text-slate-400">
+                {activeSection + 1} / {sectionLabels.length}
+              </div>
+
+              <button
+                type="button"
+                onClick={nextStep}
+                className="inline-flex items-center gap-1 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-black text-white shadow-[0_8px_20px_rgba(13,148,136,0.18)] transition hover:bg-teal-800"
+              >
+                {activeSection === sectionLabels.length - 1 ? "مرحله بعد" : "بعدی"}
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </aside>
       </div>
