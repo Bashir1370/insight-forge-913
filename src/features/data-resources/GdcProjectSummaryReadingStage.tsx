@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { useGdcProjectSummaryConfig } from "./GdcProjectSummaryContext";
 import type {
   GdcProjectSummaryConfig,
   GdcProjectSummaryHotspot,
@@ -38,16 +39,19 @@ function HotspotIcon({ hotspotKey }: { hotspotKey: string }) {
 }
 
 export function GdcProjectSummaryReadingStage({
-  config,
+  config: configProp,
   stageNumber,
   stageTotal,
   onPrevious,
 }: {
-  config: GdcProjectSummaryConfig;
+  config?: GdcProjectSummaryConfig;
+  title?: string;
   stageNumber: number;
   stageTotal: number;
   onPrevious: () => void;
 }) {
+  const managedConfig = useGdcProjectSummaryConfig();
+  const config = configProp ?? managedConfig;
   const [selectedKey, setSelectedKey] = useState<string>(() => {
     if (config.hotspots.some((item) => item.key === "data-category")) return "data-category";
     return config.hotspots[0]?.key ?? "";
