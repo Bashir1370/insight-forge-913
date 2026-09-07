@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { GdcQuestionGuidePage } from "./GdcQuestionGuidePage";
+import { getGdcCohortBuilderIntroConfig } from "./gdc-cohort-builder-intro-config";
 import { upgradeLegacyProgramFacet } from "./gdc-program-facet-upgrade";
 import { getGdcProjectSummaryConfig } from "./gdc-project-summary-config";
 import { getGdcQuestionGuideConfig } from "./gdc-question-guide-config";
@@ -64,6 +65,7 @@ export function GdcResourcePage() {
       description: blocks.find((item) => item.key === "description")?.value,
       guideConfig,
       projectSummaryConfig: getGdcProjectSummaryConfig(blocks),
+      cohortBuilderIntroConfig: getGdcCohortBuilderIntroConfig(blocks),
     };
   }, [resource]);
 
@@ -85,6 +87,7 @@ export function GdcResourcePage() {
         pageDescription={content.description}
         guideConfig={content.guideConfig}
         projectSummaryConfig={content.projectSummaryConfig}
+        cohortBuilderIntroConfig={content.cohortBuilderIntroConfig}
       />
     </div>
   );
