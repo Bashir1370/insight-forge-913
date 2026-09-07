@@ -1,0 +1,148 @@
+/* Stage 1 refinement: keep the real GDC screenshot visually clean. */
+.gdc-guide-v6 .gdc-stage-one-canvas::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* A simple hotspot: no number, label, pulse or completion copy. */
+.gdc-guide-v6 .gdc-stage-one-hotspot,
+.gdc-guide-v6.gdc-stage-one-found .gdc-stage-one-hotspot {
+  border: 2px solid rgb(20 184 166) !important;
+  border-radius: 8px !important;
+  background: rgba(20, 184, 166, .08) !important;
+  box-shadow: 0 0 0 2px rgba(20, 184, 166, .12) !important;
+  transform: none !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-hotspot:hover,
+.gdc-guide-v6 .gdc-stage-one-hotspot:focus-visible {
+  border-color: rgb(13 148 136) !important;
+  background: rgba(20, 184, 166, .13) !important;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, .13) !important;
+  transform: none !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-hotspot::before,
+.gdc-guide-v6 .gdc-stage-one-hotspot::after,
+.gdc-guide-v6.gdc-stage-one-found .gdc-stage-one-hotspot::before,
+.gdc-guide-v6.gdc-stage-one-found .gdc-stage-one-hotspot::after {
+  display: none !important;
+  content: none !important;
+  animation: none !important;
+}
+
+/* Remove the old mission card completely. */
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(4) {
+  display: none !important;
+}
+
+/*
+ * Learning Rail
+ * Instead of a stack of long rectangular cards, Stage 1 reads like a compact
+ * editorial rail: research question -> core concept -> mental map.
+ */
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 {
+  position: relative;
+  padding-right: 22px;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3::before {
+  content: "";
+  position: absolute;
+  right: 5px;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    rgb(148 163 184),
+    rgb(45 212 191),
+    rgb(203 213 225)
+  );
+  opacity: .65;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(-n+3) {
+  position: relative;
+  margin-right: 0 !important;
+  border-radius: 16px !important;
+  padding: 15px 16px !important;
+  box-shadow: none !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(-n+3)::before {
+  content: "";
+  position: absolute;
+  right: -25px;
+  top: 18px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid white;
+  border-radius: 999px;
+  background: rgb(148 163 184);
+  box-shadow: 0 0 0 2px rgba(148,163,184,.18);
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(2)::before {
+  background: rgb(13 148 136);
+  box-shadow: 0 0 0 3px rgba(20,184,166,.15);
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(1) {
+  border: 1px solid rgb(226 232 240) !important;
+  background: rgb(248 250 252) !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(2) {
+  border: 1px solid rgb(153 246 228) !important;
+  background: rgb(240 253 250) !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(3) {
+  border: 1px solid rgb(226 232 240) !important;
+  background: white !important;
+}
+
+/* Make the GDC mental map compact and readable instead of one long strip. */
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(3) > .mt-3.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(3) > .mt-3.grid > div {
+  min-height: 64px !important;
+  border-radius: 12px !important;
+  padding: 9px 8px !important;
+  background: rgb(248 250 252) !important;
+  box-shadow: none !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(3) > .mt-3.grid > div:nth-child(2) {
+  border-color: rgb(45 212 191) !important;
+  background: rgb(240 253 250) !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(3) > .mt-3.grid > div::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Give the panel more breathing room without making it visually heavy. */
+.gdc-guide-v6 .gdc-stage-one-panel {
+  background: rgba(255,255,255,.98) !important;
+}
+
+.gdc-guide-v6 .gdc-stage-one-panel > .mt-5.grid.grid-cols-2 {
+  margin-top: 18px !important;
+}
+
+@media (max-width: 639px) {
+  .gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 {
+    padding-right: 18px;
+  }
+
+  .gdc-guide-v6 .gdc-stage-one-panel > .mt-5.space-y-3 > div:nth-child(-n+3)::before {
+    right: -21px;
+  }
+}
