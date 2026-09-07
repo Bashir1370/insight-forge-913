@@ -234,6 +234,12 @@ export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
     projects.transitionTitle,
   ];
 
+  function openFacetDetails(id: GdcFacetId) {
+    setSelectedFacet(id);
+    setActiveSection(1);
+    setLensOpen(true);
+  }
+
   function previousStep() {
     if (activeSection > 0) {
       setActiveSection((value) => value - 1);
@@ -300,11 +306,9 @@ export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
                     <button
                       key={item.id}
                       type="button"
-                      aria-label={`نمایش ${item.title}`}
-                      onClick={() => {
-                        setSelectedFacet(item.id);
-                        setActiveSection(1);
-                      }}
+                      aria-label={`باز کردن توضیح دقیق ${item.title}`}
+                      title={`برای توضیح دقیق ${item.title} کلیک کنید`}
+                      onClick={() => openFacetDetails(item.id)}
                       className={`absolute z-20 rounded-md border-2 transition focus:outline-none focus:ring-4 focus:ring-teal-200/50 ${
                         selected
                           ? "border-teal-400 bg-teal-300/12"
@@ -383,32 +387,22 @@ export function GdcProjectsStage({ config, onPrevious, onNext }: Props) {
                       <button
                         key={item.id}
                         type="button"
-                        onClick={() => setSelectedFacet(item.id)}
-                        className={`grid grid-cols-[120px_minmax(0,1fr)] items-center gap-3 rounded-xl border px-3 py-2.5 text-right transition ${
+                        aria-label={`باز کردن توضیح دقیق ${item.title}`}
+                        title={`برای توضیح دقیق ${item.title} کلیک کنید`}
+                        onClick={() => openFacetDetails(item.id)}
+                        className={`group grid grid-cols-[112px_minmax(0,1fr)_68px] items-center gap-2 rounded-xl border px-3 py-2.5 text-right transition ${
                           selectedFacet === item.id
                             ? "border-teal-300 bg-teal-50"
-                            : "border-slate-200 bg-white hover:border-slate-300"
+                            : "border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50"
                         }`}
                       >
                         <b dir="ltr" className="text-left text-xs text-slate-900">{item.title}</b>
                         <span className="text-xs leading-5 text-slate-500">{item.prompt}</span>
+                        <span className="rounded-full bg-teal-700 px-2 py-1 text-center text-[9px] font-black text-white opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+                          کلیک کنید
+                        </span>
                       </button>
                     ))}
-                  </div>
-                  <div className="mt-3 rounded-xl border border-teal-100 bg-white p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <div dir="ltr" className="text-left text-xs font-black text-teal-800">{facet.title}</div>
-                        <div className="mt-1 text-xs leading-5 text-slate-500">{facet.prompt}</div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setLensOpen(true)}
-                        className="shrink-0 rounded-lg bg-teal-700 px-3 py-2 text-[10px] font-black text-white"
-                      >
-                        توضیح دقیق
-                      </button>
-                    </div>
                   </div>
                 </div>
               ) : null}
