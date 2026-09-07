@@ -59,7 +59,7 @@ export function GdcCohortBuilderIntroStage({
             </div>
           )}
 
-          {screenshot
+          {screenshot && activeTab === 2
             ? hotspots.map((item) => {
                 const selected = selectedHotspot === item.key;
                 return (
@@ -67,12 +67,9 @@ export function GdcCohortBuilderIntroStage({
                     key={item.key}
                     type="button"
                     aria-label={`نمایش توضیح ${item.label}`}
-                    onClick={() => {
-                      setSelectedHotspot(item.key);
-                      setActiveTab(2);
-                    }}
+                    onClick={() => setSelectedHotspot(item.key)}
                     className={`group absolute z-10 rounded-lg border-2 transition focus:outline-none focus:ring-4 focus:ring-teal-200/60 ${
-                      selected && activeTab === 2
+                      selected
                         ? "border-teal-400 bg-teal-300/12 shadow-[0_0_0_2px_rgba(255,255,255,.55)]"
                         : "border-teal-300/65 bg-teal-300/5 hover:border-teal-400 hover:bg-teal-300/12"
                     }`}
