@@ -12,8 +12,8 @@ type HotspotGeometry = {
 
 type Props = {
   config: GdcQuestionGuideConfig;
-  imageUrl?: string | null;
-  managedHotspots?: unknown[];
+  imageUrl?: string | null | undefined;
+  managedHotspots?: unknown[] | undefined;
   onContinue: () => void;
 };
 
