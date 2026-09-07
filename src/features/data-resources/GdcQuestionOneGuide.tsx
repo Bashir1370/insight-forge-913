@@ -17,8 +17,10 @@ import {
 import { GdcProjectDecisionStage } from "./GdcProjectDecisionStage";
 import { GdcProjectSummaryReadingStage } from "./GdcProjectSummaryReadingStage";
 import { GdcProjectsStage } from "./GdcProjectsStage";
+import { GdcQuestionTwoGuide } from "./GdcQuestionTwoGuide";
 import { GdcQuestionDrivenGuideV3 as LegacyGuide } from "./GdcQuestionDrivenGuideV3";
 import { GdcStudyDesignStage } from "./GdcStudyDesignStage";
+import type { GdcCohortBuilderIntroConfig } from "./gdc-cohort-builder-intro-config";
 import type {
   GdcQuestionGuideConfig,
   GdcQuestionId,
@@ -40,6 +42,7 @@ export type GdcQuestionOneGuideProps = {
   pageTitle?: string | null | undefined;
   pageDescription?: string | null | undefined;
   guideConfig: GdcQuestionGuideConfig;
+  cohortBuilderIntroConfig: GdcCohortBuilderIntroConfig;
 };
 
 export function GdcQuestionOneGuide({
@@ -48,6 +51,7 @@ export function GdcQuestionOneGuide({
   pageTitle,
   pageDescription,
   guideConfig,
+  cohortBuilderIntroConfig,
 }: GdcQuestionOneGuideProps) {
   const [stage, setStage] = useState(0);
   const [legacyTarget, setLegacyTarget] = useState<GdcLegacyQuestionTarget | null>(null);
@@ -75,6 +79,18 @@ export function GdcQuestionOneGuide({
       return;
     }
     setLegacyTarget({ questionId });
+  }
+
+  if (legacyTarget?.questionId === "cohort") {
+    return (
+      <GdcQuestionTwoGuide
+        pageTitle={pageTitle}
+        pageDescription={pageDescription}
+        guideConfig={displayConfig}
+        cohortBuilderIntroConfig={cohortBuilderIntroConfig}
+        onSelectQuestion={openQuestion}
+      />
+    );
   }
 
   if (legacyTarget) {
