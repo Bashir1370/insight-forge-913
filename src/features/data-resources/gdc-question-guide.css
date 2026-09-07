@@ -4,6 +4,14 @@
   text-justify: inter-word;
 }
 
+.gdc-question-guide .mt-5.grid.gap-5 {
+  direction: ltr;
+}
+
+.gdc-question-guide .mt-5.grid.gap-5 > aside {
+  direction: rtl;
+}
+
 .gdc-question-guide .fixed.inset-0 > section {
   width: min(96vw, var(--gdc-lens-modal-max-width, 1500px));
   max-width: var(--gdc-lens-modal-max-width, 1500px);
