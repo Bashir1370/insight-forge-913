@@ -417,7 +417,6 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
     guideConfig.stageTitles[1] ?? "Projects را بخوان",
     guideConfig.stageTitles[2] ?? "طراحی مطالعه و اعمال فیلترها",
     "از ۳ Project مرتبط تا انتخاب پژوهشی",
-    "تصمیم بعدی",
     "خواندن اطلاعات پروژه",
   ], [guideConfig.stageTitles]);
 
@@ -474,7 +473,7 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
           {stageTitles.map((title, index) => (
             <button
               key={`${title}-${index}`}
-              onClick={() => index <= 3 ? setStage(index) : setBridgeTarget({ questionId: "discover", stageIndex: 4 })}
+              onClick={() => setStage(index)}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-black ${stage === index ? "bg-teal-700 text-white" : "bg-white text-slate-500 ring-1 ring-slate-200"}`}
             >
               {index + 1}. {title}
@@ -509,22 +508,22 @@ export function GdcQuestionDrivenGuideV5({ imageUrl, managedHotspots, pageTitle,
             onPrevious={() => setStage(1)}
             onNext={() => setStage(3)}
           />
-   ) : stage === 3 ? (
-  <GdcProjectDecisionStage
-    title={stageTitles[3] ?? ""}
-    stageNumber={4}
-    stageTotal={stageTitles.length}
-    onPrevious={() => setStage(2)}
-    onNext={() => setStage(4)}
-  />
-) : (
-  <GdcProjectSummaryReadingStage
-    title={stageTitles[4] ?? "خواندن اطلاعات پروژه"}
-    stageNumber={5}
-    stageTotal={stageTitles.length}
-    onPrevious={() => setStage(3)}
-  />
-)}
+        ) : stage === 3 ? (
+          <GdcProjectDecisionStage
+            title={stageTitles[3] ?? ""}
+            stageNumber={4}
+            stageTotal={stageTitles.length}
+            onPrevious={() => setStage(2)}
+            onNext={() => setStage(4)}
+          />
+        ) : (
+          <GdcProjectSummaryReadingStage
+            title={stageTitles[4] ?? "خواندن اطلاعات پروژه"}
+            stageNumber={5}
+            stageTotal={stageTitles.length}
+            onPrevious={() => setStage(3)}
+          />
+        )}
       </section>
 
       {lensOpen && selectedFacetConfig ? <FacetLens facet={selectedFacetConfig} close={() => setLensOpen(false)} /> : null}
