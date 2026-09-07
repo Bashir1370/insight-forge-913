@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { GdcQuestionDrivenGuideV6 } from "./GdcQuestionDrivenGuideV6";
+import { getGdcProjectSummaryConfig } from "./gdc-project-summary-config";
 import { getGdcQuestionGuideConfig } from "./gdc-question-guide-config";
 import {
   prepareGdcQuestionGuideForDisplay,
@@ -55,6 +56,7 @@ export function GdcDynamicPage() {
       getGdcQuestionGuideConfig(blocks),
     );
     const guideConfig = prepareGdcQuestionGuideForDisplay(upgradedGuide);
+    const projectSummaryConfig = getGdcProjectSummaryConfig(blocks);
 
     const program = guideConfig.projects.facets.find(
       (item) => item.id === "program",
@@ -97,6 +99,7 @@ export function GdcDynamicPage() {
       title: blocks.find((item) => item.key === "title")?.value,
       description: blocks.find((item) => item.key === "description")?.value,
       guideConfig,
+      projectSummaryConfig,
     };
   }, [resource]);
 
@@ -117,6 +120,7 @@ export function GdcDynamicPage() {
         pageTitle={content.title}
         pageDescription={content.description}
         guideConfig={content.guideConfig}
+        projectSummaryConfig={content.projectSummaryConfig}
       />
     </div>
   );
