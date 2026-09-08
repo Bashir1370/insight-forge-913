@@ -2,6 +2,7 @@ import { Crosshair, Save } from "lucide-react";
 
 import { HotspotCanvasEditor } from "./HotspotCanvasEditor";
 import { VisualAssetEditor } from "./VisualAssetEditor";
+import type { GdcHotspotArrowSettings } from "./GdcHotspotArrow";
 import type {
   GdcCohortBuilderIntroConfig,
   GdcCohortBuilderIntroHotspot,
@@ -9,34 +10,17 @@ import type {
 import { useGdcCohortBuilderIntroImage } from "./gdc-cohort-builder-intro-image";
 import type { EditableResourceHotspot } from "./resource-tour-model";
 
+type ArrowEditableHotspot = EditableResourceHotspot & GdcHotspotArrowSettings;
+
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return (
-    <label className="block text-xs font-bold text-slate-600">
-      {label}
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-teal-500"
-      />
-    </label>
-  );
+  return <label className="block text-xs font-bold text-slate-600">{label}<input value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-teal-500" /></label>;
 }
 
 function Textarea({ label, value, onChange, rows = 3 }: { label: string; value: string; onChange: (value: string) => void; rows?: number }) {
-  return (
-    <label className="block text-xs font-bold text-slate-600">
-      {label}
-      <textarea
-        rows={rows}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-7 text-slate-950 outline-none focus:border-teal-500"
-      />
-    </label>
-  );
+  return <label className="block text-xs font-bold text-slate-600">{label}<textarea rows={rows} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 w-full resize-y rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-7 text-slate-950 outline-none focus:border-teal-500" /></label>;
 }
 
-function toEditable(item: GdcCohortBuilderIntroHotspot, index: number): EditableResourceHotspot {
+function toEditable(item: GdcCohortBuilderIntroHotspot, index: number): ArrowEditableHotspot {
   return {
     key: item.key,
     step: index + 1,
@@ -53,23 +37,16 @@ function toEditable(item: GdcCohortBuilderIntroHotspot, index: number): Editable
     y: item.y,
     width: item.width,
     height: item.height,
+    arrowDirection: item.arrowDirection,
+    arrowSize: item.arrowSize,
+    arrowOffsetX: item.arrowOffsetX,
+    arrowOffsetY: item.arrowOffsetY,
   };
 }
 
-export function GdcCohortBuilderIntroAdminEditor({
-  config,
-  onChange,
-  onSave,
-}: {
-  config: GdcCohortBuilderIntroConfig;
-  onChange: (config: GdcCohortBuilderIntroConfig) => void;
-  onSave: (config: GdcCohortBuilderIntroConfig) => void | Promise<void>;
-}) {
+export function GdcCohortBuilderIntroAdminEditor({ config, onChange, onSave }: { config: GdcCohortBuilderIntroConfig; onChange: (config: GdcCohortBuilderIntroConfig) => void; onSave: (config: GdcCohortBuilderIntroConfig) => void | Promise<void> }) {
   const previewImage = useGdcCohortBuilderIntroImage(config.imageUrl);
-
-  function update<K extends keyof GdcCohortBuilderIntroConfig>(key: K, value: GdcCohortBuilderIntroConfig[K]) {
-    onChange({ ...config, [key]: value });
-  }
+  function update<K extends keyof GdcCohortBuilderIntroConfig>(key: K, value: GdcCohortBuilderIntroConfig[K]) { onChange({ ...config, [key]: value }); }
 
   return (
     <section className="rounded-3xl border border-emerald-200 bg-white p-6 shadow-sm" dir="rtl">
@@ -77,17 +54,9 @@ export function GdcCohortBuilderIntroAdminEditor({
         <div>
           <div className="text-xs font-black text-emerald-700">سؤال ۲ · مرحله ۱ · ورود به Cohort Builder</div>
           <h2 className="mt-1 text-2xl font-black text-slate-950">Cohort Builder Intro Stage Editor</h2>
-          <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
-            متن‌های سه اسلاید، اسکرین‌شات مرحله و هر دو Hotspot ورود به Cohort Builder از همین بخش مدیریت می‌شوند.
-          </p>
+          <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">متن‌های سه اسلاید، اسکرین‌شات، Hotspotها و تنظیمات مستقل فلش قرمز از همین بخش مدیریت می‌شوند.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onSave(config)}
-          className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white hover:bg-teal-800"
-        >
-          <Save className="h-4 w-4" /> ذخیره سؤال ۲ · مرحله ۱
-        </button>
+        <button type="button" onClick={() => onSave(config)} className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-black text-white hover:bg-teal-800"><Save className="h-4 w-4" /> ذخیره سؤال ۲ · مرحله ۱</button>
       </div>
 
       <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50/60 p-4">
@@ -111,48 +80,37 @@ export function GdcCohortBuilderIntroAdminEditor({
       </div>
 
       <div className="mt-5">
-        <VisualAssetEditor
-          resourceSlug="gdc-question-2-cohort-builder-intro"
-          imageUrl={config.imageUrl || previewImage}
-          title="اسکرین‌شات سؤال ۲ · مرحله ۱"
-          description="تصویر پیش‌فرض همین اسکرین‌شات آموزشی است. هر زمان خواستید می‌توانید نسخه جدید را آپلود کنید؛ URL جدید داخل تنظیمات همین مرحله ذخیره می‌شود."
-          allowRemove={false}
-          onSave={async (imageUrl) => {
-            const next = { ...config, imageUrl };
-            onChange(next);
-            await onSave(next);
-          }}
-        />
+        <VisualAssetEditor resourceSlug="gdc-question-2-cohort-builder-intro" imageUrl={config.imageUrl || previewImage} title="اسکرین‌شات سؤال ۲ · مرحله ۱" description="تصویر پیش‌فرض همین اسکرین‌شات آموزشی است. هر زمان خواستید می‌توانید نسخه جدید را آپلود کنید." allowRemove={false} onSave={async (imageUrl) => { const next = { ...config, imageUrl }; onChange(next); await onSave(next); }} />
       </div>
 
       <div className="mt-5 rounded-2xl border border-slate-200 p-4">
-        <div className="mb-3 flex items-center gap-2 text-xs font-bold text-slate-500">
-          <Crosshair className="h-4 w-4 text-teal-700" />
-          جایگاه و اندازه Hotspotها را روی تصویر Drag / Resize کنید.
-        </div>
+        <div className="mb-3 flex items-center gap-2 text-xs font-bold text-slate-500"><Crosshair className="h-4 w-4 text-teal-700" />جایگاه Hotspot و خود فلش را Drag کنید؛ جهت و اندازه فلش هم پایین تصویر قابل تنظیم است.</div>
         {previewImage ? (
           <HotspotCanvasEditor
             imageUrl={previewImage}
             hotspots={config.hotspots.map(toEditable)}
             onSave={async (items) => {
-              const nextHotspots: GdcCohortBuilderIntroHotspot[] = items.map((item, index) => ({
-                key: config.hotspots[index]?.key ?? item.key,
-                label: config.hotspots[index]?.label ?? item.title,
-                x: item.x,
-                y: item.y,
-                width: item.width,
-                height: item.height,
-              }));
+              const nextHotspots: GdcCohortBuilderIntroHotspot[] = items.map((raw, index) => {
+                const item = raw as ArrowEditableHotspot;
+                return {
+                  key: config.hotspots[index]?.key ?? item.key,
+                  label: config.hotspots[index]?.label ?? item.title,
+                  x: item.x,
+                  y: item.y,
+                  width: item.width,
+                  height: item.height,
+                  arrowDirection: item.arrowDirection ?? "left",
+                  arrowSize: item.arrowSize ?? 64,
+                  arrowOffsetX: item.arrowOffsetX ?? 0,
+                  arrowOffsetY: item.arrowOffsetY ?? 0,
+                };
+              });
               const next = { ...config, hotspots: nextHotspots };
               onChange(next);
               await onSave(next);
             }}
           />
-        ) : (
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-            تصویر مرحله هنوز بارگذاری نشده است.
-          </div>
-        )}
+        ) : <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">تصویر مرحله هنوز بارگذاری نشده است.</div>}
       </div>
     </section>
   );
