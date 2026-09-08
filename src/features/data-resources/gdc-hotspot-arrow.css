@@ -1,21 +1,41 @@
 @keyframes gdc-hotspot-arrow-nudge-left {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(-8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-8px);
+  }
 }
 
 @keyframes gdc-hotspot-arrow-nudge-right {
-  0%, 100% { transform: translateX(0); }
-  50% { transform: translateX(8px); }
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(8px);
+  }
 }
 
 @keyframes gdc-hotspot-arrow-nudge-up {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }
 
 @keyframes gdc-hotspot-arrow-nudge-down {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(8px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(8px);
+  }
 }
 
 .gdc-hotspot-arrow-nudge {
@@ -23,94 +43,20 @@
   will-change: transform;
 }
 
-[data-direction="right"] > .gdc-hotspot-arrow-nudge { animation-name: gdc-hotspot-arrow-nudge-right; }
-[data-direction="up"] > .gdc-hotspot-arrow-nudge { animation-name: gdc-hotspot-arrow-nudge-up; }
-[data-direction="down"] > .gdc-hotspot-arrow-nudge { animation-name: gdc-hotspot-arrow-nudge-down; }
-
-/* Legacy Question 1 pseudo arrows remain only for stages not yet migrated. */
-@keyframes gdc-q1-hotspot-arrow-nudge {
-  0%, 100% { transform: translate(0, -50%); }
-  50% { transform: translate(-8px, -50%); }
+[data-direction="right"] > .gdc-hotspot-arrow-nudge {
+  animation-name: gdc-hotspot-arrow-nudge-right;
 }
 
-.gdc-question-guide button[aria-label="نمایش بخش فیلترها"],
-.gdc-question-guide button[aria-label="نمایش جدول Projects"],
-.gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "],
-.gdc-question-guide button[aria-label^="توضیح "] {
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
+[data-direction="up"] > .gdc-hotspot-arrow-nudge {
+  animation-name: gdc-hotspot-arrow-nudge-up;
 }
 
-.gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
-.gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
-.gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
-.gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after {
-  content: "←";
-  pointer-events: none;
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  z-index: 30;
-  color: #dc2626;
-  font-size: 56px;
-  line-height: 1;
-  font-weight: 900;
-  text-shadow: 0 1px 1px rgba(255,255,255,.95);
-  animation: gdc-q1-hotspot-arrow-nudge 1.15s ease-in-out infinite;
-}
-
-.gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md {
-  border-color: transparent !important;
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
-.gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md > span,
-.gdc-question-guide button[aria-label^="توضیح "] > span {
-  display: none !important;
-}
-
-.gdc-question-guide button[aria-label^="توضیح "]::after {
-  content: "←";
-  pointer-events: none;
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  z-index: 30;
-  color: #dc2626;
-  font-size: 56px;
-  line-height: 1;
-  font-weight: 900;
-  opacity: 0;
-  text-shadow: 0 1px 1px rgba(255,255,255,.95);
-  transform: translate(0,-50%);
-  transition: opacity 140ms ease;
-}
-
-.gdc-question-guide button[aria-label^="توضیح "]:hover::after,
-.gdc-question-guide button[aria-label^="توضیح "]:focus-visible::after {
-  opacity: 1;
-  animation: gdc-q1-hotspot-arrow-nudge 1.15s ease-in-out infinite;
-}
-
-@media (max-width:640px) {
-  .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
-  .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
-  .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
-  .gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after,
-  .gdc-question-guide button[aria-label^="توضیح "]::after {
-    font-size: 46px;
-  }
+[data-direction="down"] > .gdc-hotspot-arrow-nudge {
+  animation-name: gdc-hotspot-arrow-nudge-down;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gdc-hotspot-arrow-nudge,
-  .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
-  .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
-  .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
-  .gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after,
-  .gdc-question-guide button[aria-label^="توضیح "]::after {
+  .gdc-hotspot-arrow-nudge {
     animation: none !important;
   }
 }
