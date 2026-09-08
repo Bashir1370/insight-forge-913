@@ -14,7 +14,7 @@
     transform: translate(0, -50%);
   }
   50% {
-    transform: translate(-6px, -50%);
+    transform: translate(-7px, -50%);
   }
 }
 
@@ -34,11 +34,11 @@
   content: "←";
   pointer-events: none;
   position: absolute;
-  left: calc(100% + 6px);
+  left: calc(100% + 8px);
   top: 50%;
   z-index: 30;
   color: #dc2626;
-  font-size: 42px;
+  font-size: 56px;
   line-height: 1;
   font-weight: 900;
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
@@ -60,11 +60,11 @@
   content: "←";
   pointer-events: none;
   position: absolute;
-  left: calc(100% + 6px);
+  left: calc(100% + 8px);
   top: 50%;
   z-index: 30;
   color: #dc2626;
-  font-size: 42px;
+  font-size: 56px;
   line-height: 1;
   font-weight: 900;
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
@@ -85,11 +85,11 @@
 .gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after {
   content: "←";
   position: absolute;
-  left: calc(100% + 6px);
+  left: calc(100% + 8px);
   top: 50%;
   z-index: 30;
   color: #dc2626;
-  font-size: 42px;
+  font-size: 56px;
   line-height: 1;
   font-weight: 900;
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
@@ -111,11 +111,11 @@
   content: "←";
   pointer-events: none;
   position: absolute;
-  left: calc(100% + 6px);
+  left: calc(100% + 8px);
   top: 50%;
   z-index: 30;
   color: #dc2626;
-  font-size: 42px;
+  font-size: 56px;
   line-height: 1;
   font-weight: 900;
   opacity: 0;
@@ -137,7 +137,7 @@
   .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
   .gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after,
   .gdc-question-guide button[aria-label^="توضیح "]::after {
-    font-size: 34px;
+    font-size: 44px;
   }
 }
 
