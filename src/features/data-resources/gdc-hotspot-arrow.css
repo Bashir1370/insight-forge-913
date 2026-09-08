@@ -27,13 +27,12 @@
 [data-direction="up"] > .gdc-hotspot-arrow-nudge { animation-name: gdc-hotspot-arrow-nudge-up; }
 [data-direction="down"] > .gdc-hotspot-arrow-nudge { animation-name: gdc-hotspot-arrow-nudge-down; }
 
-/* Legacy Question 1 pseudo arrows remain as a fallback for stages not yet migrated. */
+/* Legacy Question 1 pseudo arrows remain only for stages not yet migrated. */
 @keyframes gdc-q1-hotspot-arrow-nudge {
   0%, 100% { transform: translate(0, -50%); }
   50% { transform: translate(-8px, -50%); }
 }
 
-.gdc-question-guide button[aria-label="نمایش توضیح Projects"],
 .gdc-question-guide button[aria-label="نمایش بخش فیلترها"],
 .gdc-question-guide button[aria-label="نمایش جدول Projects"],
 .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "],
@@ -43,7 +42,6 @@
   box-shadow: none !important;
 }
 
-.gdc-question-guide button[aria-label="نمایش توضیح Projects"]::after,
 .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
 .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
 .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
@@ -97,7 +95,6 @@
 }
 
 @media (max-width:640px) {
-  .gdc-question-guide button[aria-label="نمایش توضیح Projects"]::after,
   .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
   .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
   .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
@@ -109,7 +106,6 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gdc-hotspot-arrow-nudge,
-  .gdc-question-guide button[aria-label="نمایش توضیح Projects"]::after,
   .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
   .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
   .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
