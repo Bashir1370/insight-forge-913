@@ -8,13 +8,147 @@
   }
 }
 
+@keyframes gdc-q1-hotspot-arrow-nudge {
+  0%,
+  100% {
+    transform: translate(0, -50%);
+  }
+  50% {
+    transform: translate(-6px, -50%);
+  }
+}
+
 .gdc-hotspot-arrow-nudge {
   animation: gdc-hotspot-arrow-nudge 1.15s ease-in-out infinite;
   will-change: transform;
 }
 
+/* Question 1 · Stage 1 — Projects */
+.gdc-question-guide button[aria-label="نمایش توضیح Projects"] {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.gdc-question-guide button[aria-label="نمایش توضیح Projects"]::after {
+  content: "←";
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  z-index: 30;
+  color: #dc2626;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
+  animation: gdc-q1-hotspot-arrow-nudge 1.15s ease-in-out infinite;
+}
+
+/* Question 1 · Stage 2 — only the section/facet that is currently active */
+.gdc-question-guide button[aria-label="نمایش بخش فیلترها"],
+.gdc-question-guide button[aria-label="نمایش جدول Projects"],
+.gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "] {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
+.gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
+.gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after {
+  content: "←";
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  z-index: 30;
+  color: #dc2626;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
+  animation: gdc-q1-hotspot-arrow-nudge 1.15s ease-in-out infinite;
+}
+
+/* Question 1 · Stage 3 — convert the current screenshot markers into arrows. */
+.gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md > span {
+  display: none !important;
+}
+
+.gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after {
+  content: "←";
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  z-index: 30;
+  color: #dc2626;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 900;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
+  animation: gdc-q1-hotspot-arrow-nudge 1.15s ease-in-out infinite;
+}
+
+/* Question 1 · Stage 5 — keep the screenshot clean; reveal the red arrow on hover/focus. */
+.gdc-question-guide button[aria-label^="توضیح "] {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.gdc-question-guide button[aria-label^="توضیح "] > span {
+  display: none !important;
+}
+
+.gdc-question-guide button[aria-label^="توضیح "]::after {
+  content: "←";
+  pointer-events: none;
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  z-index: 30;
+  color: #dc2626;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 900;
+  opacity: 0;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.95);
+  transform: translate(0, -50%);
+  transition: opacity 140ms ease;
+}
+
+.gdc-question-guide button[aria-label^="توضیح "]:hover::after,
+.gdc-question-guide button[aria-label^="توضیح "]:focus-visible::after {
+  opacity: 1;
+  animation: gdc-q1-hotspot-arrow-nudge 1.15s ease-in-out infinite;
+}
+
+@media (max-width: 640px) {
+  .gdc-question-guide button[aria-label="نمایش توضیح Projects"]::after,
+  .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
+  .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
+  .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
+  .gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after,
+  .gdc-question-guide button[aria-label^="توضیح "]::after {
+    font-size: 34px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .gdc-hotspot-arrow-nudge {
-    animation: none;
+  .gdc-hotspot-arrow-nudge,
+  .gdc-question-guide button[aria-label="نمایش توضیح Projects"]::after,
+  .gdc-question-guide button[aria-label="نمایش بخش فیلترها"].border-teal-400::after,
+  .gdc-question-guide button[aria-label="نمایش جدول Projects"].border-sky-400::after,
+  .gdc-question-guide button[aria-label^="باز کردن توضیح دقیق "].border-teal-400::after,
+  .gdc-question-guide .relative.overflow-hidden.bg-slate-100 > .pointer-events-none.absolute.rounded-md::after,
+  .gdc-question-guide button[aria-label^="توضیح "]::after {
+    animation: none !important;
   }
 }
