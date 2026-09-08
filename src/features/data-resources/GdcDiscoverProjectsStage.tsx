@@ -1,6 +1,10 @@
 import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import {
+  GdcHotspotArrow,
+  type GdcHotspotArrowSettings,
+} from "./GdcHotspotArrow";
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
 
 type HotspotGeometry = {
@@ -15,6 +19,10 @@ type Props = {
   imageUrl?: string | null | undefined;
   managedHotspots?: unknown[] | undefined;
   onContinue: () => void;
+};
+
+type IntroWithProjectsArrow = GdcQuestionGuideConfig["intro"] & {
+  projectsArrow?: GdcHotspotArrowSettings;
 };
 
 const DEFAULT_IMAGE = "/images/gdc/gdc-home-clean.webp";
@@ -90,15 +98,16 @@ export function GdcDiscoverProjectsStage({
   const [activeTab, setActiveTab] = useState(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const intro = config.intro;
+  const introWithArrow = intro as IntroWithProjectsArrow;
   const hotspot = useMemo(() => getProjectsHotspot(managedHotspots), [managedHotspots]);
   const screenshot = imageUrl || DEFAULT_IMAGE;
   const tabLabels = [intro.issueLabel, intro.projectTitle, intro.architectureTitle];
-
-  const hotspotStyle = {
-    left: `${hotspot.x}%`,
-    top: `${hotspot.y}%`,
-    width: `${hotspot.width}%`,
-    height: `${hotspot.height}%`,
+  const arrowSettings = introWithArrow.projectsArrow ?? {};
+  const arrowItem = {
+    key: "projects",
+    label: "Projects",
+    ...hotspot,
+    ...arrowSettings,
   };
 
   const zoomCenterX = hotspot.x + hotspot.width / 2;
@@ -124,15 +133,12 @@ export function GdcDiscoverProjectsStage({
             decoding="async"
           />
 
-          <button
-            type="button"
-            aria-label="نمایش توضیح Projects"
+          <GdcHotspotArrow
+            item={arrowItem}
             onClick={() => {
               setActiveTab(1);
               setZoomOpen(true);
             }}
-            className="absolute z-10 rounded-lg border-2 border-teal-400 bg-teal-300/10 shadow-[0_0_0_2px_rgba(255,255,255,0.55)] transition hover:bg-teal-300/20 focus:outline-none focus:ring-4 focus:ring-teal-200/60"
-            style={hotspotStyle}
           />
         </div>
       </div>
