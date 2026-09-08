@@ -8,8 +8,10 @@ import { GdcCohortBuilderIntroAdminEditor } from "@/features/data-resources/GdcC
 import { GdcDiscoverProjectsStageAdminEditor } from "@/features/data-resources/GdcDiscoverProjectsStageAdminEditor";
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
 import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProjectSummaryAdminEditor";
+import { GdcProjectSummaryArrowAdminEditor } from "@/features/data-resources/GdcProjectSummaryArrowAdminEditor";
 import { GdcQuestionGuideAdminEditor } from "@/features/data-resources/GdcQuestionGuideAdminEditor";
 import { GdcStudyDesignAdminEditor } from "@/features/data-resources/GdcStudyDesignAdminEditor";
+import { GdcStudyDesignArrowAdminEditor } from "@/features/data-resources/GdcStudyDesignArrowAdminEditor";
 import { VisualContentEditor } from "@/features/data-resources/VisualContentEditor";
 import {
   GDC_COHORT_BUILDER_FILTERS_CONTENT_KEY,
@@ -361,9 +363,13 @@ function ResourceToursAdmin() {
 
           <GdcStudyDesignAdminEditor config={guideConfig} onChange={setGuideConfig} onSave={handleGuideSave} />
 
+          <GdcStudyDesignArrowAdminEditor config={guideConfig} onChange={setGuideConfig} onSave={handleGuideSave} />
+
           <GdcProjectDecisionAdminEditor config={guideConfig} onChange={setGuideConfig} onSave={handleGuideSave} />
 
           <GdcProjectSummaryAdminEditor config={projectSummaryConfig} onChange={setProjectSummaryConfig} onSave={handleProjectSummarySave} />
+
+          <GdcProjectSummaryArrowAdminEditor config={projectSummaryConfig} onChange={setProjectSummaryConfig} onSave={handleProjectSummarySave} />
 
           <GdcCohortBuilderIntroAdminEditor config={cohortBuilderIntroConfig} onChange={setCohortBuilderIntroConfig} onSave={handleCohortBuilderIntroSave} />
 
