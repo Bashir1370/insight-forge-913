@@ -28,7 +28,7 @@ export function GdcHotspotArrow({
   };
 
   const arrowStyle = {
-    left: `calc(${item.x + item.width}% + 6px)`,
+    left: `calc(${item.x + item.width}% + 8px)`,
     top: `${item.y + item.height / 2}%`,
   };
 
@@ -51,7 +51,7 @@ export function GdcHotspotArrow({
           className="pointer-events-none absolute z-20 -translate-y-1/2"
         >
           <div className="gdc-hotspot-arrow-nudge text-red-600 drop-shadow-[0_1px_1px_rgba(255,255,255,.95)]">
-            <ArrowLeft className="h-10 w-10 sm:h-11 sm:w-11" strokeWidth={4} />
+            <ArrowLeft className="h-14 w-14 sm:h-16 sm:w-16" strokeWidth={4} />
           </div>
         </div>
       ) : null}
