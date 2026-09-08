@@ -1,5 +1,7 @@
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import "./gdc-hotspot-arrow.css";
 import type { EditableResourceHotspot } from "./resource-tour-model";
 
 function clamp(value: number, min: number, max: number) {
@@ -14,10 +16,12 @@ export function HotspotCanvasEditor({
   hotspots,
   imageUrl,
   onSave,
+  showArrowPreview = true,
 }: {
   hotspots: EditableResourceHotspot[];
   imageUrl?: string;
   onSave?: (items: EditableResourceHotspot[]) => void | Promise<void>;
+  showArrowPreview?: boolean;
 }) {
   const [items, setItems] = useState(hotspots);
   const [selected, setSelected] = useState<string | null>(null);
@@ -34,8 +38,9 @@ export function HotspotCanvasEditor({
     [items, selected],
   );
 
-  function startDrag(key: string, event: React.PointerEvent<HTMLDivElement>) {
+  function startDrag(key: string, event: React.PointerEvent<HTMLElement>) {
     event.preventDefault();
+    event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { key, x: event.clientX, y: event.clientY };
     resizeRef.current = null;
@@ -123,8 +128,8 @@ export function HotspotCanvasEditor({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-black text-slate-950">ویرایش بصری Hotspot</h3>
-          <p className="mt-1 text-xs text-slate-500">
-            باکس را بکشید؛ مربع گوشه پایین راست برای تغییر اندازه است.
+          <p className="mt-1 text-xs leading-6 text-slate-500">
+            باکس را بکشید؛ مربع گوشه پایین راست برای تغییر اندازه است. فلش قرمزِ Hotspot انتخاب‌شده هم پیش‌نمایش خروجی است و با کشیدن خود فلش یا باکس می‌توانید موقعیتش را دستی جابه‌جا کنید.
           </p>
         </div>
         <button
@@ -153,36 +158,53 @@ export function HotspotCanvasEditor({
           />
         ) : null}
 
-        {items.map((item) => (
-          <div
-            key={item.key}
-            role="button"
-            tabIndex={0}
-            aria-label={item.title}
-            onPointerDown={(event) => startDrag(item.key, event)}
-            onClick={() => setSelected(item.key)}
-            className={`absolute cursor-move select-none rounded-md border-2 border-dashed text-[10px] font-black shadow-sm transition ${
-              selected === item.key
-                ? "z-20 border-teal-500 bg-teal-400/20 ring-4 ring-teal-300/50"
-                : "z-10 border-sky-500 bg-sky-400/10 hover:border-teal-400"
-            }`}
-            style={{
-              left: `${item.x}%`,
-              top: `${item.y}%`,
-              width: `${item.width}%`,
-              height: `${item.height}%`,
-            }}
-          >
-            <span className="absolute left-1 top-1 rounded bg-slate-950/85 px-1.5 py-0.5 text-white">
-              {item.step}. {item.title}
-            </span>
-            <span
-              onPointerDown={(event) => startResize(item.key, event)}
-              className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize rounded-tl bg-teal-600 shadow"
-              title="تغییر اندازه"
-            />
-          </div>
-        ))}
+        {items.map((item) => {
+          const isSelected = selected === item.key;
+          return (
+            <div
+              key={item.key}
+              role="button"
+              tabIndex={0}
+              aria-label={item.title}
+              onPointerDown={(event) => startDrag(item.key, event)}
+              onClick={() => setSelected(item.key)}
+              className={`absolute cursor-move select-none rounded-md border-2 border-dashed text-[10px] font-black shadow-sm transition ${
+                isSelected
+                  ? "z-20 border-teal-500 bg-teal-400/20 ring-4 ring-teal-300/50"
+                  : "z-10 border-sky-500 bg-sky-400/10 hover:border-teal-400"
+              }`}
+              style={{
+                left: `${item.x}%`,
+                top: `${item.y}%`,
+                width: `${item.width}%`,
+                height: `${item.height}%`,
+              }}
+            >
+              <span className="absolute left-1 top-1 rounded bg-slate-950/85 px-1.5 py-0.5 text-white">
+                {item.step}. {item.title}
+              </span>
+
+              {showArrowPreview && isSelected ? (
+                <span
+                  aria-label="جابجایی فلش قرمز"
+                  title="برای جابه‌جایی فلش بکشید"
+                  onPointerDown={(event) => startDrag(item.key, event)}
+                  className="absolute left-full top-1/2 z-30 ml-2 -translate-y-1/2 cursor-move text-red-600 drop-shadow-[0_1px_1px_rgba(255,255,255,.95)]"
+                >
+                  <span className="gdc-hotspot-arrow-nudge block">
+                    <ArrowLeft className="h-14 w-14 sm:h-16 sm:w-16" strokeWidth={4} />
+                  </span>
+                </span>
+              ) : null}
+
+              <span
+                onPointerDown={(event) => startResize(item.key, event)}
+                className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize rounded-tl bg-teal-600 shadow"
+                title="تغییر اندازه"
+              />
+            </div>
+          );
+        })}
       </div>
 
       {selectedItem ? (
@@ -207,9 +229,14 @@ export function HotspotCanvasEditor({
               </label>
             ))}
           </div>
+          {showArrowPreview ? (
+            <p className="mt-3 text-right text-xs leading-6 text-slate-500" dir="rtl">
+              موقعیت فلش خروجی به همین Hotspot متصل است؛ با تغییر X/Y یا Drag کردن فلش، محل فلش هم در صفحه آموزش تغییر می‌کند.
+            </p>
+          ) : null}
         </div>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">برای تنظیم دقیق عددی، یک Hotspot را انتخاب کنید.</p>
+        <p className="mt-3 text-sm text-slate-500">برای تنظیم دقیق عددی و دیدن فلش قرمز، یک Hotspot را انتخاب کنید.</p>
       )}
     </div>
   );
