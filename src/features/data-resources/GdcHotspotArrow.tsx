@@ -1,4 +1,5 @@
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp } from "lucide-react";
+import { useState } from "react";
 
 import "./gdc-hotspot-arrow.css";
 
@@ -72,11 +73,15 @@ export function GdcHotspotArrow({
   item,
   onClick,
   showArrow = true,
+  revealOnHover = false,
 }: {
   item: GdcHotspotArrowGeometry;
   onClick?: () => void;
   showArrow?: boolean;
+  revealOnHover?: boolean;
 }) {
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const direction = item.arrowDirection ?? "left";
   const size = Math.max(28, Math.min(120, item.arrowSize ?? DEFAULT_GDC_HOTSPOT_ARROW_SIZE));
   const targetStyle = {
@@ -85,6 +90,7 @@ export function GdcHotspotArrow({
     width: `${item.width}%`,
     height: `${item.height}%`,
   };
+  const arrowVisible = showArrow && (!revealOnHover || hovered || focused);
 
   return (
     <>
@@ -92,13 +98,17 @@ export function GdcHotspotArrow({
         type="button"
         aria-label={`نمایش توضیح ${item.label}`}
         onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         style={targetStyle}
         className="absolute z-10 cursor-pointer rounded-md bg-transparent outline-none transition focus:ring-2 focus:ring-red-300/70"
       >
         <span className="sr-only">{item.label}</span>
       </button>
 
-      {showArrow ? (
+      {arrowVisible ? (
         <div
           aria-hidden="true"
           data-direction={direction}
