@@ -31,13 +31,16 @@ export function GdcCohortBuilderFiltersStage({
   const [activeIndex, setActiveIndex] = useState(0);
   const slides = config.slides;
   const activeSlide = slides[activeIndex] ?? slides[0] ?? null;
-  const activeHotspot = useMemo(
-    () =>
-      activeSlide
-        ? config.hotspots.find((item) => item.key === activeSlide.hotspotKey) ?? null
-        : null,
-    [activeSlide, config.hotspots],
-  );
+
+  const activeHotspots = useMemo(() => {
+    if (!activeSlide) return [];
+
+    return config.hotspots.filter((item) => {
+      if (item.enabled === false) return false;
+      if (item.slideKeys?.length) return item.slideKeys.includes(activeSlide.key);
+      return item.key === activeSlide.hotspotKey;
+    });
+  }, [activeSlide, config.hotspots]);
 
   function goNext() {
     if (activeIndex < slides.length - 1) {
@@ -65,18 +68,21 @@ export function GdcCohortBuilderFiltersStage({
             </div>
           )}
 
-          {config.imageUrl && activeHotspot ? (
-            <button
-              type="button"
-              aria-label={`بخش ${activeHotspot.label}`}
-              style={hotspotStyle(activeHotspot)}
-              className="group absolute z-10 rounded-lg border-2 border-teal-400 bg-teal-300/10 shadow-[0_0_0_2px_rgba(255,255,255,.62)] transition hover:bg-teal-300/20 focus:outline-none focus:ring-4 focus:ring-teal-200/60"
-            >
-              <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-950/90 px-2 py-1 text-[9px] font-black text-white shadow-lg group-hover:block">
-                {activeHotspot.label}
-              </span>
-            </button>
-          ) : null}
+          {config.imageUrl
+            ? activeHotspots.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  aria-label={`بخش ${item.label}`}
+                  style={hotspotStyle(item)}
+                  className="group absolute z-10 rounded-lg border-2 border-teal-400 bg-teal-300/10 shadow-[0_0_0_2px_rgba(255,255,255,.62)] transition hover:bg-teal-300/20 focus:outline-none focus:ring-4 focus:ring-teal-200/60"
+                >
+                  <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-950/90 px-2 py-1 text-[9px] font-black text-white shadow-lg group-hover:block">
+                    {item.label}
+                  </span>
+                </button>
+              ))
+            : null}
         </div>
       </div>
 
