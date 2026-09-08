@@ -1,9 +1,18 @@
 import { Crosshair, ImageIcon, Save } from "lucide-react";
 
+import {
+  type GdcHotspotArrowSettings,
+} from "./GdcHotspotArrow";
 import { HotspotCanvasEditor } from "./HotspotCanvasEditor";
 import { VisualAssetEditor } from "./VisualAssetEditor";
 import type { GdcQuestionGuideConfig } from "./gdc-question-guide-config";
 import type { EditableResourceHotspot } from "./resource-tour-model";
+
+type IntroWithProjectsArrow = GdcQuestionGuideConfig["intro"] & {
+  projectsArrow?: GdcHotspotArrowSettings;
+};
+
+type EditableHotspotWithArrow = EditableResourceHotspot & GdcHotspotArrowSettings;
 
 function Input({
   label,
@@ -69,6 +78,11 @@ export function GdcDiscoverProjectsStageAdminEditor({
 }) {
   const projectHotspot = hotspots.find((item) => item.key === "projects");
   const intro = config.intro;
+  const introWithArrow = intro as IntroWithProjectsArrow;
+  const projectsArrow = introWithArrow.projectsArrow ?? {};
+  const editableProjectHotspot = projectHotspot
+    ? ({ ...projectHotspot, ...projectsArrow } as EditableHotspotWithArrow)
+    : null;
 
   function updateIntro<K extends keyof GdcQuestionGuideConfig["intro"]>(
     key: K,
@@ -90,7 +104,7 @@ export function GdcDiscoverProjectsStageAdminEditor({
           <div className="text-xs font-black text-cyan-700">سؤال ۱ · مرحله ۱ · پیدا کردن محدوده داده‌ها</div>
           <h2 className="mt-1 text-2xl font-black text-slate-950">Discover Projects Stage Editor</h2>
           <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
-            تمام اجزای مرحله اول در یک محل مدیریت می‌شوند: متن Inspector، اسکرین‌شات واقعی GDC و محدوده قابل کلیک Projects.
+            تمام اجزای مرحله اول در یک محل مدیریت می‌شوند: متن Inspector، اسکرین‌شات واقعی GDC، محدوده قابل کلیک Projects و خود فلش قرمز.
           </p>
         </div>
         <button
@@ -217,21 +231,46 @@ export function GdcDiscoverProjectsStageAdminEditor({
             <ImageIcon className="h-3.5 w-3.5" /> تصویر مرحله ۱
           </span>
           <span className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1.5 text-teal-700">
-            <Crosshair className="h-3.5 w-3.5" /> Projects Hotspot
+            <Crosshair className="h-3.5 w-3.5" /> Projects Hotspot + Arrow
           </span>
         </div>
 
-        {projectHotspot ? (
+        {editableProjectHotspot ? (
           <HotspotCanvasEditor
             imageUrl={imageUrl}
-            hotspots={[projectHotspot]}
+            hotspots={[editableProjectHotspot]}
             onSave={async (editedItems) => {
-              const edited = editedItems[0];
+              const edited = editedItems[0] as EditableHotspotWithArrow | undefined;
               if (!edited) return;
-              const merged = hotspots.map((item) =>
-                item.key === "projects" ? { ...item, ...edited } : item,
+
+              const mergedHotspots = hotspots.map((item) =>
+                item.key === "projects"
+                  ? {
+                      ...item,
+                      x: edited.x,
+                      y: edited.y,
+                      width: edited.width,
+                      height: edited.height,
+                    }
+                  : item,
               );
-              await onHotspotsSave(merged);
+
+              const nextIntro = {
+                ...config.intro,
+                projectsArrow: {
+                  arrowDirection: edited.arrowDirection ?? "left",
+                  arrowSize: edited.arrowSize ?? 64,
+                  arrowOffsetX: edited.arrowOffsetX ?? 0,
+                  arrowOffsetY: edited.arrowOffsetY ?? 0,
+                },
+              } as IntroWithProjectsArrow;
+              const nextConfig = { ...config, intro: nextIntro as GdcQuestionGuideConfig["intro"] };
+
+              onChange(nextConfig);
+              await Promise.all([
+                onHotspotsSave(mergedHotspots),
+                onGuideSave(nextConfig),
+              ]);
             }}
           />
         ) : (
