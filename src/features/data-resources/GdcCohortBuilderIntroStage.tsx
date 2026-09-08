@@ -1,20 +1,9 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import type {
-  GdcCohortBuilderIntroConfig,
-  GdcCohortBuilderIntroHotspot,
-} from "./gdc-cohort-builder-intro-config";
+import { GdcHotspotArrow } from "./GdcHotspotArrow";
+import type { GdcCohortBuilderIntroConfig } from "./gdc-cohort-builder-intro-config";
 import { useGdcCohortBuilderIntroImage } from "./gdc-cohort-builder-intro-image";
-
-function hotspotStyle(item: GdcCohortBuilderIntroHotspot) {
-  return {
-    left: `${item.x}%`,
-    top: `${item.y}%`,
-    width: `${item.width}%`,
-    height: `${item.height}%`,
-  };
-}
 
 export function GdcCohortBuilderIntroStage({
   config,
@@ -60,27 +49,14 @@ export function GdcCohortBuilderIntroStage({
           )}
 
           {screenshot && activeTab === 2
-            ? hotspots.map((item) => {
-                const selected = selectedHotspot === item.key;
-                return (
-                  <button
-                    key={item.key}
-                    type="button"
-                    aria-label={`نمایش توضیح ${item.label}`}
-                    onClick={() => setSelectedHotspot(item.key)}
-                    className={`group absolute z-10 rounded-lg border-2 transition focus:outline-none focus:ring-4 focus:ring-teal-200/60 ${
-                      selected
-                        ? "border-teal-400 bg-teal-300/12 shadow-[0_0_0_2px_rgba(255,255,255,.55)]"
-                        : "border-teal-300/65 bg-teal-300/5 hover:border-teal-400 hover:bg-teal-300/12"
-                    }`}
-                    style={hotspotStyle(item)}
-                  >
-                    <span className="pointer-events-none absolute left-1/2 top-full mt-1 hidden -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950/90 px-2 py-1 text-[9px] font-black text-white shadow-lg group-hover:block">
-                      {item.label}
-                    </span>
-                  </button>
-                );
-              })
+            ? hotspots.map((item) => (
+                <GdcHotspotArrow
+                  key={item.key}
+                  item={item}
+                  showArrow={selectedHotspot === item.key}
+                  onClick={() => setSelectedHotspot(item.key)}
+                />
+              ))
             : null}
         </div>
       </div>
