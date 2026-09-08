@@ -11,7 +11,11 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-import type { GdcFacetId, GdcGuideHotspot } from "./gdc-question-guide-config";
+import {
+  GdcHotspotArrow,
+  type GdcHotspotArrowSettings,
+} from "./GdcHotspotArrow";
+import type { GdcFacetId } from "./gdc-question-guide-config";
 import type { GdcStudyDesignConfig, GdcStudyTaskConfig } from "./gdc-study-design-config";
 
 const PROJECT_PARTS = Array.from(
@@ -28,6 +32,9 @@ const FALLBACK_SCREENSHOT_PATHS: Record<GdcFacetId, string> = {
 };
 
 type Confidence = "low" | "medium" | "high";
+type StudyWithArrowSettings = GdcStudyDesignConfig & {
+  hotspotArrowSettings?: Record<string, GdcHotspotArrowSettings>;
+};
 
 const PERSIAN_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"] as const;
 
@@ -35,13 +42,8 @@ function faDigits(value: string | number) {
   return String(value).replace(/\d/g, (digit) => PERSIAN_DIGITS[Number(digit)] ?? digit);
 }
 
-function hotspotStyle(item: GdcGuideHotspot) {
-  return {
-    left: `${item.x}%`,
-    top: `${item.y}%`,
-    width: `${item.width}%`,
-    height: `${item.height}%`,
-  };
+function arrowSettingsKey(scope: string, hotspotKey: string) {
+  return `${scope}:${hotspotKey}`;
 }
 
 function useFallbackImages() {
@@ -124,6 +126,8 @@ export function GdcStudyDesignStageManaged({
     ? latestTask.imageUrl || fallback.steps[latestTask.id] || config.baselineImageUrl || fallback.baseline
     : config.baselineImageUrl || fallback.baseline;
   const currentHotspots = latestTask?.hotspots ?? config.baselineHotspots;
+  const currentHotspotScope = latestTask?.id ?? "baseline";
+  const arrowSettingsMap = (config as StudyWithArrowSettings).hotspotArrowSettings ?? {};
   const visibleProjectCount = latestTask?.projectCount ?? config.initialProjectCount;
   const revealedTasks = tasks.slice(0, completedPrefix);
 
@@ -224,17 +228,39 @@ export function GdcStudyDesignStageManaged({
               </div>
             )}
 
-            {currentImage ? currentHotspots.map((hotspot) => (
-              <div
-                key={hotspot.key}
-                className="pointer-events-none absolute rounded-md border-[3px] border-teal-400 bg-teal-300/15 shadow-sm"
-                style={hotspotStyle(hotspot)}
-              >
-                <span className="absolute left-1 top-1 max-w-[90%] rounded bg-slate-950/90 px-2 py-1 text-[10px] font-black text-white shadow" dir="rtl">
-                  {faDigits(hotspot.title)}
-                </span>
-              </div>
-            )) : null}
+            {currentImage
+              ? currentHotspots.map((hotspot) => {
+                  const directSettings = hotspot as typeof hotspot & GdcHotspotArrowSettings;
+                  const savedSettings =
+                    arrowSettingsMap[arrowSettingsKey(currentHotspotScope, hotspot.key)] ?? {};
+                  const matchingTaskIndex = tasks.findIndex((task) => task.id === hotspot.key);
+                  return (
+                    <GdcHotspotArrow
+                      key={hotspot.key}
+                      item={{
+                        key: hotspot.key,
+                        label: faDigits(hotspot.title),
+                        x: hotspot.x,
+                        y: hotspot.y,
+                        width: hotspot.width,
+                        height: hotspot.height,
+                        arrowDirection:
+                          savedSettings.arrowDirection ?? directSettings.arrowDirection,
+                        arrowSize: savedSettings.arrowSize ?? directSettings.arrowSize,
+                        arrowOffsetX:
+                          savedSettings.arrowOffsetX ?? directSettings.arrowOffsetX,
+                        arrowOffsetY:
+                          savedSettings.arrowOffsetY ?? directSettings.arrowOffsetY,
+                      }}
+                      onClick={
+                        matchingTaskIndex >= 0 && matchingTaskIndex <= completedPrefix
+                          ? () => openTask(matchingTaskIndex)
+                          : undefined
+                      }
+                    />
+                  );
+                })
+              : null}
           </div>
 
           <div className="border-t bg-slate-50 px-4 py-3" dir="rtl">
