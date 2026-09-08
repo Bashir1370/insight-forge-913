@@ -9,6 +9,10 @@ export type GdcCohortBuilderFiltersHotspot = {
   height: number;
   enabled: boolean;
   slideKeys: string[];
+  arrowDirection?: "left" | "right" | "up" | "down";
+  arrowSize?: number;
+  arrowOffsetX?: number;
+  arrowOffsetY?: number;
 };
 
 export type GdcCohortBuilderFiltersSlide = {
@@ -66,6 +70,10 @@ const hotspot = (
   height,
   enabled: true,
   slideKeys,
+  arrowDirection: "left",
+  arrowSize: 64,
+  arrowOffsetX: 0,
+  arrowOffsetY: 0,
 });
 
 export const DEFAULT_GDC_COHORT_BUILDER_FILTERS_CONFIG: GdcCohortBuilderFiltersConfig = {
@@ -229,6 +237,15 @@ function stringArrayOr(value: unknown, fallback: string[]) {
     : fallback;
 }
 
+function arrowDirectionOr(
+  value: unknown,
+  fallback: GdcCohortBuilderFiltersHotspot["arrowDirection"],
+): GdcCohortBuilderFiltersHotspot["arrowDirection"] {
+  return value === "left" || value === "right" || value === "up" || value === "down"
+    ? value
+    : fallback;
+}
+
 function normalizeSlide(
   value: any,
   fallback: GdcCohortBuilderFiltersSlide,
@@ -257,6 +274,10 @@ function normalizeHotspot(
     height: numberOr(value?.height, fallback.height),
     enabled: booleanOr(value?.enabled, fallback.enabled),
     slideKeys: stringArrayOr(value?.slideKeys, fallback.slideKeys),
+    arrowDirection: arrowDirectionOr(value?.arrowDirection, fallback.arrowDirection ?? "left"),
+    arrowSize: numberOr(value?.arrowSize, fallback.arrowSize ?? 64),
+    arrowOffsetX: numberOr(value?.arrowOffsetX, fallback.arrowOffsetX ?? 0),
+    arrowOffsetY: numberOr(value?.arrowOffsetY, fallback.arrowOffsetY ?? 0),
   };
 }
 
