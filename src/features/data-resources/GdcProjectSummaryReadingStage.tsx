@@ -13,20 +13,19 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import {
+  GdcHotspotArrow,
+  type GdcHotspotArrowSettings,
+} from "./GdcHotspotArrow";
 import { useGdcProjectSummaryConfig } from "./GdcProjectSummaryContext";
 import type {
   GdcProjectSummaryConfig,
   GdcProjectSummaryHotspot,
 } from "./gdc-project-summary-config";
 
-function hotspotStyle(item: GdcProjectSummaryHotspot) {
-  return {
-    left: `${item.x}%`,
-    top: `${item.y}%`,
-    width: `${item.width}%`,
-    height: `${item.height}%`,
-  };
-}
+type ProjectSummaryWithArrowSettings = GdcProjectSummaryConfig & {
+  hotspotArrowSettings?: Record<string, GdcHotspotArrowSettings>;
+};
 
 function HotspotIcon({ hotspotKey }: { hotspotKey: string }) {
   if (hotspotKey === "save-cohort") return <Users className="h-5 w-5" />;
@@ -93,6 +92,8 @@ export function GdcProjectSummaryReadingStage({
 }) {
   const managedConfig = useGdcProjectSummaryConfig();
   const config = configProp ?? managedConfig;
+  const arrowSettingsMap =
+    (config as ProjectSummaryWithArrowSettings).hotspotArrowSettings ?? {};
   const [activeSlide, setActiveSlide] = useState(0);
   const [showAnswer, setShowAnswer] = useState(false);
 
@@ -144,7 +145,7 @@ export function GdcProjectSummaryReadingStage({
                 <div className="text-xs font-black text-teal-700">{config.mapEyebrow}</div>
                 <div className="mt-1 text-sm font-bold text-slate-600">{config.mapInstruction}</div>
                 <div className="mt-1 text-[10px] font-bold text-slate-400">
-                  نشانگر را روی بخش موردنظر ببرید؛ Hotspot فقط همان لحظه ظاهر می‌شود و با کلیک، توضیح آن باز می‌شود.
+                  نشانگر را روی بخش موردنظر ببرید؛ فلش همان لحظه ظاهر می‌شود و با کلیک، توضیح آن باز می‌شود.
                 </div>
               </div>
               {config.badge ? (
@@ -171,20 +172,32 @@ export function GdcProjectSummaryReadingStage({
             )}
 
             {config.imageUrl
-              ? config.hotspots.map((item) => (
-                  <button
-                    key={item.key}
-                    type="button"
-                    aria-label={`توضیح ${item.label}`}
-                    onClick={() => openHotspot(item.key)}
-                    style={hotspotStyle(item)}
-                    className="group absolute z-10 rounded-lg border-[3px] border-transparent bg-transparent transition hover:z-20 hover:border-teal-400 hover:bg-teal-300/12 hover:shadow-[0_0_0_2px_rgba(255,255,255,.75)] focus:z-20 focus:border-teal-400 focus:bg-teal-300/12 focus:outline-none focus:ring-4 focus:ring-teal-200/50"
-                  >
-                    <span className="pointer-events-none absolute left-1 top-1 max-w-[90%] translate-y-1 rounded-md bg-slate-950/90 px-2 py-1 text-[10px] font-black text-white opacity-0 shadow transition group-hover:translate-y-0 group-hover:opacity-100 group-focus:translate-y-0 group-focus:opacity-100" dir="ltr">
-                      {item.label}
-                    </span>
-                  </button>
-                ))
+              ? config.hotspots.map((item) => {
+                  const directSettings = item as GdcProjectSummaryHotspot & GdcHotspotArrowSettings;
+                  const savedSettings = arrowSettingsMap[item.key] ?? {};
+                  return (
+                    <GdcHotspotArrow
+                      key={item.key}
+                      item={{
+                        key: item.key,
+                        label: item.label,
+                        x: item.x,
+                        y: item.y,
+                        width: item.width,
+                        height: item.height,
+                        arrowDirection:
+                          savedSettings.arrowDirection ?? directSettings.arrowDirection,
+                        arrowSize: savedSettings.arrowSize ?? directSettings.arrowSize,
+                        arrowOffsetX:
+                          savedSettings.arrowOffsetX ?? directSettings.arrowOffsetX,
+                        arrowOffsetY:
+                          savedSettings.arrowOffsetY ?? directSettings.arrowOffsetY,
+                      }}
+                      revealOnHover
+                      onClick={() => openHotspot(item.key)}
+                    />
+                  );
+                })
               : null}
           </div>
         </div>
@@ -246,7 +259,7 @@ export function GdcProjectSummaryReadingStage({
                 <div className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
                   <div className="text-xs font-black text-slate-700">چطور این صفحه را بخوانیم؟</div>
                   <p className="mt-2 text-xs leading-6 text-slate-500">
-                    از خود تصویر استفاده کنید: روی هر بخش بروید تا محدوده آن مشخص شود و سپس کلیک کنید تا توضیح همان بخش در این پنل نمایش داده شود.
+                    از خود تصویر استفاده کنید: روی هر بخش بروید تا فلش همان ناحیه ظاهر شود و سپس کلیک کنید تا توضیح همان بخش در این پنل نمایش داده شود.
                   </p>
                 </div>
               </div>
