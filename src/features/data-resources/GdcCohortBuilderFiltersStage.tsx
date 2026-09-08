@@ -1,19 +1,8 @@
 import { ChevronLeft, ChevronRight, Info, Lightbulb, TriangleAlert } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import type {
-  GdcCohortBuilderFiltersConfig,
-  GdcCohortBuilderFiltersHotspot,
-} from "./gdc-cohort-builder-filters-config";
-
-function hotspotStyle(item: GdcCohortBuilderFiltersHotspot) {
-  return {
-    left: `${item.x}%`,
-    top: `${item.y}%`,
-    width: `${item.width}%`,
-    height: `${item.height}%`,
-  };
-}
+import { GdcHotspotArrow } from "./GdcHotspotArrow";
+import type { GdcCohortBuilderFiltersConfig } from "./gdc-cohort-builder-filters-config";
 
 export function GdcCohortBuilderFiltersStage({
   config,
@@ -70,17 +59,7 @@ export function GdcCohortBuilderFiltersStage({
 
           {config.imageUrl
             ? activeHotspots.map((item) => (
-                <button
-                  key={item.key}
-                  type="button"
-                  aria-label={`بخش ${item.label}`}
-                  style={hotspotStyle(item)}
-                  className="group absolute z-10 rounded-lg border-2 border-teal-400 bg-teal-300/10 shadow-[0_0_0_2px_rgba(255,255,255,.62)] transition hover:bg-teal-300/20 focus:outline-none focus:ring-4 focus:ring-teal-200/60"
-                >
-                  <span className="pointer-events-none absolute left-full top-1/2 ml-2 hidden -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-950/90 px-2 py-1 text-[9px] font-black text-white shadow-lg group-hover:block">
-                    {item.label}
-                  </span>
-                </button>
+                <GdcHotspotArrow key={item.key} item={item} />
               ))
             : null}
         </div>
