@@ -24,9 +24,25 @@ export function GdcResourcePage() {
   useEffect(() => {
     let active = true;
 
-    loadResourceTour("gdc").then((data) => {
+    async function refreshResource() {
+      const data = await loadResourceTour("gdc");
       if (active) setResource(data);
-    });
+    }
+
+    void refreshResource();
+
+    function handleFocus() {
+      void refreshResource();
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void refreshResource();
+      }
+    }
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     async function checkAdmin() {
       const {
@@ -44,10 +60,12 @@ export function GdcResourcePage() {
       if (active) setIsAdmin(Boolean(role));
     }
 
-    checkAdmin();
+    void checkAdmin();
 
     return () => {
       active = false;
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
