@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { GdcCohortBuilderFiltersAdminEditor } from "@/features/data-resources/GdcCohortBuilderFiltersAdminEditor";
 import { GdcCohortBuilderIntroAdminEditor } from "@/features/data-resources/GdcCohortBuilderIntroAdminEditor";
+import { GdcCohortFieldGuideAdminEditor } from "@/features/data-resources/GdcCohortFieldGuideAdminEditor";
 import { GdcDiscoverProjectsStageAdminEditor } from "@/features/data-resources/GdcDiscoverProjectsStageAdminEditor";
 import { GdcProjectDecisionAdminEditor } from "@/features/data-resources/GdcProjectDecisionAdminEditor";
 import { GdcProjectSummaryAdminEditor } from "@/features/data-resources/GdcProjectSummaryAdminEditor";
@@ -25,6 +26,12 @@ import {
   toGdcCohortBuilderIntroContent,
   type GdcCohortBuilderIntroConfig,
 } from "@/features/data-resources/gdc-cohort-builder-intro-config";
+import {
+  GDC_COHORT_FIELD_GUIDE_CONTENT_KEY,
+  getGdcCohortFieldGuideConfig,
+  toGdcCohortFieldGuideContent,
+  type GdcCohortFieldGuideConfig,
+} from "@/features/data-resources/gdc-cohort-field-guide-config";
 import {
   GDC_PROJECT_SUMMARY_CONTENT_KEY,
   getGdcProjectSummaryConfig,
@@ -114,6 +121,9 @@ function ResourceToursAdmin() {
   const [cohortBuilderFiltersConfig, setCohortBuilderFiltersConfig] = useState<GdcCohortBuilderFiltersConfig>(() =>
     getGdcCohortBuilderFiltersConfig([]),
   );
+  const [cohortFieldGuideConfig, setCohortFieldGuideConfig] = useState<GdcCohortFieldGuideConfig>(() =>
+    getGdcCohortFieldGuideConfig([]),
+  );
   const [loading, setLoading] = useState(true);
   const [warning, setWarning] = useState<string | null>(null);
 
@@ -122,6 +132,7 @@ function ResourceToursAdmin() {
     setProjectSummaryConfig(getGdcProjectSummaryConfig(saved));
     setCohortBuilderIntroConfig(getGdcCohortBuilderIntroConfig(saved));
     setCohortBuilderFiltersConfig(getGdcCohortBuilderFiltersConfig(saved));
+    setCohortFieldGuideConfig(getGdcCohortFieldGuideConfig(saved));
   }
 
   useEffect(() => {
@@ -198,11 +209,13 @@ function ResourceToursAdmin() {
       const projectSummaryBlock = toGdcProjectSummaryContent(projectSummaryConfig);
       const cohortBuilderIntroBlock = toGdcCohortBuilderIntroContent(cohortBuilderIntroConfig);
       const cohortBuilderFiltersBlock = toGdcCohortBuilderFiltersContent(cohortBuilderFiltersConfig);
+      const cohortFieldGuideBlock = toGdcCohortFieldGuideContent(cohortFieldGuideConfig);
       const managedKeys = [
         guideBlock.key,
         projectSummaryBlock.key,
         cohortBuilderIntroBlock.key,
         cohortBuilderFiltersBlock.key,
+        cohortFieldGuideBlock.key,
       ];
       const merged = [
         ...nextContent.filter((item) => !managedKeys.includes(item.key)),
@@ -210,6 +223,7 @@ function ResourceToursAdmin() {
         projectSummaryBlock,
         cohortBuilderIntroBlock,
         cohortBuilderFiltersBlock,
+        cohortFieldGuideBlock,
       ];
       const saved = await saveResourceContent(
         RESOURCE_SLUG,
@@ -325,6 +339,30 @@ function ResourceToursAdmin() {
     }
   }
 
+  async function handleCohortFieldGuideSave(nextConfig: GdcCohortFieldGuideConfig) {
+    try {
+      const fieldGuideBlock = toGdcCohortFieldGuideContent(nextConfig);
+      const merged = [
+        ...content.filter((item) => item.key !== fieldGuideBlock.key),
+        fieldGuideBlock,
+      ];
+      const saved = await saveResourceContent(
+        RESOURCE_SLUG,
+        RESOURCE_TITLE,
+        imageUrl,
+        merged,
+      );
+      setContent(saved);
+      syncManagedConfigs(saved);
+      setWarning(null);
+      toast.success("سؤال ۲ · مرحله ۳ ذخیره شد.");
+    } catch (error) {
+      console.error(error);
+      toast.error("ذخیره سؤال ۲ · مرحله ۳ انجام نشد.");
+      throw error;
+    }
+  }
+
   if (loading) {
     return (
       <main className="flex min-h-[70vh] items-center justify-center gap-2 bg-slate-50" dir="rtl">
@@ -375,13 +413,16 @@ function ResourceToursAdmin() {
 
           <GdcCohortBuilderFiltersAdminEditor config={cohortBuilderFiltersConfig} onChange={setCohortBuilderFiltersConfig} onSave={handleCohortBuilderFiltersSave} />
 
+          <GdcCohortFieldGuideAdminEditor config={cohortFieldGuideConfig} onChange={setCohortFieldGuideConfig} onSave={handleCohortFieldGuideSave} />
+
           <VisualContentEditor
             items={content.filter(
               (item) =>
                 item.key !== GDC_QUESTION_GUIDE_CONTENT_KEY &&
                 item.key !== GDC_PROJECT_SUMMARY_CONTENT_KEY &&
                 item.key !== GDC_COHORT_BUILDER_INTRO_CONTENT_KEY &&
-                item.key !== GDC_COHORT_BUILDER_FILTERS_CONTENT_KEY,
+                item.key !== GDC_COHORT_BUILDER_FILTERS_CONTENT_KEY &&
+                item.key !== GDC_COHORT_FIELD_GUIDE_CONTENT_KEY,
             )}
             onSave={handleContentSave}
           />
