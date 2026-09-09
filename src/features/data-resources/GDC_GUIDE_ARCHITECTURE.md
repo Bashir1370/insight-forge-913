@@ -60,9 +60,22 @@ Question 2 owns its navigation in `GdcQuestionTwoGuide.tsx` and continues from P
    - Default screenshot: `public/images/gdc/gdc-cohort-builder-filters.webp`
    - Owns: all left-sidebar Cohort Builder categories, one slide per category, and one stage-scoped hotspot per active slide.
 
-### Question 2 hotspot rule
+3. **Learn the fields inside each Cohort Builder category**
+   - UI: `GdcCohortFieldGuideStage.tsx`
+   - Admin: `GdcCohortFieldGuideAdminEditor.tsx`
+   - Config: `gdc-cohort-field-guide-config.ts`
+   - Context: `GdcCohortFieldGuideContext.tsx`
+   - Default General screenshot: reuses `public/images/gdc/gdc-cohort-builder-filters.webp` until replaced from the editor.
+   - Owns: right-side category tabs, one or more vertically stacked screenshots per category, a delayed spotlight tutorial, and short hover/click explanations on filter titles.
+   - The first implemented category is `General`, with Program, Project, Disease Type, Primary Diagnosis, Primary Site, Tissue or Organ of Origin, and Case ID.
 
-Runtime hotspots are contextual. A hotspot is shown only on the slide that teaches that exact area of the GDC screenshot. The admin editor can still display/edit all hotspots at once for positioning.
+### Question 2 interaction rules
+
+- Stage 2 hotspots are contextual: a hotspot is shown only on the slide that teaches that exact sidebar category.
+- Stage 3 filter-title targets remain visually quiet until the learner hovers/focuses/clicks them.
+- When a Stage 3 category is opened for the first time, after about two seconds the configured spotlight field is isolated while the rest of the screenshot is dimmed and a short interaction instruction appears.
+- Stage 3 supports multiple screenshots stacked vertically inside one category for categories with many filters.
+- Admin editors must remain the source of truth for screenshots, filter descriptions, clickable title geometry, and spotlight geometry.
 
 ## Page and data wrappers
 
@@ -92,5 +105,6 @@ New functionality should live in the component that owns the concept, for exampl
 - Question 1 Stage 5 change → `GdcProjectSummaryReadingStage.tsx` / `GdcProjectSummaryAdminEditor.tsx`
 - Question 2 Stage 1 change → `GdcCohortBuilderIntroStage.tsx` / `GdcCohortBuilderIntroAdminEditor.tsx`
 - Question 2 Stage 2 change → `GdcCohortBuilderFiltersStage.tsx` / `GdcCohortBuilderFiltersAdminEditor.tsx`
+- Question 2 Stage 3 change → `GdcCohortFieldGuideStage.tsx` / `GdcCohortFieldGuideAdminEditor.tsx`
 
 Avoid MutationObserver/DOM patching for stage UI. Implement interaction directly in React state/components.
