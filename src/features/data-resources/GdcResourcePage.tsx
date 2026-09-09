@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GdcQuestionGuidePage } from "./GdcQuestionGuidePage";
 import { getGdcCohortBuilderFiltersConfig } from "./gdc-cohort-builder-filters-config";
 import { getGdcCohortBuilderIntroConfig } from "./gdc-cohort-builder-intro-config";
+import { getGdcCohortFieldGuideConfig } from "./gdc-cohort-field-guide-config";
 import { upgradeLegacyProgramFacet } from "./gdc-program-facet-upgrade";
 import { getGdcProjectSummaryConfig } from "./gdc-project-summary-config";
 import { getGdcQuestionGuideConfig } from "./gdc-question-guide-config";
@@ -68,6 +69,7 @@ export function GdcResourcePage() {
       projectSummaryConfig: getGdcProjectSummaryConfig(blocks),
       cohortBuilderIntroConfig: getGdcCohortBuilderIntroConfig(blocks),
       cohortBuilderFiltersConfig: getGdcCohortBuilderFiltersConfig(blocks),
+      cohortFieldGuideConfig: getGdcCohortFieldGuideConfig(blocks),
     };
   }, [resource]);
 
@@ -91,6 +93,7 @@ export function GdcResourcePage() {
         projectSummaryConfig={content.projectSummaryConfig}
         cohortBuilderIntroConfig={content.cohortBuilderIntroConfig}
         cohortBuilderFiltersConfig={content.cohortBuilderFiltersConfig}
+        cohortFieldGuideConfig={content.cohortFieldGuideConfig}
       />
     </div>
   );
