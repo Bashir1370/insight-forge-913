@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Info, MousePointer2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, MousePointer2, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
@@ -245,6 +245,13 @@ export function GdcCohortFieldGuideStage({
     setSpotlight(null);
     if (!activeTab || introducedTabs.current.has(activeTab.key)) return;
 
+    // The interaction guide is taught once in General. Every other tab stays clean:
+    // only the screenshot changes and hover/click opens the short field description.
+    if (activeTab.key !== "general") {
+      introducedTabs.current.add(activeTab.key);
+      return;
+    }
+
     const firstPage = activeTab.pages.find(
       (page) =>
         resolveGdcCohortFieldGuideImage(page.imageUrl, fallbackImageUrl) &&
@@ -344,20 +351,6 @@ export function GdcCohortFieldGuideStage({
               })}
             </div>
           </div>
-
-          {activeTab ? (
-            <div className="mt-4 rounded-xl border border-teal-100 bg-teal-50/60 p-3">
-              <div className="flex items-center gap-2 text-xs font-black text-teal-900">
-                <Info className="h-4 w-4" /> <span dir="ltr">{activeTab.label}</span>
-              </div>
-              <p className="mt-2 text-xs leading-6 text-teal-950/75">{activeTab.helper}</p>
-              {activeTab.pages.some((page) => page.fields.length > 0) ? (
-                <p className="mt-2 text-[10px] leading-5 text-teal-700">
-                  روی عنوان فیلترها در خود اسکرین‌شات بروید؛ توضیح کوتاه همان‌جا باز می‌شود.
-                </p>
-              ) : null}
-            </div>
-          ) : null}
 
           <div className="mt-4 flex items-center justify-between gap-2">
             <button
