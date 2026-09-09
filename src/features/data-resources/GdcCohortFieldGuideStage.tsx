@@ -6,8 +6,10 @@ import type {
   GdcCohortFieldGuideField,
   GdcCohortFieldGuidePage,
 } from "./gdc-cohort-field-guide-config";
+import { resolveGdcCohortFieldGuideImage } from "./gdc-cohort-field-guide-image";
 
 type FieldRef = { pageKey: string; fieldKey: string };
+type ImageState = "primary" | "fallback" | "failed";
 
 function refKey(pageKey: string, fieldKey: string) {
   return `${pageKey}:${fieldKey}`;
@@ -48,6 +50,7 @@ function ScreenshotPage({
   page,
   pageIndex,
   pageCount,
+  fallbackImageUrl,
   spotlightFieldKey,
   instruction,
   tooltipHint,
@@ -60,6 +63,7 @@ function ScreenshotPage({
   page: GdcCohortFieldGuidePage;
   pageIndex: number;
   pageCount: number;
+  fallbackImageUrl?: string | null;
   spotlightFieldKey: string | null;
   instruction: string;
   tooltipHint: string;
@@ -69,9 +73,37 @@ function ScreenshotPage({
   onPin: (key: string) => void;
   onInteract: () => void;
 }) {
+  const preferredImage = resolveGdcCohortFieldGuideImage(page.imageUrl, fallbackImageUrl);
+  const fallbackImage = fallbackImageUrl?.trim() ?? "";
+  const [imageState, setImageState] = useState<ImageState>("primary");
+
+  useEffect(() => {
+    setImageState("primary");
+  }, [page.key, preferredImage, fallbackImage]);
+
+  const imageSrc =
+    imageState === "fallback"
+      ? fallbackImage
+      : imageState === "failed"
+        ? ""
+        : preferredImage;
+  const hasImage = Boolean(imageSrc);
+
   const spotlightField = spotlightFieldKey
     ? page.fields.find((item) => item.key === spotlightFieldKey) ?? null
     : null;
+
+  function handleImageError() {
+    if (
+      imageState === "primary" &&
+      fallbackImage &&
+      fallbackImage !== preferredImage
+    ) {
+      setImageState("fallback");
+      return;
+    }
+    setImageState("failed");
+  }
 
   return (
     <section className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(15,23,42,0.10)]">
@@ -81,24 +113,28 @@ function ScreenshotPage({
         </div>
       ) : null}
 
-      <div className="relative" dir="ltr">
-        {page.imageUrl ? (
+      <div className="relative aspect-[1905/843] overflow-hidden bg-slate-100" dir="ltr">
+        {hasImage ? (
           <img
-            src={page.imageUrl}
+            key={`${page.key}-${imageState}-${imageSrc}`}
+            src={imageSrc}
             alt={`Cohort Builder field guide ${page.key}`}
-            className="block h-auto w-full"
+            className="absolute inset-0 block h-full w-full object-contain"
             loading="eager"
             decoding="async"
+            onError={handleImageError}
           />
         ) : (
-          <div className="flex aspect-[1918/837] items-center justify-center bg-slate-100 px-6 text-center text-sm font-bold leading-7 text-slate-400" dir="rtl">
-            برای این تب هنوز اسکرین‌شات تعریف نشده است. تصویر را از GDC Editor اضافه کنید.
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-100 px-6 text-center text-sm font-bold leading-7 text-slate-500" dir="rtl">
+            <div className="max-w-md rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-amber-900">
+              اسکرین‌شات این صفحه بارگذاری نشد. از GDC Editor تصویر همین تب را انتخاب کنید؛ تا آن زمان مرحله ۳ می‌تواند از تصویر مرحله ۲ به‌عنوان جایگزین استفاده کند.
+            </div>
           </div>
         )}
 
-        {page.imageUrl && spotlightField ? <DimAround field={spotlightField} /> : null}
+        {hasImage && spotlightField ? <DimAround field={spotlightField} /> : null}
 
-        {page.imageUrl && spotlightField ? (
+        {hasImage && spotlightField ? (
           <div
             className="pointer-events-none absolute z-40 max-w-[360px] -translate-x-1/2 rounded-2xl border border-amber-200 bg-white px-4 py-3 text-center text-xs font-black leading-6 text-slate-800 shadow-2xl"
             style={{
@@ -115,7 +151,7 @@ function ScreenshotPage({
           </div>
         ) : null}
 
-        {page.imageUrl
+        {hasImage
           ? page.fields.map((field) => {
               const composite = refKey(page.key, field.key);
               const open = hoveredKey === composite || pinnedKey === composite;
@@ -179,12 +215,14 @@ function ScreenshotPage({
 
 export function GdcCohortFieldGuideStage({
   config,
+  fallbackImageUrl,
   stageNumber = 3,
   stageTotal = 3,
   onPrevious,
   onContinue,
 }: {
   config: GdcCohortFieldGuideConfig;
+  fallbackImageUrl?: string | null;
   stageNumber?: number;
   stageTotal?: number;
   onPrevious: () => void;
@@ -207,7 +245,11 @@ export function GdcCohortFieldGuideStage({
     setSpotlight(null);
     if (!activeTab || introducedTabs.current.has(activeTab.key)) return;
 
-    const firstPage = activeTab.pages.find((page) => page.imageUrl && page.fields.length > 0);
+    const firstPage = activeTab.pages.find(
+      (page) =>
+        resolveGdcCohortFieldGuideImage(page.imageUrl, fallbackImageUrl) &&
+        page.fields.length > 0,
+    );
     if (!firstPage) return;
     const target = findSpotlight(firstPage);
     if (!target) return;
@@ -218,7 +260,7 @@ export function GdcCohortFieldGuideStage({
     }, 2000);
 
     return () => window.clearTimeout(timer);
-  }, [activeTab]);
+  }, [activeTab, fallbackImageUrl]);
 
   function dismissGuide() {
     setSpotlight(null);
@@ -239,6 +281,7 @@ export function GdcCohortFieldGuideStage({
               page={page}
               pageIndex={pageIndex}
               pageCount={activeTab.pages.length}
+              fallbackImageUrl={fallbackImageUrl}
               spotlightFieldKey={spotlight?.pageKey === page.key ? spotlight.fieldKey : null}
               instruction={config.instruction}
               tooltipHint={config.tooltipHint}
@@ -276,7 +319,11 @@ export function GdcCohortFieldGuideStage({
             <div className="mt-3 grid grid-cols-2 gap-2">
               {config.tabs.map((tab) => {
                 const active = activeTab?.key === tab.key;
-                const ready = tab.pages.some((page) => page.imageUrl && page.fields.length > 0);
+                const ready = tab.pages.some(
+                  (page) =>
+                    resolveGdcCohortFieldGuideImage(page.imageUrl, fallbackImageUrl) &&
+                    page.fields.length > 0,
+                );
                 return (
                   <button
                     key={tab.key}
