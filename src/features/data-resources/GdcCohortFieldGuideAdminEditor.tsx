@@ -1,4 +1,4 @@
-import { Crosshair, Plus, Save, Trash2 } from "lucide-react";
+import { Crosshair, ImageIcon, Plus, Save, Trash2 } from "lucide-react";
 
 import { HotspotCanvasEditor } from "./HotspotCanvasEditor";
 import { VisualAssetEditor } from "./VisualAssetEditor";
@@ -8,6 +8,7 @@ import type {
   GdcCohortFieldGuidePage,
   GdcCohortFieldGuideTab,
 } from "./gdc-cohort-field-guide-config";
+import { resolveGdcCohortFieldGuideImage } from "./gdc-cohort-field-guide-image";
 import type { EditableResourceHotspot } from "./resource-tour-model";
 
 function Input({
@@ -114,10 +115,12 @@ function uniqueKey(existing: string[], base: string) {
 
 export function GdcCohortFieldGuideAdminEditor({
   config,
+  fallbackImageUrl,
   onChange,
   onSave,
 }: {
   config: GdcCohortFieldGuideConfig;
+  fallbackImageUrl?: string | null;
   onChange: (config: GdcCohortFieldGuideConfig) => void;
   onSave: (config: GdcCohortFieldGuideConfig) => void | Promise<void>;
 }) {
@@ -224,7 +227,7 @@ export function GdcCohortFieldGuideAdminEditor({
           <div className="text-xs font-black text-amber-700">سؤال ۲ · مرحله ۳ · معرفی فیلترهای داخل هر دسته</div>
           <h2 className="mt-1 text-2xl font-black text-slate-950">Cohort Field Guide Editor</h2>
           <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-600">
-            برای هر تب می‌توانید یک یا چند اسکرین‌شات زیر هم قرار دهید، عنوان‌های قابل Hover/Click بسازید، توضیح کوتاه هر فیلتر را عوض کنید و محدوده Spotlight آموزشی را کنترل کنید.
+            این مرحله کاملاً از همین بخش مدیریت می‌شود: تب‌ها، متن‌ها، Screenshot هر صفحه، تعداد صفحات، فیلترها، Popoverها، ناحیه Hover/Click و Spotlight اولیه.
           </p>
         </div>
         <button
@@ -266,128 +269,156 @@ export function GdcCohortFieldGuideAdminEditor({
               </div>
             </summary>
 
-            <div className="mt-4">
+            <div className="mt-4 grid gap-3 lg:grid-cols-2">
+              <Input label="نام تب" value={tab.label} dir="ltr" onChange={(value) => patchTab(tab.key, { label: value })} />
               <Input label="توضیح کوتاه تب" value={tab.helper} onChange={(value) => patchTab(tab.key, { helper: value })} />
             </div>
 
             <div className="mt-4 space-y-5">
-              {tab.pages.map((page, pageIndex) => (
-                <section key={page.key} className="rounded-2xl border border-slate-200 bg-white p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="text-[10px] font-black text-amber-700">صفحه {pageIndex + 1}</div>
-                      <code className="text-[10px] text-slate-400">{page.key}</code>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => addField(tab, page)}
-                        className="inline-flex items-center gap-1 rounded-lg border border-teal-200 px-3 py-2 text-[10px] font-black text-teal-700"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> افزودن فیلتر
-                      </button>
-                      {tab.pages.length > 1 ? (
+              {tab.pages.map((page, pageIndex) => {
+                const effectiveImageUrl = resolveGdcCohortFieldGuideImage(page.imageUrl, fallbackImageUrl);
+                const canBorrowStageTwo = Boolean(fallbackImageUrl && fallbackImageUrl !== page.imageUrl);
+
+                return (
+                  <section key={page.key} className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="text-[10px] font-black text-amber-700">صفحه {pageIndex + 1}</div>
+                        <code className="text-[10px] text-slate-400">{page.key}</code>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {canBorrowStageTwo ? (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const next = patchPage(tab.key, page.key, { imageUrl: fallbackImageUrl ?? "" });
+                              await onSave(next);
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-[10px] font-black text-sky-700"
+                          >
+                            <ImageIcon className="h-3.5 w-3.5" /> استفاده از تصویر مرحله ۲
+                          </button>
+                        ) : null}
                         <button
                           type="button"
-                          onClick={() => removePage(tab, page.key)}
-                          className="rounded-lg border border-rose-100 p-2 text-rose-600"
-                          title="حذف صفحه"
+                          onClick={() => addField(tab, page)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-teal-200 px-3 py-2 text-[10px] font-black text-teal-700"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Plus className="h-3.5 w-3.5" /> افزودن فیلتر
                         </button>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <VisualAssetEditor
-                      resourceSlug={`gdc-q2-field-guide-${tab.key}-${page.key}`}
-                      imageUrl={page.imageUrl}
-                      title={`اسکرین‌شات ${tab.label} · صفحه ${pageIndex + 1}`}
-                      description="اسکرین‌شات واقعی همان دسته در Cohort Builder. برای دسته‌های شلوغ می‌توانید صفحه دوم هم اضافه کنید تا زیر صفحه اول نمایش داده شود."
-                      onSave={async (imageUrl) => {
-                        const next = patchPage(tab.key, page.key, { imageUrl });
-                        await onSave(next);
-                      }}
-                    />
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    {page.fields.map((field) => (
-                      <details key={field.key} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                        <summary className="cursor-pointer list-none">
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="text-xs font-black text-slate-900" dir="ltr">{field.label}</div>
-                            <button
-                              type="button"
-                              onClick={(event) => {
-                                event.preventDefault();
-                                removeField(tab.key, page, field.key);
-                              }}
-                              className="rounded-lg border border-rose-100 p-1.5 text-rose-600"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </summary>
-
-                        <div className="mt-3 grid gap-3 lg:grid-cols-2">
-                          <Input label="عنوان فیلتر" value={field.label} dir="ltr" onChange={(value) => patchField(tab.key, page.key, field.key, { label: value })} />
-                          <Textarea label="توضیح کوتاه Popover" value={field.description} onChange={(value) => patchField(tab.key, page.key, field.key, { description: value })} rows={3} />
-                        </div>
-
-                        <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
-                          <label className="inline-flex items-center gap-2 text-[11px] font-black text-amber-900">
-                            <input
-                              type="radio"
-                              name={`spotlight-${tab.key}-${page.key}`}
-                              checked={page.spotlightFieldKey === field.key}
-                              onChange={() => patchPage(tab.key, page.key, { spotlightFieldKey: field.key })}
-                              className="accent-amber-600"
-                            />
-                            این فیلتر اولین Spotlight آموزشی این صفحه باشد
-                          </label>
-                          <div className="mt-3 grid gap-2 sm:grid-cols-4">
-                            <NumberInput label="Spotlight X %" value={field.panelX} onChange={(value) => patchField(tab.key, page.key, field.key, { panelX: value })} />
-                            <NumberInput label="Spotlight Y %" value={field.panelY} onChange={(value) => patchField(tab.key, page.key, field.key, { panelY: value })} />
-                            <NumberInput label="Spotlight W %" value={field.panelWidth} onChange={(value) => patchField(tab.key, page.key, field.key, { panelWidth: value })} />
-                            <NumberInput label="Spotlight H %" value={field.panelHeight} onChange={(value) => patchField(tab.key, page.key, field.key, { panelHeight: value })} />
-                          </div>
-                        </div>
-                      </details>
-                    ))}
-                  </div>
-
-                  {page.imageUrl && page.fields.length ? (
-                    <div className="mt-4">
-                      <div className="mb-2 flex items-center gap-2 text-[11px] font-black text-slate-600">
-                        <Crosshair className="h-4 w-4 text-teal-600" /> جای عنوان‌های قابل Hover/Click را روی تصویر Drag / Resize کنید.
+                        {tab.pages.length > 1 ? (
+                          <button
+                            type="button"
+                            onClick={() => removePage(tab, page.key)}
+                            className="rounded-lg border border-rose-100 p-2 text-rose-600"
+                            title="حذف صفحه"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
                       </div>
-                      <HotspotCanvasEditor
-                        imageUrl={page.imageUrl}
-                        hotspots={pageHotspots(page)}
-                        showArrowPreview={false}
-                        onSave={async (items) => {
-                          const fields = page.fields.map((field) => {
-                            const edited = items.find((item) => item.key === field.key);
-                            return edited
-                              ? {
-                                  ...field,
-                                  x: edited.x,
-                                  y: edited.y,
-                                  width: edited.width,
-                                  height: edited.height,
-                                }
-                              : field;
-                          });
-                          const next = patchPage(tab.key, page.key, { fields });
+                    </div>
+
+                    <div className="mt-4">
+                      <VisualAssetEditor
+                        resourceSlug={`gdc-q2-field-guide-${tab.key}-${page.key}`}
+                        imageUrl={effectiveImageUrl}
+                        title={`اسکرین‌شات ${tab.label} · صفحه ${pageIndex + 1}`}
+                        description="اسکرین‌شات واقعی همان دسته در Cohort Builder. برای دسته‌های شلوغ می‌توانید صفحه دوم هم اضافه کنید تا زیر صفحه اول نمایش داده شود."
+                        onSave={async (imageUrl) => {
+                          const next = patchPage(tab.key, page.key, { imageUrl });
                           await onSave(next);
                         }}
                       />
                     </div>
-                  ) : null}
-                </section>
-              ))}
+
+                    <div className="mt-4 space-y-3">
+                      {page.fields.map((field) => (
+                        <details key={field.key} className="rounded-xl border border-slate-200 bg-slate-50/50 p-3">
+                          <summary className="cursor-pointer list-none">
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="text-xs font-black text-slate-900" dir="ltr">{field.label}</div>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.preventDefault();
+                                  removeField(tab.key, page, field.key);
+                                }}
+                                className="rounded-lg border border-rose-100 p-1.5 text-rose-600"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </summary>
+
+                          <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                            <Input label="عنوان فیلتر" value={field.label} dir="ltr" onChange={(value) => patchField(tab.key, page.key, field.key, { label: value })} />
+                            <Textarea label="توضیح کوتاه Popover" value={field.description} onChange={(value) => patchField(tab.key, page.key, field.key, { description: value })} rows={3} />
+                          </div>
+
+                          <div className="mt-3 rounded-xl border border-sky-100 bg-sky-50/50 p-3">
+                            <div className="text-[11px] font-black text-sky-900">ناحیه عنوان برای Hover / Click</div>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                              <NumberInput label="X %" value={field.x} onChange={(value) => patchField(tab.key, page.key, field.key, { x: value })} />
+                              <NumberInput label="Y %" value={field.y} onChange={(value) => patchField(tab.key, page.key, field.key, { y: value })} />
+                              <NumberInput label="W %" value={field.width} onChange={(value) => patchField(tab.key, page.key, field.key, { width: value })} />
+                              <NumberInput label="H %" value={field.height} onChange={(value) => patchField(tab.key, page.key, field.key, { height: value })} />
+                            </div>
+                          </div>
+
+                          <div className="mt-3 rounded-xl border border-amber-100 bg-amber-50/50 p-3">
+                            <label className="inline-flex items-center gap-2 text-[11px] font-black text-amber-900">
+                              <input
+                                type="radio"
+                                name={`spotlight-${tab.key}-${page.key}`}
+                                checked={page.spotlightFieldKey === field.key}
+                                onChange={() => patchPage(tab.key, page.key, { spotlightFieldKey: field.key })}
+                                className="accent-amber-600"
+                              />
+                              این فیلتر اولین Spotlight آموزشی این صفحه باشد
+                            </label>
+                            <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                              <NumberInput label="Spotlight X %" value={field.panelX} onChange={(value) => patchField(tab.key, page.key, field.key, { panelX: value })} />
+                              <NumberInput label="Spotlight Y %" value={field.panelY} onChange={(value) => patchField(tab.key, page.key, field.key, { panelY: value })} />
+                              <NumberInput label="Spotlight W %" value={field.panelWidth} onChange={(value) => patchField(tab.key, page.key, field.key, { panelWidth: value })} />
+                              <NumberInput label="Spotlight H %" value={field.panelHeight} onChange={(value) => patchField(tab.key, page.key, field.key, { panelHeight: value })} />
+                            </div>
+                          </div>
+                        </details>
+                      ))}
+                    </div>
+
+                    {effectiveImageUrl && page.fields.length ? (
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center gap-2 text-[11px] font-black text-slate-600">
+                          <Crosshair className="h-4 w-4 text-teal-600" /> جای عنوان‌های قابل Hover/Click را روی تصویر Drag / Resize کنید.
+                        </div>
+                        <HotspotCanvasEditor
+                          imageUrl={effectiveImageUrl}
+                          hotspots={pageHotspots(page)}
+                          showArrowPreview={false}
+                          onSave={async (items) => {
+                            const fields = page.fields.map((field) => {
+                              const edited = items.find((item) => item.key === field.key);
+                              return edited
+                                ? {
+                                    ...field,
+                                    x: edited.x,
+                                    y: edited.y,
+                                    width: edited.width,
+                                    height: edited.height,
+                                  }
+                                : field;
+                            });
+                            const next = patchPage(tab.key, page.key, { fields });
+                            await onSave(next);
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                  </section>
+                );
+              })}
             </div>
           </details>
         ))}
