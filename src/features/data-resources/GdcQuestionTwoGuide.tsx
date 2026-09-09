@@ -119,6 +119,7 @@ export function GdcQuestionTwoGuide({
         ) : (
           <GdcCohortFieldGuideStage
             config={cohortFieldGuideConfig}
+            fallbackImageUrl={cohortBuilderFiltersConfig.imageUrl}
             stageNumber={3}
             stageTotal={stageTitles.length}
             onPrevious={() => setStage(1)}
