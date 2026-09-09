@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { GdcQuestionGuidePage } from "./GdcQuestionGuidePage";
 import { getGdcCohortBuilderFiltersConfig } from "./gdc-cohort-builder-filters-config";
 import { getGdcCohortBuilderIntroConfig } from "./gdc-cohort-builder-intro-config";
+import { seedGdcCohortFieldGuideTabs } from "./gdc-cohort-field-guide-catalog";
 import { getGdcCohortFieldGuideConfig } from "./gdc-cohort-field-guide-config";
 import { upgradeLegacyProgramFacet } from "./gdc-program-facet-upgrade";
 import { getGdcProjectSummaryConfig } from "./gdc-project-summary-config";
@@ -61,6 +62,7 @@ export function GdcResourcePage() {
     );
     const displayGuide = prepareGdcQuestionGuideForDisplay(upgradedGuide);
     const guideConfig = upgradeLegacyProgramFacet(displayGuide);
+    const cohortFieldGuideConfig = getGdcCohortFieldGuideConfig(blocks);
 
     return {
       title: blocks.find((item) => item.key === "title")?.value,
@@ -69,7 +71,10 @@ export function GdcResourcePage() {
       projectSummaryConfig: getGdcProjectSummaryConfig(blocks),
       cohortBuilderIntroConfig: getGdcCohortBuilderIntroConfig(blocks),
       cohortBuilderFiltersConfig: getGdcCohortBuilderFiltersConfig(blocks),
-      cohortFieldGuideConfig: getGdcCohortFieldGuideConfig(blocks),
+      cohortFieldGuideConfig: {
+        ...cohortFieldGuideConfig,
+        tabs: seedGdcCohortFieldGuideTabs(cohortFieldGuideConfig.tabs, 0),
+      },
     };
   }, [resource]);
 
