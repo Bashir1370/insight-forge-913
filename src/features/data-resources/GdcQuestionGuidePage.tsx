@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import "./gdc-question-guide.css";
 
 import { GdcCohortBuilderFiltersProvider } from "./GdcCohortBuilderFiltersContext";
+import { GdcCohortFieldGuideProvider } from "./GdcCohortFieldGuideContext";
 import { GdcProjectDecisionProvider } from "./GdcProjectDecisionContext";
 import { GdcProjectSummaryProvider } from "./GdcProjectSummaryContext";
 import {
@@ -19,6 +20,10 @@ import {
   type GdcCohortBuilderIntroConfig,
 } from "./gdc-cohort-builder-intro-config";
 import {
+  DEFAULT_GDC_COHORT_FIELD_GUIDE_CONFIG,
+  type GdcCohortFieldGuideConfig,
+} from "./gdc-cohort-field-guide-config";
+import {
   DEFAULT_GDC_PROJECT_SUMMARY_CONFIG,
   type GdcProjectSummaryConfig,
 } from "./gdc-project-summary-config";
@@ -30,6 +35,7 @@ type Props = Omit<GdcQuestionOneGuideProps, "cohortBuilderIntroConfig"> & {
   projectSummaryConfig?: GdcProjectSummaryConfig;
   cohortBuilderIntroConfig?: GdcCohortBuilderIntroConfig;
   cohortBuilderFiltersConfig?: GdcCohortBuilderFiltersConfig;
+  cohortFieldGuideConfig?: GdcCohortFieldGuideConfig;
 };
 
 type GuideStyle = CSSProperties & {
@@ -61,6 +67,7 @@ export function GdcQuestionGuidePage({
   projectSummaryConfig = DEFAULT_GDC_PROJECT_SUMMARY_CONFIG,
   cohortBuilderIntroConfig = DEFAULT_GDC_COHORT_BUILDER_INTRO_CONFIG,
   cohortBuilderFiltersConfig = DEFAULT_GDC_COHORT_BUILDER_FILTERS_CONFIG,
+  cohortFieldGuideConfig = DEFAULT_GDC_COHORT_FIELD_GUIDE_CONFIG,
   ...props
 }: Props) {
   const projectDecision = getGdcProjectDecisionConfig(props.guideConfig);
@@ -84,13 +91,15 @@ export function GdcQuestionGuidePage({
       <GdcProjectDecisionProvider config={projectDecision}>
         <GdcProjectSummaryProvider config={projectSummaryConfig}>
           <GdcCohortBuilderFiltersProvider config={cohortBuilderFiltersConfig}>
-            <div className="gdc-question-guide" style={style}>
-              <GdcQuestionOneGuide
-                {...props}
-                guideConfig={guideConfig}
-                cohortBuilderIntroConfig={cohortBuilderIntroConfig}
-              />
-            </div>
+            <GdcCohortFieldGuideProvider config={cohortFieldGuideConfig}>
+              <div className="gdc-question-guide" style={style}>
+                <GdcQuestionOneGuide
+                  {...props}
+                  guideConfig={guideConfig}
+                  cohortBuilderIntroConfig={cohortBuilderIntroConfig}
+                />
+              </div>
+            </GdcCohortFieldGuideProvider>
           </GdcCohortBuilderFiltersProvider>
         </GdcProjectSummaryProvider>
       </GdcProjectDecisionProvider>
