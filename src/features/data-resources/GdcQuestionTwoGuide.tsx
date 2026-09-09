@@ -12,6 +12,8 @@ import { useState } from "react";
 import { GdcCohortBuilderFiltersStage } from "./GdcCohortBuilderFiltersStage";
 import { useGdcCohortBuilderFiltersConfig } from "./GdcCohortBuilderFiltersContext";
 import { GdcCohortBuilderIntroStage } from "./GdcCohortBuilderIntroStage";
+import { GdcCohortFieldGuideStage } from "./GdcCohortFieldGuideStage";
+import { useGdcCohortFieldGuideConfig } from "./GdcCohortFieldGuideContext";
 import type { GdcCohortBuilderIntroConfig } from "./gdc-cohort-builder-intro-config";
 import type { GdcQuestionGuideConfig, GdcQuestionId } from "./gdc-question-guide-config";
 
@@ -38,7 +40,12 @@ export function GdcQuestionTwoGuide({
 }) {
   const [stage, setStage] = useState(0);
   const cohortBuilderFiltersConfig = useGdcCohortBuilderFiltersConfig();
-  const stageTitles = ["ورود به Cohort Builder", cohortBuilderFiltersConfig.title];
+  const cohortFieldGuideConfig = useGdcCohortFieldGuideConfig();
+  const stageTitles = [
+    "ورود به Cohort Builder",
+    cohortBuilderFiltersConfig.title,
+    cohortFieldGuideConfig.title,
+  ];
 
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 text-slate-900">
@@ -101,12 +108,20 @@ export function GdcQuestionTwoGuide({
             stageTotal={stageTitles.length}
             onContinue={() => setStage(1)}
           />
-        ) : (
+        ) : stage === 1 ? (
           <GdcCohortBuilderFiltersStage
             config={cohortBuilderFiltersConfig}
             stageNumber={2}
             stageTotal={stageTitles.length}
             onPrevious={() => setStage(0)}
+            onContinue={() => setStage(2)}
+          />
+        ) : (
+          <GdcCohortFieldGuideStage
+            config={cohortFieldGuideConfig}
+            stageNumber={3}
+            stageTotal={stageTitles.length}
+            onPrevious={() => setStage(1)}
           />
         )}
       </section>
